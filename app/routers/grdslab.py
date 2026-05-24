@@ -1,7 +1,7 @@
 ﻿from fastapi import APIRouter, Query
 from app.grdslab.calculator import calculate_full
 
-router = APIRouter(tags=["GRDSLAB"])
+router = APIRouter(prefix="/api/v1/grdslab", tags=["GRDSLAB"])
 
 CONVERSIONS = {
     "in_to_mm": 25.4,

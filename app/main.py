@@ -94,7 +94,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="BIO_ERP v5",
-    version="5.2.0",
+    version="5.3.0",
     lifespan=lifespan,
 )
 
@@ -189,7 +189,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.get("/")
 async def root():
-    return {"message": "BIO_ERP v5", "version": "5.2.0"}
+    return {"message": "BIO_ERP v5", "version": "5.3.0"}
 
 
 @app.get("/health")
@@ -205,6 +205,6 @@ async def health():
 
     return {
         "status": "ok" if db_status == "ok" else "degraded",
-        "version": "5.2.0",
+        "version": "5.3.0",
         "database": db_status,
     }

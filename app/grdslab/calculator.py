@@ -68,11 +68,11 @@ def crack_width(stress: float, fr: float, t: float) -> float:
 def calculate_full(P_kN: float, t_mm: float, fc_MPa: float,
                    k_kPa_mm: float, b_mm: float, Ac_mm2: float) -> dict:
     P = P_kN * 1000
-    t = t_mm / 1000
+    t = t_mm
     fc = fc_MPa
-    k = k_kPa_mm * 1000 / 1000
-    b = b_mm / 1000
-    Ac = Ac_mm2 / 1e6
+    k = k_kPa_mm * 0.001
+    b = b_mm
+    Ac = Ac_mm2
 
     Ec = modulus_of_elasticity(fc)
     fr = modulus_of_rupture(fc)
@@ -105,9 +105,9 @@ def calculate_full(P_kN: float, t_mm: float, fc_MPa: float,
             "modulus_of_rupture_MPa": round(fr, 3)
         },
         "slab_properties": {
-            "radius_of_stiffness_mm": round(Lr * 1000, 1),
-            "min_thickness_interior_mm": round(t_min_int * 1000, 1),
-            "min_thickness_corner_mm": round(t_min_cor * 1000, 1)
+            "radius_of_stiffness_mm": round(Lr, 1),
+            "min_thickness_interior_mm": round(t_min_int, 1),
+            "min_thickness_corner_mm": round(t_min_cor, 1)
         },
         "stresses": {
             "interior_flexural_MPa": round(si, 3),
@@ -126,6 +126,6 @@ def calculate_full(P_kN: float, t_mm: float, fc_MPa: float,
             "edge_ok": se <= fr,
             "corner_ok": sc <= fr,
             "bearing_ok": sb <= fc * 0.45,
-            "punching_ok": v <= 0.17 * math.sqrt(fc) * 1000
+            "punching_ok": v <= 0.17 * math.sqrt(fc)
         }
     }

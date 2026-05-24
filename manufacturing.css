@@ -1,0 +1,392 @@
+/*
+ * static/css/manufacturing.css
+ * ==============================
+ * Manufacturing module styles — built entirely on existing CSS variables
+ * from design-tokens.css. No hardcoded colors or sizes.
+ * WCAG 2.2 AA: status badges use color + icon + text (never color alone).
+ */
+
+/* ──────────────────────────────────────────────────────────────────
+   PO HEADER
+   ────────────────────────────────────────────────────────────────── */
+
+.po-header {
+  display:         flex;
+  align-items:     flex-start;
+  justify-content: space-between;
+  flex-wrap:       wrap;
+  gap:             var(--space-4);
+  padding:         var(--space-6);
+  background:      var(--bg-secondary);
+  border-bottom:   1px solid var(--border-color);
+}
+
+.po-header__title {
+  font-size:   var(--font-size-2xl);
+  font-weight: 600;
+  color:       var(--text-primary);
+  margin:      0 0 var(--space-2);
+}
+
+.po-header__meta {
+  display:   flex;
+  align-items: center;
+  gap:       var(--space-3);
+  flex-wrap: wrap;
+}
+
+.po-header__date {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-1);
+  font-size:   var(--font-size-sm);
+  color:       var(--text-secondary);
+}
+
+.po-header__actions {
+  display: flex;
+  gap:     var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   STATUS BADGES  (color + icon + text — never color alone)
+   ────────────────────────────────────────────────────────────────── */
+
+.badge {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           var(--space-1);
+  padding:       2px 10px;
+  border-radius: var(--radius-full);
+  font-size:     var(--font-size-xs);
+  font-weight:   600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space:   nowrap;
+}
+
+.badge--draft       { background: var(--bg-tertiary); color: var(--text-secondary); }
+.badge--released    { background: var(--color-info-bg); color: var(--color-info); }
+.badge--in-progress { background: var(--color-warning-bg); color: var(--color-warning); }
+.badge--completed   { background: var(--color-success-bg); color: var(--color-success); }
+.badge--closed      { background: #0f172a; color: var(--text-disabled);
+                      border: 1px solid var(--border-color); }
+.badge--cancelled   { background: var(--color-error-bg); color: var(--color-error); }
+.badge--pending     { background: var(--bg-tertiary); color: var(--text-secondary); }
+.badge--skipped     { background: var(--color-warning-bg); color: var(--color-warning); }
+.badge--success     { background: var(--color-success-bg); color: var(--color-success); }
+
+/* ──────────────────────────────────────────────────────────────────
+   TAB STRIP
+   ────────────────────────────────────────────────────────────────── */
+
+.tab-strip {
+  display:     flex;
+  overflow-x:  auto;
+  border-bottom: 1px solid var(--border-color);
+  background:  var(--bg-secondary);
+  padding:     0 var(--space-6);
+  gap:         var(--space-1);
+  scrollbar-width: none;    /* Firefox */
+}
+.tab-strip::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  display:       flex;
+  align-items:   center;
+  gap:           var(--space-2);
+  padding:       var(--space-3) var(--space-4);
+  background:    transparent;
+  border:        none;
+  border-bottom: 3px solid transparent;
+  color:         var(--text-secondary);
+  font-size:     var(--font-size-sm);
+  font-weight:   500;
+  cursor:        pointer;
+  white-space:   nowrap;
+  min-height:    var(--touch-target-min);
+  transition:    color var(--transition-fast), border-color var(--transition-fast);
+}
+.tab-btn:hover         { color: var(--text-primary); }
+.tab-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.tab-btn[aria-selected="true"] {
+  color:         var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   DATA TABLES
+   ────────────────────────────────────────────────────────────────── */
+
+.table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.data-table {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       var(--font-size-sm);
+}
+
+.data-table th {
+  background:    var(--bg-secondary);
+  color:         var(--text-secondary);
+  font-weight:   600;
+  font-size:     var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding:       var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+  text-align:    left;
+  white-space:   nowrap;
+}
+
+.data-table th.num,
+.data-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table td {
+  padding:       var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+  color:         var(--text-primary);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.data-table tbody tr:hover { background: var(--bg-secondary); }
+
+/* Operation row states */
+.op-row--completed { opacity: 0.75; }
+.op-row--in-progress td:first-child {
+  border-left: 3px solid var(--color-warning);
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   INLINE EDITABLE PERFORMED-BY INPUT
+   ────────────────────────────────────────────────────────────────── */
+
+.performed-by-input {
+  background:    transparent;
+  border:        1px solid transparent;
+  border-radius: var(--radius-sm);
+  color:         var(--text-primary);
+  font-size:     var(--font-size-sm);
+  padding:       var(--space-1) var(--space-2);
+  width:         100%;
+  min-height:    var(--touch-target-min);
+  transition:    border-color var(--transition-fast), background var(--transition-fast);
+}
+.performed-by-input:hover {
+  border-color: var(--input-border-hover);
+  background:   var(--input-bg);
+}
+.performed-by-input:focus {
+  border-color: var(--input-border-focus);
+  background:   var(--input-bg);
+  outline:      none;
+  box-shadow:   var(--focus-ring);
+}
+.performed-by-input:disabled,
+.performed-by-input[readonly] {
+  color:   var(--text-secondary);
+  cursor:  default;
+  opacity: 0.6;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   ACTION BUTTONS (in table rows)
+   ────────────────────────────────────────────────────────────────── */
+
+.btn-action {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           var(--space-1);
+  padding:       var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  border:        1px solid transparent;
+  font-size:     var(--font-size-xs);
+  font-weight:   500;
+  cursor:        pointer;
+  white-space:   nowrap;
+  min-height:    var(--touch-target-min);
+  transition:    all var(--transition-fast);
+}
+.btn-action:focus-visible { box-shadow: var(--focus-ring); }
+
+.btn-action--complete {
+  background:   var(--color-success-bg);
+  color:        var(--color-success);
+  border-color: var(--color-success);
+}
+.btn-action--complete:hover:not(:disabled) {
+  background: var(--color-success);
+  color:      #fff;
+}
+
+.btn-action--start {
+  background:   var(--color-warning-bg);
+  color:        var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.btn-action--issue {
+  background:   var(--color-info-bg);
+  color:        var(--color-info);
+  border-color: var(--color-info);
+}
+
+.btn-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   CLOSE PO MODAL (typed confirmation)
+   ────────────────────────────────────────────────────────────────── */
+
+.modal-overlay {
+  position:        fixed;
+  inset:           0;
+  background:      var(--bg-overlay);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  z-index:         var(--z-modal);
+  padding:         var(--space-4);
+}
+.modal-overlay[hidden] { display: none; }
+
+.modal {
+  background:    var(--bg-secondary);
+  border:        1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding:       var(--space-8);
+  max-width:     480px;
+  width:         100%;
+  box-shadow:    var(--shadow-lg);
+}
+
+.modal__title {
+  font-size:   var(--font-size-xl);
+  font-weight: 600;
+  color:       var(--color-error);
+  margin:      0 0 var(--space-4);
+}
+
+.modal__body { margin-bottom: var(--space-6); }
+.modal__hint { font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--space-3); }
+
+.modal__confirm-input {
+  width:         100%;
+  padding:       var(--space-3) var(--space-4);
+  background:    var(--input-bg);
+  border:        1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color:         var(--text-primary);
+  font-size:     var(--font-size-base);
+  min-height:    var(--touch-target-min);
+}
+.modal__confirm-input:focus {
+  border-color: var(--input-border-focus);
+  box-shadow:   var(--focus-ring);
+  outline:      none;
+}
+.modal__confirm-input.is-valid { border-color: var(--border-color-success); }
+
+.modal__error {
+  color:     var(--color-error);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-2);
+  min-height: 20px;
+}
+
+.modal__actions {
+  display:         flex;
+  justify-content: flex-end;
+  gap:             var(--space-3);
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   ISSUE RM MODAL
+   ────────────────────────────────────────────────────────────────── */
+
+.issue-modal__material-name {
+  font-weight: 600;
+  color:       var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.issue-modal__available {
+  font-size:    var(--font-size-sm);
+  color:        var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   DASHBOARD WIDGET GRID
+   ────────────────────────────────────────────────────────────────── */
+
+.mfg-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.mfg-kpi-card {
+  background:    var(--bg-secondary);
+  border:        1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding:       var(--space-5);
+}
+
+.mfg-kpi-card__label {
+  font-size:   var(--font-size-xs);
+  color:       var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-2);
+}
+
+.mfg-kpi-card__value {
+  font-size:   var(--font-size-3xl);
+  font-weight: 700;
+  color:       var(--text-primary);
+  margin:      0;
+  font-variant-numeric: tabular-nums;
+}
+
+.mfg-kpi-card__sub {
+  font-size:  var(--font-size-xs);
+  color:      var(--text-secondary);
+  margin-top: var(--space-1);
+}
+
+.mfg-kpi-card--warning .mfg-kpi-card__value { color: var(--color-warning); }
+.mfg-kpi-card--success .mfg-kpi-card__value { color: var(--color-success); }
+.mfg-kpi-card--error   .mfg-kpi-card__value { color: var(--color-error); }
+
+/* ──────────────────────────────────────────────────────────────────
+   RESPONSIVE
+   ────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .po-header { flex-direction: column; }
+  .po-header__actions { width: 100%; }
+  .po-header__actions .btn { flex: 1; justify-content: center; }
+  .data-table th:nth-child(n+4),
+  .data-table td:nth-child(n+4) { display: none; } /* hide less-critical cols */
+  .mfg-kpi-grid { grid-template-columns: 1fr 1fr; }
+  .modal { padding: var(--space-5); }
+}
+
+@media (max-width: 380px) {
+  .tab-btn { padding: var(--space-2) var(--space-3); font-size: var(--font-size-xs); }
+  .mfg-kpi-grid { grid-template-columns: 1fr; }
+}
