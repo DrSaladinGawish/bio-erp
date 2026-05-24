@@ -6,6 +6,8 @@ from typing import Optional
 from app.database import get_db
 from app.services.costing_engine import CostingEngine
 from app.models import EventCostAnalysis, Event
+from app.models.auth import User
+from app.middleware.auth import get_current_user, RequirePermission
 
 router = APIRouter(tags=["Costing & Analysis"])
 
@@ -14,6 +16,7 @@ router = APIRouter(tags=["Costing & Analysis"])
 async def analyze_event_costs(
     event_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("costing.create")),
 ):
     result = await CostingEngine.calculate_event_cost_analysis(db, event_id)
     if "error" in result:
@@ -26,6 +29,7 @@ async def activity_based_costing(
     cost_center_id: int,
     period: str,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("costing.read")),
 ):
     return await CostingEngine.activity_based_costing(db, cost_center_id, period)
 
@@ -34,6 +38,7 @@ async def activity_based_costing(
 async def budget_variance(
     event_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("costing.read")),
 ):
     return await CostingEngine.compare_budget_vs_actual(db, event_id)
 
@@ -43,6 +48,7 @@ async def margin_analysis(
     period_from: Optional[str] = None,
     period_to: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("costing.read")),
 ):
     query = (
         select(EventCostAnalysis, Event.name_en, Event.start_date)
@@ -100,6 +106,7 @@ async def margin_analysis(
 @router.get("/biological-health")
 async def biological_system_health(
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("costing.read")),
 ):
     result = await db.execute(
         select(func.count(Event.id)).where(Event.status == "APPROVED")

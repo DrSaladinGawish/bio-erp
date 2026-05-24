@@ -16,9 +16,9 @@ class HealthCheck:
     async def check_database() -> dict:
         try:
             async with AsyncSessionLocal() as db:
-                start = datetime.utcnow()
+                start = datetime.now(timezone.utc).replace(tzinfo=None)
                 await db.execute(text("SELECT 1"))
-                latency = (datetime.utcnow() - start).total_seconds()
+                latency = (datetime.now(timezone.utc).replace(tzinfo=None) - start).total_seconds()
                 return {
                     "status": "healthy",
                     "latency_ms": round(latency * 1000, 2),
@@ -38,9 +38,9 @@ class HealthCheck:
                 "authenticated": False,
             }
         try:
-            start = datetime.utcnow()
+            start = datetime.now(timezone.utc).replace(tzinfo=None)
             token = await ETAClient._get_token()
-            latency = (datetime.utcnow() - start).total_seconds()
+            latency = (datetime.now(timezone.utc).replace(tzinfo=None) - start).total_seconds()
             return {
                 "status": "healthy" if token else "degraded",
                 "latency_ms": round(latency * 1000, 2),
@@ -141,7 +141,7 @@ class HealthCheck:
 
         return {
             "status": overall,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
             "checks": {
                 "database": db,
                 "eta_api": eta,

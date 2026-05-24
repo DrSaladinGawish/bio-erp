@@ -94,7 +94,7 @@ class ThreeWayMatchService:
         match.price_variance = price_variance
         match.price_match = price_match
         match.overall_status = overall_status
-        match.match_date = datetime.utcnow()
+        match.match_date = datetime.now(timezone.utc).replace(tzinfo=None)
         match.qty_tolerance_pct = 5.0
         match.price_tolerance_pct = 2.0
 

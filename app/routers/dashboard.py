@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
+from app.middleware.auth import get_current_user, RequirePermission
+from app.models.auth import User
 from app.models.event import Event
 from app.models.client import Client
 from app.models.supplier import Supplier, RFQ, PurchaseOrder
@@ -149,7 +151,10 @@ ws.onopen = () => { document.getElementById('lastUpdate').textContent = 'Live'; 
 
 
 @router.get("/stats")
-async def get_dashboard_stats(db: AsyncSession = Depends(get_db)):
+async def get_dashboard_stats(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
+):
     event_count = await db.scalar(select(func.count(Event.id)))
     active_count = await db.scalar(
         select(func.count(Event.id)).where(
@@ -227,7 +232,11 @@ async def get_dashboard_stats(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/top-clients")
-async def top_clients(limit: int = Query(5), db: AsyncSession = Depends(get_db)):
+async def top_clients(
+    limit: int = Query(5),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
+):
     result = await db.execute(
         select(
             Client.id,
@@ -254,7 +263,11 @@ async def top_clients(limit: int = Query(5), db: AsyncSession = Depends(get_db))
 
 
 @router.get("/recent-events")
-async def recent_events(limit: int = Query(10), db: AsyncSession = Depends(get_db)):
+async def recent_events(
+    limit: int = Query(10),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
+):
     result = await db.execute(
         select(Event).order_by(Event.created_at.desc()).limit(limit)
     )
@@ -279,7 +292,9 @@ async def recent_events(limit: int = Query(10), db: AsyncSession = Depends(get_d
 
 @router.get("/supplier-performance")
 async def supplier_performance(
-    limit: int = Query(10), db: AsyncSession = Depends(get_db)
+    limit: int = Query(10),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
 ):
     result = await db.execute(
         select(Supplier)
@@ -299,7 +314,10 @@ async def supplier_performance(
 
 
 @router.get("/eta-compliance")
-async def eta_compliance(db: AsyncSession = Depends(get_db)):
+async def eta_compliance(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
+):
     total = await db.scalar(select(func.count(EInvoiceRegister.id)))
     by_status = {}
     statuses = ["PENDING", "SUBMITTED", "VALID", "REJECTED"]
@@ -314,7 +332,10 @@ async def eta_compliance(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/branch-comparison")
-async def branch_comparison(db: AsyncSession = Depends(get_db)):
+async def branch_comparison(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
+):
     branches = await db.execute(select(Branch))
     result = []
     for branch in branches.scalars():
@@ -339,7 +360,11 @@ async def branch_comparison(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/audit-trail")
-async def audit_trail(limit: int = Query(20), db: AsyncSession = Depends(get_db)):
+async def audit_trail(
+    limit: int = Query(20),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
+):
     result = await db.execute(
         select(AuditLog).order_by(AuditLog.timestamp.desc()).limit(limit)
     )
@@ -435,7 +460,7 @@ async def _fetch_broadcast_data(db: AsyncSession) -> dict:
     eta_rate = (eta_accepted / total_eta * 100) if total_eta > 0 else 100.0
 
     return {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
         "total_events": event_count or 0,
         "active_events": active_count or 0,
         "total_clients": client_count or 0,

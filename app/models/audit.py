@@ -1,5 +1,5 @@
 from datetime import timezone, datetime
-from sqlalchemy import Integer, String, DateTime, Text
+from sqlalchemy import Integer, String, DateTime, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -32,3 +32,12 @@ class AuditLog(Base):
     ip_address: Mapped[str] = mapped_column(String(50), nullable=True)
     user_agent: Mapped[str] = mapped_column(String(500), nullable=True)
     branch_id: Mapped[int] = mapped_column(Integer, default=1)
+    row_hash: Mapped[str] = mapped_column(
+        String(64), nullable=True, comment="SHA-256 hex of this row"
+    )
+    previous_hash: Mapped[str] = mapped_column(
+        String(64), nullable=True, comment="SHA-256 hex of previous row (NULL for genesis)"
+    )
+    chain_verified: Mapped[bool] = mapped_column(
+        Boolean, default=False, comment="Whether chain integrity has been verified"
+    )

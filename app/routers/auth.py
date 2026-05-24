@@ -52,7 +52,7 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     role_names = [r.name for r in user.roles]
     token = create_access_token(user.id, user.username, role_names, user.branch_id)
 
-    user.last_login = __import__("datetime").datetime.utcnow()
+    user.last_login = __import__("datetime").datetime.now(timezone.utc).replace(tzinfo=None)
     logger = AuditLogger(db)
     await logger.log(
         "LOGIN", "User", user.id, actor_id=user.id, actor_name=user.username

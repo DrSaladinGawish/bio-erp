@@ -78,7 +78,7 @@ async def submit_budget_version(
         )
 
     setattr(lifecycle, status_attr, "Submitted")
-    setattr(lifecycle, f"v{version}_submitted_at", datetime.utcnow())
+    setattr(lifecycle, f"v{version}_submitted_at", datetime.now(timezone.utc).replace(tzinfo=None))
     await db.commit()
     return {"event_id": event_id, "version": version, "status": "Submitted"}
 
@@ -109,7 +109,7 @@ async def approve_budget_version(
 
     setattr(lifecycle, status_attr, "Approved")
     setattr(lifecycle, f"v{version}_approved_by", user.id)
-    setattr(lifecycle, f"v{version}_approved_at", datetime.utcnow())
+    setattr(lifecycle, f"v{version}_approved_at", datetime.now(timezone.utc).replace(tzinfo=None))
     lifecycle.current_active_version = version
     await db.commit()
     return {"event_id": event_id, "version": version, "status": "Approved"}
@@ -141,7 +141,7 @@ async def lock_budget_version(
 
     setattr(lifecycle, status_attr, "Locked")
     setattr(lifecycle, f"v{version}_locked_by", user.id)
-    setattr(lifecycle, f"v{version}_locked_at", datetime.utcnow())
+    setattr(lifecycle, f"v{version}_locked_at", datetime.now(timezone.utc).replace(tzinfo=None))
 
     # Take a snapshot of current budget lines for this version
     lines_result = await db.execute(
@@ -171,7 +171,7 @@ async def lock_budget_version(
         total_cost += line.total_cost
         total_revenue += line.selling_price * line.quantity
 
-    hash_data = f"{event_id}:V{version}:{total_cost}:{total_revenue}:{datetime.utcnow().isoformat()}"
+    hash_data = f"{event_id}:V{version}:{total_cost}:{total_revenue}:{datetime.now(timezone.utc).replace(tzinfo=None).isoformat()}"
     lock_hash = hashlib.sha256(hash_data.encode()).hexdigest()
 
     snapshot = BudgetSnapshot(
@@ -194,7 +194,7 @@ async def lock_budget_version(
         "status": "Locked",
         "snapshot_id": snapshot.id,
         "lock_hash": lock_hash,
-        "locked_at": datetime.utcnow().isoformat(),
+        "locked_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
     }
 
 

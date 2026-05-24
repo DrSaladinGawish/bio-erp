@@ -199,7 +199,7 @@ async def post_jv(
 
     jv.status = "Posted"
     jv.gl_posted = True
-    jv.gl_posted_at = datetime.utcnow()
+    jv.gl_posted_at = datetime.now(timezone.utc).replace(tzinfo=None)
     await db.commit()
     return {"jv_id": jv.id, "jv_number": jv.jv_number, "status": "Posted"}
 
@@ -236,7 +236,7 @@ async def reverse_jv(
         total_credit=jv.total_debit,
         status="Posted",
         gl_posted=True,
-        gl_posted_at=datetime.utcnow(),
+        gl_posted_at=datetime.now(timezone.utc).replace(tzinfo=None),
         gl_period=date.today().strftime("%Y-%m"),
         created_by=user.id,
     )
@@ -1023,7 +1023,7 @@ async def approve_payment(
         raise HTTPException(400, detail=f"Payment is already {pmt.status}")
     pmt.status = "Approved"
     pmt.approved_by = user.id
-    pmt.approved_at = datetime.utcnow()
+    pmt.approved_at = datetime.now(timezone.utc).replace(tzinfo=None)
     await db.commit()
     return {
         "payment_id": pmt.id,

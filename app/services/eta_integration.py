@@ -85,7 +85,7 @@ class ETAInvoiceHook:
             },
             "documentType": invoice_type,
             "documentTypeVersion": "1.0",
-            "dateTimeIssued": datetime.utcnow().isoformat(),
+            "dateTimeIssued": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
             "totalSalesAmount": round(total_amount, 2),
             "totalDiscountAmount": 0.0,
             "netAmount": round(total_amount, 2),
@@ -161,7 +161,7 @@ class ETAInvoiceHook:
 
         submission = {
             "invoice": payload,
-            "submission_timestamp": datetime.utcnow().isoformat(),
+            "submission_timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
             "submission_method": "API",
         }
 
@@ -177,7 +177,7 @@ class ETAInvoiceHook:
 
         einvoice.eta_status = "SUBMITTED"
         einvoice.eta_submission_id = submission_id
-        einvoice.eta_submitted_at = datetime.utcnow()
+        einvoice.eta_submitted_at = datetime.now(timezone.utc).replace(tzinfo=None)
         einvoice.eta_response = json.dumps(
             {"submission_id": submission_id, "status": "ACCEPTED"}
         )

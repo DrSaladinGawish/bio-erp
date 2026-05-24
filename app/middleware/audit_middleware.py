@@ -44,7 +44,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 )
 
                 entry = AuditLog(
-                    timestamp=datetime.utcnow(),
+                    timestamp=datetime.now(timezone.utc).replace(tzinfo=None),
                     actor_id=actor_id,
                     actor_name=actor_name,
                     action=request.method,

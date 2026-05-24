@@ -69,7 +69,7 @@ class GLPostingService:
             total_credit=invoice.total_amount,
             status="Posted",
             gl_posted=True,
-            gl_posted_at=datetime.utcnow(),
+            gl_posted_at=datetime.now(timezone.utc).replace(tzinfo=None),
             gl_period=invoice.invoice_date.strftime("%Y-%m"),
             created_by=invoice.created_by,
         )
@@ -115,7 +115,7 @@ class GLPostingService:
             )
 
         invoice.gl_posted = True
-        invoice.gl_posted_at = datetime.utcnow()
+        invoice.gl_posted_at = datetime.now(timezone.utc).replace(tzinfo=None)
         invoice.gl_posted_by = invoice.created_by
         return jv
 
@@ -141,7 +141,7 @@ class GLPostingService:
             total_credit=invoice.total_amount,
             status="Posted",
             gl_posted=True,
-            gl_posted_at=datetime.utcnow(),
+            gl_posted_at=datetime.now(timezone.utc).replace(tzinfo=None),
             gl_period=invoice.invoice_date.strftime("%Y-%m"),
             created_by=invoice.created_by,
         )
@@ -187,7 +187,7 @@ class GLPostingService:
         )
 
         invoice.gl_posted = True
-        invoice.gl_posted_at = datetime.utcnow()
+        invoice.gl_posted_at = datetime.now(timezone.utc).replace(tzinfo=None)
         invoice.gl_posted_by = invoice.created_by
         return jv
 
@@ -211,7 +211,7 @@ class GLPostingService:
             total_credit=receipt.amount,
             status="Posted",
             gl_posted=True,
-            gl_posted_at=datetime.utcnow(),
+            gl_posted_at=datetime.now(timezone.utc).replace(tzinfo=None),
             gl_period=receipt.receipt_date.strftime("%Y-%m"),
             created_by=receipt.created_by,
         )
@@ -240,7 +240,7 @@ class GLPostingService:
         )
 
         receipt.gl_posted = True
-        receipt.gl_posted_at = datetime.utcnow()
+        receipt.gl_posted_at = datetime.now(timezone.utc).replace(tzinfo=None)
         return jv
 
     async def post_payment(self, payment: PMTHeader) -> JVHeader | None:
@@ -263,7 +263,7 @@ class GLPostingService:
             total_credit=payment.amount,
             status="Posted",
             gl_posted=True,
-            gl_posted_at=datetime.utcnow(),
+            gl_posted_at=datetime.now(timezone.utc).replace(tzinfo=None),
             gl_period=payment.payment_date.strftime("%Y-%m"),
             created_by=payment.created_by,
         )
@@ -292,5 +292,5 @@ class GLPostingService:
         )
 
         payment.gl_posted = True
-        payment.gl_posted_at = datetime.utcnow()
+        payment.gl_posted_at = datetime.now(timezone.utc).replace(tzinfo=None)
         return jv

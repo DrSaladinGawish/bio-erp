@@ -55,7 +55,7 @@ async def create_petty_cash_register(
                 description=line.description,
                 amount=line.amount,
                 receipt_number=line.receipt_number,
-                receipt_date=line.receipt_date or datetime.utcnow(),
+                receipt_date=line.receipt_date or datetime.now(timezone.utc).replace(tzinfo=None),
             )
         )
 
@@ -144,7 +144,7 @@ async def approve_petty_cash(
         raise HTTPException(400, detail=f"Register is already {reg.status}")
     reg.status = "APPROVED"
     reg.approved_by = user.id
-    reg.approval_date = datetime.utcnow()
+    reg.approval_date = datetime.now(timezone.utc).replace(tzinfo=None)
     await db.commit()
     return {"id": reg.id, "register_number": reg.register_number, "status": "APPROVED"}
 

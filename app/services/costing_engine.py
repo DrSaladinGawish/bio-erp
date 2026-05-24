@@ -150,7 +150,7 @@ class CostingEngine:
                 "neural_load_score": round(neural_load, 2),
             },
             "variance_analysis": await CostingEngine._calculate_variances(db, event_id),
-            "calculated_at": datetime.utcnow().isoformat(),
+            "calculated_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
         }
 
         existing = await db.execute(
@@ -182,7 +182,7 @@ class CostingEngine:
                     organ_efficiency=organ_efficiency,
                     cell_utilization=cell_utilization,
                     neural_load=neural_load,
-                    calculated_at=datetime.utcnow(),
+                    calculated_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 )
             )
         else:

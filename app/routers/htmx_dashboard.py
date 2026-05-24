@@ -3,6 +3,8 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
+from app.middleware.auth import get_current_user, RequirePermission
+from app.models.auth import User
 from app.services.cost_engine import CostEngine
 from app.services.report_engine import generate_executive_summary
 from app.models import Event, Client, Branch
@@ -21,6 +23,7 @@ def _card(label: str, value: str, sub: str = "") -> str:
 async def stats_bar(
     branch_filter: BranchFilter = Depends(get_optional_branch_filter),
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
 ):
     bf = branch_filter
     event_q = select(func.count(Event.id))
@@ -56,6 +59,7 @@ async def stats_bar(
 async def branch_cards(
     branch_filter: BranchFilter = Depends(get_optional_branch_filter),
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
 ):
     data = await CostEngine.get_branch_profitability(
         db, branch_id=branch_filter.branch_id
@@ -79,6 +83,7 @@ async def branch_cards(
 async def variance_table(
     branch_filter: BranchFilter = Depends(get_optional_branch_filter),
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
 ):
     var = await CostEngine.get_variance_report(db, branch_id=branch_filter.branch_id)
     rows = ""
@@ -101,6 +106,7 @@ async def ai_query_fragment(
     request: Request,
     branch_filter: BranchFilter = Depends(get_optional_branch_filter),
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
 ):
     from app.services.local_ai_engine import (
         get_ai_engine,
@@ -165,6 +171,7 @@ async def ai_query_fragment(
 async def executive_fragment(
     branch_filter: BranchFilter = Depends(get_optional_branch_filter),
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
 ):
     summary = await generate_executive_summary(db, branch_id=branch_filter.branch_id)
     fh = summary["financial_health"]
@@ -214,6 +221,7 @@ async def health_detail():
 async def event_stream(
     branch_filter: BranchFilter = Depends(get_optional_branch_filter),
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
 ):
     q = select(EventLog).order_by(EventLog.timestamp.desc()).limit(20)
     if branch_filter.is_filtered:
@@ -241,6 +249,7 @@ async def event_stream(
 async def event_summary(
     branch_filter: BranchFilter = Depends(get_optional_branch_filter),
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("dashboard.read")),
 ):
     data = await EventBridge.branch_event_aggregator(
         db, branch_id=branch_filter.branch_id

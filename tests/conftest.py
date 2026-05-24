@@ -93,6 +93,44 @@ with SyncSession(_sync_engine) as session:
         if not cat.scalar():
             session.add(COACategory(code="TEST", name_en="Test Category"))
 
+    # Seed roles and permissions using sync session
+    from app.seed import FLASK_PERMISSIONS, ROLE_DEFINITIONS
+    from app.models import Permission, Role
+    from app.models.auth import role_permissions
+
+    with SyncSession(_sync_engine) as session2:
+        with session2.begin():
+            perm_id_map = {}
+            for code, name_en, module in FLASK_PERMISSIONS:
+                existing = session2.execute(text("SELECT id FROM permissions WHERE code = :c"), {"c": code}).scalar()
+                if existing:
+                    perm_id_map[code] = existing
+                else:
+                    p = Permission(code=code, name_en=name_en, module=module)
+                    session2.add(p)
+                    session2.flush()
+                    perm_id_map[code] = p.id
+
+            for role_name, perm_codes in ROLE_DEFINITIONS.items():
+                existing = session2.execute(text("SELECT id FROM roles WHERE name = :n"), {"n": role_name}).scalar()
+                if not existing:
+                    r = Role(name=role_name, description=f"Flask-compatible {role_name} role")
+                    session2.add(r)
+                    session2.flush()
+                    existing = r.id
+
+                for code in perm_codes:
+                    perm_id = perm_id_map.get(code)
+                    if perm_id:
+                        link = session2.execute(
+                            text("SELECT 1 FROM role_permissions WHERE role_id = :r AND permission_id = :p"),
+                            {"r": existing, "p": perm_id},
+                        ).first()
+                        if not link:
+                            session2.execute(
+                                role_permissions.insert().values(role_id=existing, permission_id=perm_id)
+                            )
+
 
 # ── Async fixtures (all use the app's async engine) ───────────────
 

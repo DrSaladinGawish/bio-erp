@@ -66,4 +66,4 @@ class CurrencySyncService:
                 currency.buy_rate = buy
             if sell:
                 currency.sell_rate = sell
-            currency.last_sync_at = datetime.utcnow()
+            currency.last_sync_at = datetime.now(timezone.utc).replace(tzinfo=None)

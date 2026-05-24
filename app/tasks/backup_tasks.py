@@ -10,7 +10,7 @@ _RETENTION_DAYS = 7
 @shared_task(bind=True, max_retries=2, default_retry_delay=300)
 def create_db_backup(self):
     os.makedirs(_BACKUP_DIR, exist_ok=True)
-    ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    ts = datetime.now(timezone.utc).replace(tzinfo=None).strftime("%Y%m%d_%H%M%S")
     filename = f"bio_erp_{ts}.dump"
     filepath = os.path.join(_BACKUP_DIR, filename)
 
@@ -49,7 +49,7 @@ def create_db_backup(self):
 def _cleanup_old_backups():
     if not os.path.isdir(_BACKUP_DIR):
         return
-    now = datetime.utcnow().timestamp()
+    now = datetime.now(timezone.utc).replace(tzinfo=None).timestamp()
     for fname in os.listdir(_BACKUP_DIR):
         fpath = os.path.join(_BACKUP_DIR, fname)
         if not fname.endswith(".dump") or not os.path.isfile(fpath):

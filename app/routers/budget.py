@@ -237,7 +237,7 @@ async def revise_budget(
 
     for line in existing:
         line.is_active = False
-        line.archived_at = datetime.utcnow()
+        line.archived_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     new_lines = []
     total = 0.0
@@ -296,7 +296,7 @@ async def revise_budget(
             for line in refreshed
         ],
         "revised_by": user.username,
-        "revised_at": datetime.utcnow().isoformat(),
+        "revised_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
     }
 
 

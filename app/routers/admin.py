@@ -1,10 +1,13 @@
 ﻿from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, desc
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.middleware.auth import get_current_user
 from app.models.auth import User, Role, Permission
 from app.models.audit import AuditLog
+from app.services.audit_logger import compute_row_hash, AuditJSONEncoder
+import json
 
 router = APIRouter(prefix="/api/v1/admin", tags=["Admin"])
 
@@ -19,7 +22,9 @@ async def _require_admin(user: User = Depends(get_current_user)) -> User:
 async def list_users(
     db: AsyncSession = Depends(get_db), _: User = Depends(_require_admin)
 ):
-    result = await db.execute(select(User).order_by(User.id))
+    result = await db.execute(
+        select(User).options(selectinload(User.roles)).order_by(User.id)
+    )
     users = result.scalars().all()
     return [
         {
@@ -55,7 +60,9 @@ async def set_user_roles(
 async def list_roles(
     db: AsyncSession = Depends(get_db), _: User = Depends(_require_admin)
 ):
-    result = await db.execute(select(Role).order_by(Role.id))
+    result = await db.execute(
+        select(Role).options(selectinload(Role.permissions)).order_by(Role.id)
+    )
     roles = result.scalars().all()
     return [
         {
@@ -117,7 +124,10 @@ async def list_audit_log(
     _: User = Depends(_require_admin),
 ):
     result = await db.execute(
-        select(AuditLog).order_by(AuditLog.timestamp.desc()).offset(offset).limit(limit)
+        select(AuditLog)
+        .order_by(desc(AuditLog.timestamp))
+        .offset(offset)
+        .limit(limit)
     )
     return [
         {
@@ -129,6 +139,51 @@ async def list_audit_log(
             "target_id": a.target_id,
             "description": a.description,
             "ip_address": a.ip_address,
+            "row_hash": a.row_hash,
+            "previous_hash": a.previous_hash,
         }
         for a in result.scalars().all()
     ]
+
+
+@router.get("/audit-log/verify")
+async def verify_audit_chain(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(_require_admin),
+):
+    """Verify the SHA-256 hash chain integrity of the audit log."""
+    result = await db.execute(
+        select(AuditLog).order_by(AuditLog.id)
+    )
+    entries = result.scalars().all()
+    broken = []
+    previous_hash = None
+    for entry in entries:
+        expected = compute_row_hash(
+            entry.timestamp,
+            entry.action,
+            entry.target_type,
+            entry.target_id,
+            json.dumps(json.loads(entry.old_value), cls=AuditJSONEncoder) if entry.old_value else None,
+            json.dumps(json.loads(entry.new_value), cls=AuditJSONEncoder) if entry.new_value else None,
+            previous_hash,
+        )
+        if entry.row_hash != expected:
+            broken.append({
+                "id": entry.id,
+                "expected_hash": expected,
+                "stored_hash": entry.row_hash,
+            })
+        if entry.previous_hash != previous_hash:
+            broken.append({
+                "id": entry.id,
+                "detail": "previous_hash mismatch",
+                "expected_prev": previous_hash,
+                "stored_prev": entry.previous_hash,
+            })
+        previous_hash = entry.row_hash
+    return {
+        "total_entries": len(entries),
+        "chain_intact": len(broken) == 0,
+        "broken_links": broken,
+    }

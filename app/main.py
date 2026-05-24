@@ -80,6 +80,11 @@ async def lifespan(app: FastAPI):
                 db.add(admin)
                 await db.commit()
                 logger.info("Admin user created: %s", settings.ADMIN_USERNAME)
+
+            # Seed Flask-compatible roles & permissions
+            from app.seed import seed_all
+            await seed_all(db)
+            logger.info("Roles and permissions seeded")
         finally:
             await db.close()
         break

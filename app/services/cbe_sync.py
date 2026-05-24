@@ -54,12 +54,12 @@ async def sync_cbe_rate():
             currency_id=usd.id,
             rate_to_egp=rate,
             is_active=True,
-            effective_date=datetime.utcnow(),
-            created_at=datetime.utcnow(),
+            effective_date=datetime.now(timezone.utc).replace(tzinfo=None),
+            created_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
         db.add(new_rate)
         await db.commit()
-        print(f"[CBE Sync] USD/EGP = {rate} @ {datetime.utcnow().isoformat()}")
+        print(f"[CBE Sync] USD/EGP = {rate} @ {datetime.now(timezone.utc).replace(tzinfo=None).isoformat()}")
 
 
 def start_cbe_scheduler():

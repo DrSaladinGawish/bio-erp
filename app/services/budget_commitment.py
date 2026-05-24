@@ -42,7 +42,7 @@ class BudgetCommitmentManager:
         if not commitment or commitment.status != "committed":
             return False
         commitment.status = "released"
-        commitment.released_at = datetime.utcnow()
+        commitment.released_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await self.db.commit()
         return True
 
@@ -56,7 +56,7 @@ class BudgetCommitmentManager:
         if not commitment or commitment.status != "committed":
             return False
         commitment.status = "consumed"
-        commitment.consumed_at = datetime.utcnow()
+        commitment.consumed_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await self.db.commit()
         return True
 

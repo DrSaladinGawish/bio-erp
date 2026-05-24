@@ -108,7 +108,7 @@ class ETAProductionClient:
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "X-Idempotency-Key": f"batch-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{len(signed_docs)}",
+            "X-Idempotency-Key": f"batch-{datetime.now(timezone.utc).replace(tzinfo=None).strftime('%Y%m%d%H%M%S')}-{len(signed_docs)}",
         }
 
         try:

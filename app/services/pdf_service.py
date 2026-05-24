@@ -29,7 +29,7 @@ class PDFService:
     def _render(template_str: str, data: dict) -> bytes:
         HTML, CSS = _get_weasyprint()
         tmpl = Template(template_str)
-        html = tmpl.render(data=data, now=datetime.utcnow().isoformat())
+        html = tmpl.render(data=data, now=datetime.now(timezone.utc).replace(tzinfo=None).isoformat())
         return HTML(string=html).write_pdf(stylesheets=[CSS(string=PDF_CSS)])
 
     @staticmethod

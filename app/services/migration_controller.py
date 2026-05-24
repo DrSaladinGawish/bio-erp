@@ -48,7 +48,7 @@ class MigrationController:
             return {"error": f"Unknown phase: {phase}"}
 
         self.phases[phase]["status"] = "in_progress"
-        self.phases[phase]["started_at"] = datetime.utcnow().isoformat()
+        self.phases[phase]["started_at"] = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
         try:
             if phase == "phase_1_schema_alignment":
@@ -65,7 +65,7 @@ class MigrationController:
                 result = {"error": "not implemented"}
 
             self.phases[phase]["status"] = "completed"
-            self.phases[phase]["completed_at"] = datetime.utcnow().isoformat()
+            self.phases[phase]["completed_at"] = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
             self.phases[phase]["result"] = result
         except Exception as e:
             self.phases[phase]["status"] = "failed"

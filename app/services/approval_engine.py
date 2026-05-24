@@ -58,7 +58,7 @@ class ApprovalEngine:
                     approver_id=rule.user_id,
                     role_id=rule.role_id,
                     status="pending",
-                    due_at=datetime.utcnow()
+                    due_at=datetime.now(timezone.utc).replace(tzinfo=None)
                     + timedelta(hours=rule.escalation_hours),
                 )
             )
@@ -86,7 +86,7 @@ class ApprovalEngine:
         if action == "approve":
             step.status = "approved"
             step.decision = "approve"
-            step.acted_at = datetime.utcnow()
+            step.acted_at = datetime.now(timezone.utc).replace(tzinfo=None)
             step.approver_id = user_id
 
             result = await self.db.execute(
@@ -98,17 +98,17 @@ class ApprovalEngine:
             pending = result.scalars().all()
             if not pending:
                 instance.status = "approved"
-                instance.completed_at = datetime.utcnow()
+                instance.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
             else:
                 instance.current_step += 1
 
         elif action == "reject":
             step.status = "rejected"
             step.decision = "reject"
-            step.acted_at = datetime.utcnow()
+            step.acted_at = datetime.now(timezone.utc).replace(tzinfo=None)
             step.approver_id = user_id
             instance.status = "rejected"
-            instance.completed_at = datetime.utcnow()
+            instance.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
         elif action == "escalate":
             step.status = "escalated"
@@ -119,7 +119,7 @@ class ApprovalEngine:
             if rule and rule.escalation_role_id:
                 step.role_id = rule.escalation_role_id
                 step.approver_id = None
-                step.due_at = datetime.utcnow() + timedelta(hours=24)
+                step.due_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=24)
 
         await self.db.commit()
         return {

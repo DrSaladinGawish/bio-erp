@@ -104,9 +104,9 @@ def build_eta_invoice(
         else None,
         "documentType": "I",
         "documentTypeVersion": "1.0",
-        "dateTimeIssued": datetime.utcnow().isoformat() + "Z",
+        "dateTimeIssued": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
         "taxpayerActivityCode": activity_code,
-        "internalID": f"INV-{event.id}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+        "internalID": f"INV-{event.id}-{datetime.now(timezone.utc).replace(tzinfo=None).strftime('%Y%m%d%H%M%S')}",
         "totalDiscountAmount": Decimal("0.00"),
         "totalSalesAmount": round(total_sales, 5),
         "netAmount": round(total_sales, 5),
@@ -218,8 +218,8 @@ async def submit_single_event(
             eta_uuid=acc.get("uuid"),
             eta_long_id=acc.get("longId"),
             submission_id=result.get("submissionId"),
-            submitted_at=datetime.utcnow(),
-            resolved_at=datetime.utcnow(),
+            submitted_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            resolved_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
         db.add(queue)
         background_tasks.add_task(poll_and_notify, acc.get("uuid"), user.email)
@@ -233,7 +233,7 @@ async def submit_single_event(
             status="rejected",
             rejection_code=rej.get("code"),
             rejection_reason=rej.get("reason"),
-            submitted_at=datetime.utcnow(),
+            submitted_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
         db.add(queue)
         background_tasks.add_task(
@@ -328,8 +328,8 @@ async def submit_batch_events(
             eta_uuid=acc.get("uuid"),
             eta_long_id=acc.get("longId"),
             submission_id=result.get("submissionId"),
-            submitted_at=datetime.utcnow(),
-            resolved_at=datetime.utcnow(),
+            submitted_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            resolved_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
         db.add(queue)
         background_tasks.add_task(poll_and_notify, acc.get("uuid"), user.email)
@@ -346,7 +346,7 @@ async def submit_batch_events(
             status="rejected",
             rejection_code=rej.get("code"),
             rejection_reason=rej.get("reason"),
-            submitted_at=datetime.utcnow(),
+            submitted_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
         db.add(queue)
 
@@ -385,7 +385,7 @@ async def get_production_status(
     queue = result.scalar_one_or_none()
     if queue and status.get("status") in {"Valid", "Invalid", "Rejected"}:
         queue.status = status["status"].lower()
-        queue.resolved_at = datetime.utcnow()
+        queue.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
         if status.get("rejectionReason"):
             queue.rejection_reason = status["rejectionReason"]
         await db.commit()

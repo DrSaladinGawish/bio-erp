@@ -19,7 +19,7 @@ async def generate_executive_summary(
     total_variance = total_budget - total_actual
 
     summary = {
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
         "period_label": variance.get("period_label", "N/A"),
         "financial_health": {
             "total_budgeted": total_budget,

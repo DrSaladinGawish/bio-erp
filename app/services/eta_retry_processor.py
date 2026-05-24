@@ -34,7 +34,7 @@ class ETARetryProcessor:
                         job.status = "accepted"
                         job.eta_uuid = accepted[0].get("uuid")
                         job.eta_long_id = accepted[0].get("longId")
-                        job.resolved_at = datetime.utcnow()
+                        job.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
                         await EmailService.eta_alert(
                             recipient="admin@bioerp.local",
                             invoice_uuid=job.eta_uuid,
@@ -55,7 +55,7 @@ class ETARetryProcessor:
                                 errors=[f"{rej['code']}: {rej['reason']}"],
                             )
 
-                    job.submitted_at = datetime.utcnow()
+                    job.submitted_at = datetime.now(timezone.utc).replace(tzinfo=None)
                     job.last_error = None
 
                 except ETAProductionError as e:
@@ -71,7 +71,7 @@ class ETARetryProcessor:
                     if job.retry_count >= job.max_retries:
                         job.status = "failed"
 
-                job.updated_at = datetime.utcnow()
+                job.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
                 await db.commit()
 
     @staticmethod

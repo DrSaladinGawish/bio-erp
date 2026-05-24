@@ -22,7 +22,7 @@ class ETAClient:
         if (
             ETAClient._token
             and ETAClient._expires
-            and datetime.utcnow() < ETAClient._expires
+            and datetime.now(timezone.utc).replace(tzinfo=None) < ETAClient._expires
         ):
             return ETAClient._token
 
@@ -39,7 +39,7 @@ class ETAClient:
             resp.raise_for_status()
             data = resp.json()
             ETAClient._token = data["access_token"]
-            ETAClient._expires = datetime.utcnow() + timedelta(
+            ETAClient._expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
                 seconds=data.get("expires_in", 3600) - 60
             )
             return ETAClient._token

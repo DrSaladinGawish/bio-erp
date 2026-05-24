@@ -96,7 +96,7 @@ class CostEngine:
             return {"error": "Already executed"}
 
         alloc.is_executed = True
-        alloc.executed_at = datetime.utcnow()
+        alloc.executed_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
         source_lines = await db.execute(
             select(BudgetLine)
@@ -163,7 +163,7 @@ class CostEngine:
             gross_profit = revenue - direct_costs
             gross_margin = float(gross_profit / revenue * 100) if revenue else 0
 
-            budget_q = await db.execute(
+            budget_q = (
                 select(
                     func.coalesce(func.sum(BudgetLine.budgeted_amount), 0),
                     func.coalesce(func.sum(BudgetLine.actual_amount), 0),
@@ -171,7 +171,7 @@ class CostEngine:
             )
             if period_id:
                 budget_q = budget_q.where(BudgetLine.budget_period_id == period_id)
-            budget_row = budget_q.one()
+            budget_row = (await db.execute(budget_q)).one()
             budget_variance = Decimal(str(budget_row[0])) - Decimal(str(budget_row[1]))
 
             op_expenses = Decimal("0")
@@ -201,7 +201,7 @@ class CostEngine:
         db: AsyncSession,
         period_id: int,
     ) -> int:
-        from app.models.transaction import GeneralLedger
+        from app.models.finance import JVLine, JVHeader
 
         lines_q = await db.execute(
             select(BudgetLine).where(BudgetLine.budget_period_id == period_id)
@@ -210,9 +210,11 @@ class CostEngine:
 
         for line in lines:
             gl_q = await db.execute(
-                select(func.coalesce(func.sum(GeneralLedger.amount), 0))
-                .where(GeneralLedger.coa_account_id == line.coa_account_id)
-                .where(GeneralLedger.branch_id == line.branch_id)
+                select(func.coalesce(func.sum(JVLine.debit_amount - JVLine.credit_amount), 0))
+                .select_from(JVLine)
+                .join(JVHeader, JVHeader.id == JVLine.jv_id)
+                .where(JVLine.gl_account_id == line.coa_account_id)
+                .where(JVHeader.branch_id == line.branch_id)
             )
             actual = gl_q.scalar()
             line.actual_amount = Decimal(str(actual))
