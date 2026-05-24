@@ -1,0 +1,54 @@
+:root {
+    --sidebar-width: 250px;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: #f5f6fa;
+}
+
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.card {
+    border: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    transition: box-shadow .2s;
+}
+
+.card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+
+.table th {
+    font-weight: 600;
+    font-size: .85rem;
+    white-space: nowrap;
+}
+
+.table td {
+    font-size: .9rem;
+}
+
+.badge {
+    font-weight: 500;
+}
+
+.btn-sm {
+    font-size: .8rem;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: .2rem;
+}
+
+@media print {
+    .navbar, .card:first-of-type, .btn, .pagination, #exportBtn {
+        display: none !important;
+    }
+    .container-fluid {
+        padding: 0 !important;
+    }
+}

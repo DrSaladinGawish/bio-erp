@@ -1,0 +1,57 @@
+<div class="table-responsive">
+    <table class="table table-hover table-sm align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Code</th>
+                <th>Account Name (EN)</th>
+                <th>Account Name (AR)</th>
+                <th>Type</th>
+                <th>Opening Balance</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for account in accounts %}
+            <tr>
+                <td><code>{{ account.code }}</code></td>
+                <td>{{ account.name_en }}</td>
+                <td class="text-end" dir="rtl">{{ account.name_ar or "" }}</td>
+                <td><span class="badge bg-info">{{ account.account_type }}</span></td>
+                <td class="text-end">{{ "%.2f"|format(account.opening_balance or 0) }}</td>
+                <td>
+                    {% if account.is_active %}
+                    <span class="badge bg-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox me-2"></i>No accounts found
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="d-flex justify-content-between align-items-center">
+    <small class="text-muted" data-total-count="{{ total_count }}">
+        Showing {{ accounts|length }} of {{ total_count }} accounts
+    </small>
+    {% if total_count > page_size %}
+    <nav>
+        <ul class="pagination pagination-sm mb-0">
+            {% for p in range(1, ((total_count // page_size) + 2) | int) %}
+            <li class="page-item {{ 'active' if p == page }}">
+                <a class="page-link" href="#"
+                   hx-get="/api/v1/accounting/ledger-entries?page={{ p }}&page_size={{ page_size }}"
+                   hx-target="#entriesTable">{{ p }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>

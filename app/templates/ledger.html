@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Ledger Inquiry{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-book me-2"></i>Ledger Inquiry</h4>
+    <div>
+        <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i>Print
+        </button>
+        <button class="btn btn-outline-success btn-sm" id="exportBtn">
+            <i class="bi bi-download me-1"></i>Export
+        </button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form hx-get="/api/v1/accounting/ledger-entries" hx-target="#entriesTable" hx-trigger="submit" class="row g-2">
+            <div class="col-md-2">
+                <label class="form-label small">Account</label>
+                <select name="account_id" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for account in accounts %}
+                    <option value="{{ account.id }}">{{ account.code }} - {{ account.name_en }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Category</label>
+                <select name="category_id" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name_en }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Branch</label>
+                <select name="branch_id" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}">{{ branch.name_en }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Date From</label>
+                <input type="date" name="date_from" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Date To</label>
+                <input type="date" name="date_to" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Search</label>
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Code / Name...">
+            </div>
+            <div class="col-12 mt-2">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i>Search</button>
+                <button type="reset" class="btn btn-secondary btn-sm"><i class="bi bi-x-circle me-1"></i>Clear</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-3">
+    {% for item in summary %}
+    <div class="col-md-3 mb-2">
+        <div class="card border-primary h-100">
+            <div class="card-body py-2 px-3">
+                <div class="small text-muted">{{ item.name_en }}</div>
+                <div class="h5 mb-0">{{ item.account_count }} accounts</div>
+                <div class="small">Balance: {{ "%.2f"|format(item.total_balance) }}</div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Entries Table (loaded via HTMX) -->
+<div id="entriesTable" hx-get="/api/v1/accounting/ledger-entries" hx-trigger="load">
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
