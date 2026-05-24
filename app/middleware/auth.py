@@ -34,7 +34,7 @@ def create_access_token(
         "branch_id": branch_id,
         "exp": expire,
     }
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
 
 
 async def get_current_user(
@@ -44,7 +44,7 @@ async def get_current_user(
     token = credentials.credentials
     try:
         payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+            token, settings.JWT_SECRET, algorithms=["HS256"]
         )
         user_id = int(payload.get("sub"))
     except (JWTError, ValueError, TypeError):
