@@ -12,7 +12,40 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
 from app.database import get_async_engine, get_db, init_db
-from app.routers import accounting
+import app.models.manufacturing  # noqa: F401  — register tables with Base
+from app.routers import (
+    accounting,
+    admin,
+    ai_bridge,
+    approval,
+    auth,
+    batches,
+    bio_entities,
+    branch,
+    budget,
+    budget_lifecycle,
+    calculators,
+    clients,
+    coa,
+    cost_management,
+    costing,
+    currency,
+    dashboard,
+    dashboard_v2,
+    eta,
+    events,
+    finance,
+    grdslab,
+    htmx_dashboard,
+    items,
+    petty_cash,
+    procurement,
+    reports,
+    strategic_routers,
+    suppliers,
+    system,
+    websocket_alerts,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +54,7 @@ BASE_DIR = Path(__file__).parent
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting BIO_ERP v5...")
+    logger.info("Starting BIO_ERP v5.2...")
     engine = get_async_engine()
     try:
         async with engine.begin() as conn:
@@ -51,17 +84,79 @@ async def lifespan(app: FastAPI):
             await db.close()
         break
     yield
-    logger.info("Shutting down BIO_ERP v5...")
+    logger.info("Shutting down BIO_ERP v5.2...")
 
 
 app = FastAPI(
     title="BIO_ERP v5",
-    version="5.0.0",
+    version="5.2.0",
     lifespan=lifespan,
 )
 
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
-app.include_router(accounting.router, prefix="/api/v1/accounting")
+
+# Core accounting (merged: login + HTMX ledger + financial reports)
+app.include_router(accounting.router)
+
+# Manufacturing (ERP-PC unique)
+app.include_router(batches.router)
+app.include_router(bio_entities.router)
+app.include_router(calculators.router)
+
+# Auth & admin
+app.include_router(auth.router)
+app.include_router(admin.router)
+
+# Financial modules
+app.include_router(finance.router)
+app.include_router(coa.router)
+app.include_router(currency.router)
+app.include_router(branch.router)
+app.include_router(clients.router)
+app.include_router(suppliers.router)
+app.include_router(items.router)
+
+# Events & budget
+app.include_router(events.router)
+app.include_router(budget.router)
+app.include_router(budget_lifecycle.router)
+
+# Procurement
+app.include_router(procurement.router)
+
+# Costing
+app.include_router(costing.router)
+app.include_router(cost_management.router)
+app.include_router(strategic_routers.router)
+
+# Dashboard & HTMX
+app.include_router(dashboard.router)
+app.include_router(dashboard_v2.router)
+app.include_router(htmx_dashboard.router)
+
+# ETA e-invoicing
+app.include_router(eta.router)
+
+# Petty cash
+app.include_router(petty_cash.router)
+
+# Approval workflow
+app.include_router(approval.router)
+
+# GRDSLAB calculator
+app.include_router(grdslab.router)
+
+# System utilities
+app.include_router(system.router)
+
+# AI bridge
+app.include_router(ai_bridge.router)
+
+# WebSocket alerts
+app.include_router(websocket_alerts.router)
+
+# Reports
+app.include_router(reports.router)
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -89,7 +184,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.get("/")
 async def root():
-    return {"message": "BIO_ERP v5", "version": "5.0.0"}
+    return {"message": "BIO_ERP v5", "version": "5.2.0"}
 
 
 @app.get("/health")
@@ -105,6 +200,6 @@ async def health():
 
     return {
         "status": "ok" if db_status == "ok" else "degraded",
-        "version": "5.1.0",
+        "version": "5.2.0",
         "database": db_status,
     }

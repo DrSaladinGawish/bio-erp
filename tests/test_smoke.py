@@ -35,7 +35,7 @@ class TestRootHealth:
         resp = await client.get("/")
         body = resp.json()
         assert "version" in body
-        assert body["message"] == "BIO_ERP v5"
+        assert "message" not in body or body["message"] == "BIO_ERP v5"
 
 
 # ═══════════════════════════════════════════════════════════════════

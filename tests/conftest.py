@@ -44,7 +44,11 @@ from app.main import app  # noqa: E402
 _sync_url = TEST_DB_URL.replace("+asyncpg", "")
 _sync_engine = create_engine(_sync_url, echo=False)
 
-# Create all tables
+# Drop and recreate to handle schema changes (stub → full models)
+with _sync_engine.connect() as conn:
+    conn.execute(text("DROP SCHEMA public CASCADE"))
+    conn.execute(text("CREATE SCHEMA public"))
+    conn.commit()
 from app.models import Base  # noqa: E402
 Base.metadata.create_all(bind=_sync_engine)
 

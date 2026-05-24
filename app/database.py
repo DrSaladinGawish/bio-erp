@@ -40,6 +40,14 @@ def get_async_session_factory():
     return _async_session_factory
 
 
+# Alias for USB compatibility (lazy-initialized)
+class _AsyncSessionLocal:
+    def __call__(self):
+        return get_async_session_factory()()
+
+AsyncSessionLocal = _AsyncSessionLocal()
+
+
 async def get_db():
     factory = get_async_session_factory()
     session = factory()

@@ -1,0 +1,74 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: bioerp_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bioerp
+      POSTGRES_PASSWORD: bioerp_dev
+      POSTGRES_DB: bio_erp
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bioerp -d bio_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bioerp_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: bioerp_redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - bioerp_net
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    container_name: bioerp_api
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://bioerp:bioerp_dev@db:5432/bio_erp
+      - SECRET_KEY=dev-secret-key-not-for-production
+      - DEBUG=true
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+      - ./static:/app/static
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    networks:
+      - bioerp_net
+
+networks:
+  bioerp_net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redis_data:

@@ -1,230 +1,212 @@
-from __future__ import annotations
-
-from datetime import datetime
-
-from sqlalchemy import (
-    Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text,
+﻿from app.database import Base
+from app.models.base import (
+    BaseMixin,
+    BilingualMixin,
+    BranchAwareMixin,
+    CurrencyAwareMixin,
+    AuditableMixin,
 )
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+from app.models.coa import COACategory, COAAccount
+from app.models.currency import Currency, CurrencyRate, TransactionType
+from app.models.branch import Branch
+from app.models.auth import User, Role, Permission, user_roles, role_permissions
+from app.models.client import Client
+from app.models.supplier import Supplier, RFQ, SupplierQuote, PurchaseOrder
+from app.models.item import ItemCategory, ItemSubCategory, EventMasterNode
+from app.models.owner import Owner
+from app.models.staff import Staff, FieldTask
+from app.models.event import Event, PNR, EventBudgetLine, EventLineItem, EventDoc
+from app.models.transaction import (
+    BankReconciliation,
+    BankImportSession,
+    BankStaging,
+    BankUnmatched,
+    BankCurrencyMapping,
+    PettyCashReg,
+    PettyCashLine,
+    ChequeBook,
+    NetSales,
+    NetPurchase,
+)
+from app.models.einvoice import EInvoiceRegister, EInvoiceGLEntry
+from app.models.eta_queue import ETASubmissionQueue
+from app.models.audit import AuditLog
+from app.models.costing import (
+    CostCenter,
+    CostAllocation,
+    ActivityCost,
+    StandardCost,
+    EventCostAnalysis,
+    BudgetPeriod,
+    BudgetLine,
+    CrossCenterAllocation,
+)
+from app.models.strategic_cost import (
+    TargetCosting,
+    LifeCycleCost,
+    ActivityCostPool,
+    ValueChainActivity,
+    KaizenCosting,
+    CostVarianceAnalysis,
+    BalancedScorecard,
+    BSCObjective,
+    BSCIndicator,
+    BSCMeasurement,
+    EventProfitability,
+)
+from app.models.finance import (
+    VendorInvoice,
+    VendorInvoiceLine,
+    CustomerInvoice,
+    CustomerInvoiceLine,
+    RCTHeader,
+    RCTAllocation,
+    PMTHeader,
+    PMTAllocation,
+    JVHeader,
+    JVLine,
+    JVTemplate,
+    JVTemplateLine,
+)
+from app.models.procurement import GRNHeader, GRNDetail, ServiceConfirmation
+from app.models.budget_lifecycle import BudgetLifecycle, BudgetSnapshot
+from app.models.master_data import PaymentTerm, BankAccount, BudgetCategory, TaxCode
+from app.models.event_budget_ext import BudgetChange, BudgetChangeLine, BudgetCommitment
+from app.models.workflow import (
+    ApprovalRule,
+    ApprovalInstance,
+    ApprovalStep,
+    DocumentSequence,
+)
+from app.models.three_way_match import ThreeWayMatch
+from app.models.event_management import (
+    EventLog,
+    BranchEventSummary,
+    EventType,
+    SourceSystem,
+    SourceComponent,
+    Severity,
+    MigrationStatus,
+)
+from app.models.manufacturing import (
+    Bioreactor,
+    CellLine,
+    GeneConstruct,
+    RawMaterial,
+    Batch,
+    BatchStep,
+    BatchStatusHistory,
+    BatchStatus,
+)
 
-from app.database import Base
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True)
-    username = Column(String, nullable=False, unique=True)
-    email = Column(String, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    full_name_en = Column(String, nullable=True)
-    full_name_ar = Column(String, nullable=True)
-    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=False)
-    is_superuser = Column(Boolean, nullable=False, default=False)
-    last_login = Column(DateTime(timezone=False), nullable=True)
-    created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-
-
-class Role(Base):
-    __tablename__ = "roles"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False, unique=True)
-    description = Column(String, nullable=True)
-    is_system = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-
-
-class UserRole(Base):
-    __tablename__ = "user_roles"
-
-    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    role_id = Column(Integer, ForeignKey("roles.id"), primary_key=True)
-
-
-class Permission(Base):
-    __tablename__ = "permissions"
-
-    id = Column(Integer, primary_key=True)
-    code = Column(String, nullable=False, unique=True)
-    name_en = Column(String, nullable=False)
-    name_ar = Column(String, nullable=True)
-    module = Column(String, nullable=False)
-    created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-
-
-class RolePermission(Base):
-    __tablename__ = "role_permissions"
-
-    role_id = Column(Integer, ForeignKey("roles.id"), primary_key=True)
-    permission_id = Column(Integer, ForeignKey("permissions.id"), primary_key=True)
-
-
-class Branch(Base):
-    __tablename__ = "branches"
-
-    id = Column(Integer, primary_key=True)
-    code = Column(String, nullable=False, unique=True)
-    name_en = Column(String, nullable=False)
-    name_ar = Column(String, nullable=True)
-    address_en = Column(String, nullable=True)
-    address_ar = Column(String, nullable=True)
-    phone = Column(String, nullable=True)
-    email = Column(String, nullable=True)
-    tax_authority = Column(String, nullable=True)
-    vat_rate = Column(Float, nullable=False, default=0.0)
-    country = Column(String, nullable=False)
-    currency_id = Column(Integer, ForeignKey("currencies.id"), nullable=False)
-    is_hq = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-
-
-class Currency(Base):
-    __tablename__ = "currencies"
-
-    id = Column(Integer, primary_key=True)
-    code = Column(String, nullable=False, unique=True)
-    name_en = Column(String, nullable=False)
-    name_ar = Column(String, nullable=True)
-    symbol = Column(String, nullable=False)
-    is_base = Column(Boolean, nullable=False, default=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-    mid_rate = Column(Float, nullable=False, default=0.0)
-    buy_rate = Column(Float, nullable=False, default=0.0)
-    sell_rate = Column(Float, nullable=False, default=0.0)
-    last_sync_at = Column(DateTime(timezone=False), nullable=True)
-    decimal_places = Column(Integer, nullable=False, default=2)
-    created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False)
-
-
-class CurrencyRate(Base):
-    __tablename__ = "currency_rates"
-
-    id = Column(Integer, primary_key=True)
-    from_currency_id = Column(Integer, ForeignKey("currencies.id"), nullable=False)
-    to_currency_id = Column(Integer, ForeignKey("currencies.id"), nullable=False)
-    rate = Column(Float, nullable=False)
-    rate_date = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-
-
-class COACategory(Base):
-    __tablename__ = "coa_categories"
-
-    id = Column(Integer, primary_key=True)
-    code = Column(String, nullable=False, unique=True)
-    name_en = Column(String, nullable=False)
-    name_ar = Column(String, nullable=True)
-    report_type = Column(String, nullable=True)
-    created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-
-
-class COAAccount(Base):
-    __tablename__ = "coa_accounts"
-
-    id = Column(Integer, primary_key=True)
-    code = Column(String, nullable=False, unique=True)
-    name_en = Column(String, nullable=False)
-    name_ar = Column(String, nullable=True)
-    category_id = Column(Integer, ForeignKey("coa_categories.id"), nullable=False)
-    account_type = Column(String, nullable=True)
-    is_control_account = Column(Boolean, nullable=False, default=False)
-    parent_id = Column(Integer, ForeignKey("coa_accounts.id"), nullable=True)
-    opening_balance = Column(Float, nullable=False, default=0.0)
-    opening_balance_date = Column(String, nullable=True)
-    created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-
-
-class TransactionType(Base):
-    __tablename__ = "transaction_types"
-
-    id = Column(Integer, primary_key=True)
-    code = Column(String, nullable=False, unique=True)
-    name_en = Column(String, nullable=False)
-    name_ar = Column(String, nullable=True)
-    sign_effect = Column(Integer, nullable=False)
-    created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-
-
-class AuditLog(Base):
-    __tablename__ = "audit_logs"
-
-    id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    actor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    actor_name = Column(String, nullable=True)
-    action = Column(String, nullable=False)
-    target_type = Column(String, nullable=False)
-    target_id = Column(Integer, nullable=True)
-    old_value = Column(Text, nullable=True)
-    new_value = Column(Text, nullable=True)
-    description = Column(String, nullable=True)
-    ip_address = Column(String, nullable=True)
-    user_agent = Column(String, nullable=True)
-    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=False)
-
-
-class Client(Base):
-    __tablename__ = "clients"
-
-    id = Column(Integer, primary_key=True)
-    code = Column(String, nullable=True)
-    name_en = Column(String, nullable=False)
-    name_ar = Column(String, nullable=True)
-    tax_id = Column(String, nullable=True)
-    commercial_registration = Column(String, nullable=True)
-    email = Column(String, nullable=True)
-    phone1 = Column(String, nullable=True)
-    phone2 = Column(String, nullable=True)
-    address_en = Column(String, nullable=True)
-    address_ar = Column(String, nullable=True)
-    credit_limit = Column(Float, nullable=False, default=0.0)
-    balance = Column(Float, nullable=False, default=0.0)
-    acc_key = Column(Integer, nullable=True)
-    notes = Column(String, nullable=True)
-    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=False)
-    created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-
-
-class Supplier(Base):
-    __tablename__ = "suppliers"
-
-    id = Column(Integer, primary_key=True)
-    code = Column(String, nullable=True)
-    name_en = Column(String, nullable=False)
-    name_ar = Column(String, nullable=True)
-    tax_id = Column(String, nullable=True)
-    commercial_registration = Column(String, nullable=True)
-    email = Column(String, nullable=True)
-    phone1 = Column(String, nullable=True)
-    phone2 = Column(String, nullable=True)
-    address_en = Column(String, nullable=True)
-    address_ar = Column(String, nullable=True)
-    service_category = Column(String, nullable=True)
-    rating = Column(Float, nullable=False, default=0.0)
-    acc_key = Column(Integer, nullable=True)
-    notes = Column(String, nullable=True)
-    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=False)
-    created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now(), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
+__all__ = [
+    "BaseMixin",
+    "BilingualMixin",
+    "BranchAwareMixin",
+    "CurrencyAwareMixin",
+    "AuditableMixin",
+    "COACategory",
+    "COAAccount",
+    "Currency",
+    "CurrencyRate",
+    "TransactionType",
+    "Branch",
+    "User",
+    "Role",
+    "Permission",
+    "user_roles",
+    "role_permissions",
+    "Client",
+    "Supplier",
+    "RFQ",
+    "SupplierQuote",
+    "PurchaseOrder",
+    "ItemCategory",
+    "ItemSubCategory",
+    "EventMasterNode",
+    "Owner",
+    "Staff",
+    "FieldTask",
+    "Event",
+    "PNR",
+    "EventBudgetLine",
+    "EventLineItem",
+    "EventDoc",
+    "BankReconciliation",
+    "BankImportSession",
+    "BankStaging",
+    "BankUnmatched",
+    "BankCurrencyMapping",
+    "PettyCashReg",
+    "PettyCashLine",
+    "ChequeBook",
+    "NetSales",
+    "NetPurchase",
+    "EInvoiceRegister",
+    "EInvoiceGLEntry",
+    "ETASubmissionQueue",
+    "AuditLog",
+    "CostCenter",
+    "CostAllocation",
+    "ActivityCost",
+    "StandardCost",
+    "EventCostAnalysis",
+    "BudgetPeriod",
+    "BudgetLine",
+    "CrossCenterAllocation",
+    "TargetCosting",
+    "LifeCycleCost",
+    "ActivityCostPool",
+    "ValueChainActivity",
+    "KaizenCosting",
+    "CostVarianceAnalysis",
+    "BalancedScorecard",
+    "BSCObjective",
+    "BSCIndicator",
+    "BSCMeasurement",
+    "EventProfitability",
+    "VendorInvoice",
+    "VendorInvoiceLine",
+    "CustomerInvoice",
+    "CustomerInvoiceLine",
+    "RCTHeader",
+    "RCTAllocation",
+    "PMTHeader",
+    "PMTAllocation",
+    "JVHeader",
+    "JVLine",
+    "JVTemplate",
+    "JVTemplateLine",
+    "GRNHeader",
+    "GRNDetail",
+    "ServiceConfirmation",
+    "BudgetLifecycle",
+    "BudgetSnapshot",
+    "PaymentTerm",
+    "BankAccount",
+    "BudgetCategory",
+    "TaxCode",
+    "BudgetChange",
+    "BudgetChangeLine",
+    "BudgetCommitment",
+    "ApprovalRule",
+    "ApprovalInstance",
+    "ApprovalStep",
+    "DocumentSequence",
+    "ThreeWayMatch",
+    "EventLog",
+    "BranchEventSummary",
+    "EventType",
+    "SourceSystem",
+    "SourceComponent",
+    "Severity",
+    "MigrationStatus",
+    "Bioreactor",
+    "CellLine",
+    "GeneConstruct",
+    "RawMaterial",
+    "Batch",
+    "BatchStep",
+    "BatchStatusHistory",
+    "BatchStatus",
+]

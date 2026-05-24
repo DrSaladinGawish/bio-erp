@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GRDSLAB — Slab on Grade Calculator</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <link rel="stylesheet" href="/static/css/grdslab.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>GRDSLAB — Concrete Slab on Grade Calculator</h1>
+      <p class="subtitle">ACI 360R / PCA Method — All Metric Units</p>
+      <nav class="tabs">
+        <button class="tab active" data-tab="calc">Calculator</button>
+        <button class="tab" data-tab="convert">Converter</button>
+        <button class="tab" data-tab="ref">Reference</button>
+      </nav>
+    </header>
+
+    <div id="calc" class="tab-content active">
+      <form hx-post="/api/v1/grdslab/calculate" hx-target="#results" hx-swap="innerHTML" class="calc-form">
+        <div class="form-grid">
+          <label>Applied Load (kN)
+            <input type="number" name="load_kN" value="100" step="0.1" required>
+          </label>
+          <label>Slab Thickness (mm)
+            <input type="number" name="thickness_mm" value="200" step="1" required>
+          </label>
+          <label>Concrete f'c (MPa)
+            <input type="number" name="concrete_strength_MPa" value="30" step="0.5">
+          </label>
+          <label>Subgrade k (kPa/mm)
+            <input type="number" name="subgrade_modulus_kPa_mm" value="0.054" step="0.001">
+          </label>
+          <label>Contact Width (mm)
+            <input type="number" name="contact_width_mm" value="200" step="1">
+          </label>
+          <label>Contact Area (mm²)
+            <input type="number" name="contact_area_mm2" value="40000" step="100">
+          </label>
+        </div>
+        <button type="submit">Calculate</button>
+      </form>
+      <div id="results"></div>
+    </div>
+
+    <div id="convert" class="tab-content">
+      <div class="converter-panel">
+        <h3>Unit Converter</h3>
+        <div class="conv-grid">
+          <label>Inches <input type="number" id="conv-inches" step="any"></label>
+          <label>mm <input type="number" id="conv-mm" step="any"></label>
+          <label>psi <input type="number" id="conv-psi" step="any"></label>
+          <label>MPa <input type="number" id="conv-mpa" step="any"></label>
+          <label>pci <input type="number" id="conv-pci" step="any"></label>
+          <label>kPa/mm <input type="number" id="conv-kpa" step="any"></label>
+        </div>
+        <div id="conv-output"></div>
+        <p class="hint">Type in any field — others update automatically via API</p>
+      </div>
+    </div>
+
+    <div id="ref" class="tab-content">
+      <div class="ref-grid">
+        <div class="ref-card" hx-get="/api/v1/grdslab/soil-types" hx-trigger="load">
+          <h3>Soil Types</h3>
+          <div class="ref-body"><p>Loading...</p></div>
+        </div>
+        <div class="ref-card" hx-get="/api/v1/grdslab/forklift-table" hx-trigger="load">
+          <h3>Forklift Capacities</h3>
+          <div class="ref-body"><p>Loading...</p></div>
+        </div>
+        <div class="ref-card" hx-get="/api/v1/grdslab/conversion-factors" hx-trigger="load">
+          <h3>Conversion Factors</h3>
+          <div class="ref-body"><p>Loading...</p></div>
+        </div>
+        <div class="ref-card" hx-get="/api/v1/grdslab/aashto-trucks" hx-trigger="load">
+          <h3>AASHTO Trucks</h3>
+          <div class="ref-body"><p>Loading...</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    function doConvert() {
+      const fields = ['inches','mm','psi','mpa','pci','kpa'];
+      const params = fields.map(f => {
+        const el = document.getElementById('conv-' + f);
+        return el.value ? f + '=' + el.value : '';
+      }).filter(Boolean).join('&');
+      if (!params) { document.getElementById('conv-output').innerHTML = ''; return; }
+      fetch('/api/v1/grdslab/convert?' + params)
+        .then(r => r.json())
+        .then(d => {
+          let html = '<table class="conv-table"><tr><th>Unit</th><th>Value</th></tr>';
+          for (const [k,v] of Object.entries(d))
+            html += `<tr><td>${k}</td><td>${v}</td></tr>`;
+          html += '</table>';
+          document.getElementById('conv-output').innerHTML = html;
+        });
+    }
+    document.querySelectorAll('.converter-panel input').forEach(el => {
+      el.addEventListener('input', doConvert);
+    });
+  </script>
+</body>
+</html>
