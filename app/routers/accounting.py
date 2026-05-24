@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime
+from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +17,30 @@ from app.database import get_db
 from app.models import COAAccount, COACategory, Branch, Currency, User
 from app.template_engine import render_template
 from fastapi.responses import JSONResponse
+
+
+class AccountCreate(BaseModel):
+    code: str
+    name_en: str
+    name_ar: Optional[str] = None
+    category_id: int
+    account_type: Optional[str] = None
+    is_control_account: bool = False
+    parent_id: Optional[int] = None
+    opening_balance: float = 0.0
+    opening_balance_date: Optional[str] = None
+
+
+class AccountUpdate(BaseModel):
+    code: Optional[str] = None
+    name_en: Optional[str] = None
+    name_ar: Optional[str] = None
+    category_id: Optional[int] = None
+    account_type: Optional[str] = None
+    is_control_account: Optional[bool] = None
+    parent_id: Optional[int] = None
+    opening_balance: Optional[float] = None
+    opening_balance_date: Optional[str] = None
 
 logger = logging.getLogger(__name__)
 
@@ -165,3 +191,68 @@ async def ledger_entries_table(
         "page_size": page_size,
         "current_user": current_user,
     })
+
+
+@router.post("/ledger-entries")
+async def create_ledger_entry(
+    payload: AccountCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    account = COAAccount(
+        code=payload.code,
+        name_en=payload.name_en,
+        name_ar=payload.name_ar,
+        category_id=payload.category_id,
+        account_type=payload.account_type,
+        is_control_account=payload.is_control_account,
+        parent_id=payload.parent_id,
+        opening_balance=payload.opening_balance,
+        opening_balance_date=payload.opening_balance_date,
+    )
+    db.add(account)
+    await db.commit()
+    await db.refresh(account)
+    return JSONResponse({
+        "id": account.id,
+        "code": account.code,
+        "name_en": account.name_en,
+    }, status_code=status.HTTP_201_CREATED)
+
+
+@router.put("/ledger-entries/{entry_id}")
+async def update_ledger_entry(
+    entry_id: int,
+    payload: AccountUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(COAAccount).where(COAAccount.id == entry_id))
+    account = result.scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(account, field, value)
+    await db.commit()
+    await db.refresh(account)
+    return JSONResponse({
+        "id": account.id,
+        "code": account.code,
+        "name_en": account.name_en,
+    })
+
+
+@router.delete("/ledger-entries/{entry_id}")
+async def delete_ledger_entry(
+    entry_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(COAAccount).where(COAAccount.id == entry_id))
+    account = result.scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
+    account.is_active = False
+    await db.commit()
+    return JSONResponse({"detail": "Account deactivated"})

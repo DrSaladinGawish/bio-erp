@@ -48,9 +48,9 @@ _sync_engine = create_engine(_sync_url, echo=False)
 from app.models import Base  # noqa: E402
 Base.metadata.create_all(bind=_sync_engine)
 
-# Seed admin / currency / branch
+# Seed admin / currency / branch / category
 from app.auth import hash_password  # noqa: E402
-from app.models import Branch, Currency, User  # noqa: E402
+from app.models import Branch, COACategory, Currency, User  # noqa: E402
 
 with SyncSession(_sync_engine) as session:
     with session.begin():
@@ -83,6 +83,11 @@ with SyncSession(_sync_engine) as session:
                 full_name_en="System Admin", is_superuser=True,
                 branch_id=branch_id,
             ))
+
+        # COA category (needed for POST /ledger-entries tests)
+        cat = session.execute(text("SELECT id FROM coa_categories WHERE code = 'TEST'"))
+        if not cat.scalar():
+            session.add(COACategory(code="TEST", name_en="Test Category"))
 
 
 # ── Async fixtures (all use the app's async engine) ───────────────
