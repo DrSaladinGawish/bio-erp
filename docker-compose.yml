@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bio_erp}
+      POSTGRES_USER: ${POSTGRES_USER:-bio_erp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bio_erp_secret}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bio_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-bio_erp}:${POSTGRES_PASSWORD:-bio_erp_secret}@db:5432/${POSTGRES_DB:-bio_erp}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@bio-erp.local}
+      ADMIN_FULL_NAME: ${ADMIN_FULL_NAME:-System Admin}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

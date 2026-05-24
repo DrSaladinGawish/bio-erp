@@ -90,3 +90,21 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/")
 async def root():
     return {"message": "BIO_ERP v5", "version": "5.0.0"}
+
+
+@app.get("/health")
+async def health():
+    try:
+        async for db in get_db():
+            await db.execute(select(1))
+            await db.close()
+        db_status = "ok"
+    except Exception as e:
+        logger.warning("Health check DB failure: %s", e)
+        db_status = "error"
+
+    return {
+        "status": "ok" if db_status == "ok" else "degraded",
+        "version": "5.1.0",
+        "database": db_status,
+    }

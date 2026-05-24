@@ -5,6 +5,8 @@ Run: pytest tests/test_p2_crud.py -v
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 import pytest
 from httpx import AsyncClient
 
@@ -14,7 +16,7 @@ from httpx import AsyncClient
 # ═══════════════════════════════════════════════════════════════════
 
 SAMPLE_PAYLOAD = {
-    "code": "TEST-001",
+    "code": f"TEST-{uuid4().hex[:8].upper()}",
     "name_en": "Test Account",
     "category_id": 1,
     "account_type": "asset",
