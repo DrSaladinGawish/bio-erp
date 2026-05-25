@@ -56,12 +56,48 @@ curl http://localhost:8000/api/v1/accounting/coa?category_id=1
 ```
 Expected: `401` JSON — proves all endpoints are protected.
 
-### 8. Swagger UI (1 min)
-Open `http://localhost:8000/docs` — show interactive testing.
+### 8. Manufacturing — Batch Lifecycle (3 min)
+
+Create a batch:
+```bash
+curl -X POST http://localhost:8000/api/v1/manufacturing/batches \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"name":"Demo Batch","priority":"high","target_yield":95.5}'
+```
+Save the returned `id`.
+
+Advance through lifecycle states:
+```bash
+# Draft → Released
+curl -X POST http://localhost:8000/api/v1/manufacturing/batches/1/release \
+  -H "Authorization: Bearer <token>"
+
+# Released → In Progress
+curl -X POST http://localhost:8000/api/v1/manufacturing/batches/1/start \
+  -H "Authorization: Bearer <token>"
+
+# In Progress → Completed
+curl -X POST http://localhost:8000/api/v1/manufacturing/batches/1/complete \
+  -H "Authorization: Bearer <token>"
+```
+Show: state machine transitions, each 200 OK, status field updates.
+
+### 9. Bio Calculators (2 min)
+```bash
+curl -X POST http://localhost:8000/api/v1/bio/calculators/atp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"substrate_mol":10,"atp_per_mol":32,"egp_per_atp":0.001}'
+```
+Show: ATP yield, cost calculation. Also demo GRDSLAB pavement analysis.
+
+### 10. Swagger UI (1 min)
+Open `http://localhost:8000/docs` — show interactive testing for all endpoints.
 
 ## Key Talking Points
 - **6 database models** live: Users, ChartOfAccounts, Categories, LedgerEntries, Journals, Documents
-- **7 REST endpoints** — full CRUD on ledger-entries + paginated inquiry + CoA tree
+- **10+ REST endpoints** — full CRUD, batch lifecycle, calculators, GRDSLAB
 - **Auth** — JWT bearer tokens, admin seed, 401 enforcement
 - **Validation** — Pydantic v2 with `model_config = SettingsConfigDict`
-- **32 automated tests** passing with zero warnings
+- **341 automated tests** passing
