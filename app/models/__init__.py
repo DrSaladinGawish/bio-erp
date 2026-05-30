@@ -88,6 +88,19 @@ from app.models.event_management import (
     Severity,
     MigrationStatus,
 )
+from app.models.report import ReportMetadata
+from app.models.strategic_cost_staging import (
+    SCMAuditLog,
+    SCMDeploymentQueue,
+)
+from app.organs.scm_organ.models import (
+    SCMStagingCategory,
+    SCMStagingCostDriver,
+    SCMStagingActivityCost,
+    SCMStagingSustainability,
+    SCMStagingBankTransaction,
+)
+from app.organs.or_organ.models import OrPrescription
 from app.models.manufacturing import (
     Bioreactor,
     CellLine,
@@ -100,6 +113,7 @@ from app.models.manufacturing import (
 )
 
 __all__ = [
+    "ReportMetadata",
     "BaseMixin",
     "BilingualMixin",
     "BranchAwareMixin",
@@ -209,4 +223,12 @@ __all__ = [
     "BatchStep",
     "BatchStatusHistory",
     "BatchStatus",
+    "OrPrescription",
+    "SCMStagingCategory",
+    "SCMStagingCostDriver",
+    "SCMStagingActivityCost",
+    "SCMStagingSustainability",
+    "SCMStagingBankTransaction",
+    "SCMAuditLog",
+    "SCMDeploymentQueue",
 ]
