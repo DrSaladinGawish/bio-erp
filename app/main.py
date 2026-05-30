@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -13,6 +13,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.config import settings
 from app.database import get_async_engine, get_db, init_db
 import app.models.manufacturing  # noqa: F401  — register tables with Base
+import app.ai_ingest.models  # noqa: F401  — register AI ingestion tables with Base
+
+# OR-ERP Sub-Application
+from app.organs.or_organ.sub_app import or_app
+
+# SCM Costing & Performance Sub-Application
+from app.organs.scm_organ.sub_app import scm_app
+
 from app.routers import (
     accounting,
     admin,
@@ -33,6 +41,7 @@ from app.routers import (
     dashboard,
     dashboard_v2,
     eta,
+    eventcore_bridge,
     events,
     finance,
     grdslab,
@@ -46,6 +55,7 @@ from app.routers import (
     system,
     websocket_alerts,
 )
+from app.cells.rbac_cell.router import router as rbac_router
 
 logger = logging.getLogger(__name__)
 
@@ -157,12 +167,31 @@ app.include_router(system.router)
 # AI bridge
 app.include_router(ai_bridge.router)
 
+# AI Ingestion Module
+from app.ai_ingest.router import router as ai_ingest_router
+app.include_router(ai_ingest_router)
+
 # WebSocket alerts
 app.include_router(websocket_alerts.router)
 
 # Reports
 app.include_router(reports.router)
 
+# RBAC Cell (Casbin)
+app.include_router(rbac_router)
+
+# EventCore Bridge
+app.include_router(eventcore_bridge.router)
+
+# OR-ERP Operations Research Module (mounted at /api/v1/or)
+app.mount("/api/v1/or", or_app)
+
+# SCM Costing & Performance Module (mounted at /api/v1/scm)
+app.mount("/api/v1/scm", scm_app)
+
+# P2 Reverse Flow — Doctor (BIO-ERP) -> Patient (EventCore)
+from app.p2_reverse_flow.reverse_flow import reverse_router
+app.include_router(reverse_router, prefix="/api/v1")
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
@@ -188,8 +217,37 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 @app.get("/")
-async def root():
-    return {"message": "BIO_ERP v5", "version": "5.3.0"}
+async def root(request: Request):
+    accept = request.headers.get("accept", "")
+    if "text/html" in accept:
+        return FileResponse(str(BASE_DIR / "static" / "index.html"))
+    return {
+        "message": "BIO_ERP v5",
+        "version": "5.3.0",
+        "linked_systems": [
+            {"name": "BIO_ERP v5", "url": "http://localhost:8000"},
+            {"name": "EventCore ERP", "url": "http://localhost:8001/dashboard"},
+        ],
+    }
+
+
+@app.get("/transactions", response_class=FileResponse)
+async def transactions_page():
+    return FileResponse(str(BASE_DIR / "static" / "transactions.html"))
+
+
+@app.get("/app/{catchall:path}", response_class=FileResponse)
+async def app_spa(catchall: str):
+    path = BASE_DIR / "static" / catchall
+    if path.is_file():
+        return FileResponse(str(path))
+    return FileResponse(str(BASE_DIR / "static" / "index.html"))
+
+
+@app.get("/ai-ingest")
+async def ai_ingest_page():
+    from app.template_engine import render_template
+    return render_template("ai_ingest.html", {"current_user": None})
 
 
 @app.get("/health")
@@ -208,3 +266,4 @@ async def health():
         "version": "5.3.0",
         "database": db_status,
     }
+
