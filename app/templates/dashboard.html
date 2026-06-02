@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard — IncentiveHouse ERP{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/erp-theme.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔷</text></svg>">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% if request.url.path != '/login' %}
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">🔷</div>
+            <div>
+                <div class="brand-text">IncentiveHouse</div>
+                <div style="font-size:0.7rem;color:var(--text-muted)">ERP System</div>
+            </div>
+            <span class="brand-version">v2.2.2</span>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <!-- MAIN MODULES -->
+            <div class="nav-section">
+                <div class="nav-section-title">Main Modules</div>
+                
+                <a href="/dashboard" class="nav-item {% if request.url.path == '/dashboard' %}active{% endif %}">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                
+                <a href="/events" class="nav-item {% if request.url.path.startswith('/events') %}active{% endif %}">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-label">Event Management</span>
+                    <span class="nav-badge success" id="nav-active-events">0</span>
+                </a>
+                
+                <a href="/sales" class="nav-item {% if request.url.path.startswith('/sales') %}active{% endif %}">
+                    <span class="nav-icon">💰</span>
+                    <span class="nav-label">Sales</span>
+                    <span class="nav-badge" id="nav-sales-count">0</span>
+                </a>
+                
+                <a href="/purchasing" class="nav-item {% if request.url.path.startswith('/purchasing') %}active{% endif %}">
+                    <span class="nav-icon">🛒</span>
+                    <span class="nav-label">Purchasing</span>
+                    <span class="nav-badge" id="nav-po-count">0</span>
+                </a>
+                
+                <a href="/finance" class="nav-item {% if request.url.path.startswith('/finance') %}active{% endif %}">
+                    <span class="nav-icon">🏦</span>
+                    <span class="nav-label">Financial</span>
+                    <span class="nav-badge warning" id="nav-pending-invoices">0</span>
+                </a>
+                
+                <a href="/operations" class="nav-item {% if request.url.path.startswith('/operations') %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Operations</span>
+                    <span class="nav-badge" id="nav-pending-ops">0</span>
+                </a>
+            </div>
+            
+            <!-- DATA & REPORTS -->
+            <div class="nav-section">
+                <div class="nav-section-title">Data & Reports</div>
+                
+                <a href="/bank-reconciliation" class="nav-item {% if request.url.path.startswith('/bank-reconciliation') %}active{% endif %}">
+                    <span class="nav-icon">🏛️</span>
+                    <span class="nav-label">Bank Reconciliation</span>
+                    <span class="nav-badge" id="nav-unreconciled">0</span>
+                </a>
+                
+                <a href="/reports" class="nav-item {% if request.url.path.startswith('/reports') %}active{% endif %}">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-label">Reports</span>
+                </a>
+            </div>
+            
+            <!-- SYSTEM -->
+            <div class="nav-section">
+                <div class="nav-section-title">System</div>
+                
+                <a href="/settings" class="nav-item {% if request.url.path.startswith('/settings') %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Settings</span>
+                </a>
+                
+                <button class="nav-item" onclick="logout()" style="color:var(--accent-danger)">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-label">Logout</span>
+                </button>
+            </div>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="system-status">
+                <span class="status-dot"></span>
+                <span id="system-status-text">System Online</span>
+            </div>
+            <div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">
+                Port 9001 | SSL Active
+            </div>
+        </div>
+    </aside>
+    
+    <!-- TOP HEADER -->
+    <header class="top-header">
+        <div class="logo-section">
+            <div class="logo-icon">🔷</div>
+            <div>
+                <div class="logo-text">IncentiveHouse ERP</div>
+                <div class="logo-sub">Event Management & Financial Operations</div>
+            </div>
+        </div>
+        
+        <div class="header-actions">
+            <div class="search-box">
+                <input type="text" placeholder="Search events, clients, invoices..." id="global-search">
+            </div>
+            
+            <div class="notification-bell" onclick="showNotifications()">
+                🔔
+                <span class="badge" id="notification-count">0</span>
+            </div>
+            
+            <div class="user-profile" onclick="toggleUserMenu()">
+                <div class="avatar" id="user-avatar">A</div>
+                <div class="user-info">
+                    <div class="user-name" id="user-name">Admin</div>
+                    <div class="user-role" id="user-role">Administrator</div>
+                </div>
+            </div>
+        </div>
+    </header>
+    {% endif %}
+    
+    <!-- MAIN CONTENT -->
+    <main class="main-content" id="main-content">
+        
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="card-subtitle">Executive overview of all operations</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline" onclick="refreshDashboard()">🔄 Refresh</button>
+        <button class="btn btn-primary" onclick="location.href='/events/new'">+ New Event</button>
+    </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="kpi-grid" id="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon blue">📅</div>
+        <div class="kpi-value" id="kpi-events">—</div>
+        <div class="kpi-label">Total Events</div>
+        <div class="kpi-change up" id="kpi-events-change">↑ Loading...</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon gold">💰</div>
+        <div class="kpi-value" id="kpi-revenue">—</div>
+        <div class="kpi-label">Total Revenue (EGP)</div>
+        <div class="kpi-change up" id="kpi-revenue-change">↑ Loading...</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green">👥</div>
+        <div class="kpi-value" id="kpi-clients">—</div>
+        <div class="kpi-label">Active Clients</div>
+        <div class="kpi-change up" id="kpi-clients-change">↑ Loading...</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon purple">🛒</div>
+        <div class="kpi-value" id="kpi-pos">—</div>
+        <div class="kpi-label">Purchase Orders</div>
+        <div class="kpi-change" id="kpi-pos-change">—</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon red">🏦</div>
+        <div class="kpi-value" id="kpi-bank">—</div>
+        <div class="kpi-label">Unreconciled Items</div>
+        <div class="kpi-change down" id="kpi-bank-change">↓ Needs attention</div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- REVENUE CHART -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Revenue by Month</div>
+                <div class="card-subtitle">EGP revenue trend</div>
+            </div>
+            <select class="form-select" style="width:auto" id="revenue-period">
+                <option value="12">Last 12 Months</option>
+                <option value="6">Last 6 Months</option>
+                <option value="3">Last 3 Months</option>
+            </select>
+        </div>
+        <div class="chart-container">
+            <canvas id="revenueChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- CATEGORY BREAKDOWN -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Revenue by Category</div>
+                <div class="card-subtitle">Service line distribution</div>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- PIPELINE STATUS -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Pipeline Status</div>
+                <div class="card-subtitle">8-Stage data pipeline</div>
+            </div>
+            <a href="/pipeline" class="btn btn-sm btn-outline">View Details</a>
+        </div>
+        <div class="pipeline-stages" id="pipeline-stages">
+            <div class="pipeline-stage">📥 Extract</div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-stage">✅ Validate</div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-stage">📦 Stage</div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-stage">🔍 Reconcile</div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-stage">✔️ Approve</div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-stage">📤 Promote</div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-stage">👁️ Observe</div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-stage">📊 Status</div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr><th>Stage</th><th>Records</th><th>Status</th><th>Last Run</th></tr>
+            </thead>
+            <tbody id="pipeline-table">
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- RECENT ACTIVITY -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Recent Activity</div>
+                <div class="card-subtitle">Latest system events</div>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr><th>Time</th><th>Action</th><th>User</th><th>Entity</th></tr>
+            </thead>
+            <tbody id="activity-table">
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- QUALITY FLAGS -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <div class="card-title">Data Quality Flags</div>
+            <div class="card-subtitle">Items requiring attention</div>
+        </div>
+        <a href="/reports/quality" class="btn btn-sm btn-outline">View All</a>
+    </div>
+    <div class="grid-4" id="quality-flags">
+        <div style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</div>
+    </div>
+</div>
+
+    </main>
+    
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toast-container"></div>
+    
+    <script>
+    // JWT Token management
+    let authToken = localStorage.getItem('incentivehouse_token') || '';
+    
+    // Load user info on page load
+    document.addEventListener('DOMContentLoaded', async function() {
+        if (!authToken && window.location.pathname !== '/login') {
+            window.location.href = '/login';
+            return;
+        }
+        
+        if (authToken) {
+            await loadUserInfo();
+            await loadSidebarCounts();
+            startAutoRefresh();
+        }
+    });
+    
+    async function loadUserInfo() {
+        try {
+            const res = await fetch('/api/v1/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + authToken }
+            });
+            if (res.ok) {
+                const user = await res.json();
+                document.getElementById('user-name').textContent = user.username;
+                document.getElementById('user-role').textContent = user.role;
+                document.getElementById('user-avatar').textContent = user.username[0].toUpperCase();
+            }
+        } catch (e) {
+            console.error('Failed to load user info:', e);
+        }
+    }
+    
+    async function loadSidebarCounts() {
+        try {
+            const res = await fetch('/api/v1/dashboard/summary', {
+                headers: { 'Authorization': 'Bearer ' + authToken }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('nav-active-events').textContent = data.active_events || 0;
+                document.getElementById('nav-pending-ops').textContent = data.pending_operations || 0;
+                document.getElementById('nav-pending-invoices').textContent = data.items_pending_review || 0;
+            }
+        } catch (e) {
+            console.error('Failed to load counts:', e);
+        }
+    }
+    
+    function startAutoRefresh() {
+        setInterval(loadSidebarCounts, 60000);
+    }
+    
+    function logout() {
+        localStorage.removeItem('incentivehouse_token');
+        window.location.href = '/login';
+    }
+    
+    function showNotifications() {
+        showToast('Notifications panel — coming in v2.3', 'warning');
+    }
+    
+    function toggleUserMenu() {
+        const menu = document.createElement('div');
+        menu.style.cssText = 'position:fixed;top:60px;right:24px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;padding:8px 0;min-width:180px;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,0.4);';
+        menu.innerHTML = `
+            <div style="padding:8px 16px;font-size:0.875rem;color:var(--text-secondary);border-bottom:1px solid var(--border-color);margin-bottom:4px">My Account</div>
+            <a href="/settings" style="display:block;padding:8px 16px;color:var(--text-primary);text-decoration:none;font-size:0.875rem" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">⚙️ Settings</a>
+            <a href="#" onclick="logout();return false" style="display:block;padding:8px 16px;color:var(--accent-danger);text-decoration:none;font-size:0.875rem" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">🚪 Logout</a>
+        `;
+        document.body.appendChild(menu);
+        setTimeout(() => {
+            document.addEventListener('click', function close(e) {
+                if (!menu.contains(e.target)) {
+                    menu.remove();
+                    document.removeEventListener('click', close);
+                }
+            });
+        }, 10);
+    }
+    
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+    
+    // HTMX event handlers
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        if (authToken) {
+            evt.detail.xhr.setRequestHeader('Authorization', 'Bearer ' + authToken);
+        }
+    });
+    
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.xhr.status === 401) {
+            logout();
+        }
+    });
+    
+    // Global search
+    document.getElementById('global-search')?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            const q = e.target.value;
+            if (q) window.location.href = `/search?q=${encodeURIComponent(q)}`;
+        }
+    });
+
+let revenueChart, categoryChart;
+
+async function refreshDashboard() {
+    await loadKPIs();
+    await loadCharts();
+    await loadPipeline();
+    await loadActivity();
+    await loadQualityFlags();
+}
+
+async function loadKPIs() {
+    try {
+        const res = await fetch('/api/v1/dashboard/summary', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        document.getElementById('kpi-events').textContent = (data.total_events || 0).toLocaleString();
+        document.getElementById('kpi-revenue').textContent = 'EGP ' + ((data.total_revenue || 0) / 1000000).toFixed(1) + 'M';
+        document.getElementById('kpi-clients').textContent = (data.total_clients || 0).toLocaleString();
+        document.getElementById('kpi-pos').textContent = (data.total_pos || 0).toLocaleString();
+        document.getElementById('kpi-bank').textContent = (data.unreconciled_items || 0).toLocaleString();
+        
+        document.getElementById('kpi-events-change').textContent = '↑ ' + (data.active_events || 0) + ' active';
+        document.getElementById('kpi-revenue-change').textContent = '↑ ' + (data.revenue_growth || 0) + '% YoY';
+        document.getElementById('kpi-clients-change').textContent = '↑ ' + (data.new_clients || 0) + ' new this month';
+    } catch (e) { console.error('KPI load failed:', e); }
+}
+
+async function loadCharts() {
+    try {
+        // Revenue chart
+        const revRes = await fetch('/api/v1/dashboard/years', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        const revData = revRes.ok ? await revRes.json() : { years: [], revenue: [] };
+        
+        if (revenueChart) revenueChart.destroy();
+        revenueChart = new Chart(document.getElementById('revenueChart'), {
+            type: 'line',
+            data: {
+                labels: revData.years || ['Jan','Feb','Mar','Apr','May','Jun'],
+                datasets: [{
+                    label: 'Revenue (EGP)',
+                    data: revData.revenue || [0,0,0,0,0,0],
+                    borderColor: '#324B7F',
+                    backgroundColor: 'rgba(50,75,127,0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#E8A838',
+                    pointBorderColor: '#E8A838',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0a0b0' } },
+                    x: { grid: { display: false }, ticks: { color: '#a0a0b0' } }
+                }
+            }
+        });
+        
+        // Category chart
+        const catRes = await fetch('/api/v1/dashboard/categories', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        const catData = catRes.ok ? await catRes.json() : { categories: [], counts: [] };
+        
+        if (categoryChart) categoryChart.destroy();
+        categoryChart = new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: catData.categories || ['Events','Staff','Assets','Admin'],
+                datasets: [{
+                    data: catData.counts || [40,30,20,10],
+                    backgroundColor: ['#324B7F','#E8A838','#2ecc71','#e74c3c'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#a0a0b0', padding: 16 } }
+                }
+            }
+        });
+    } catch (e) { console.error('Chart load failed:', e); }
+}
+
+async function loadPipeline() {
+    try {
+        const res = await fetch('/api/v2/status', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const stages = ['extract','validate','stage','reconcile','approve','promote','observe','status'];
+        const stageNames = ['Extract','Validate','Stage','Reconcile','Approve','Promote','Observe','Status'];
+        const container = document.getElementById('pipeline-stages');
+        container.innerHTML = '';
+        
+        stages.forEach((s, i) => {
+            const div = document.createElement('div');
+            div.className = `pipeline-stage ${data[s]?.status === 'completed' ? 'completed' : data[s]?.status === 'active' ? 'active' : ''}`;
+            div.textContent = stageNames[i];
+            container.appendChild(div);
+            if (i < stages.length - 1) {
+                const arrow = document.createElement('span');
+                arrow.className = 'pipeline-arrow';
+                arrow.textContent = '→';
+                container.appendChild(arrow);
+            }
+        });
+        
+        const tbody = document.getElementById('pipeline-table');
+        tbody.innerHTML = stages.map((s, i) => `
+            <tr>
+                <td><strong>${stageNames[i]}</strong></td>
+                <td>${(data[s]?.records || 0).toLocaleString()}</td>
+                <td><span class="badge badge-${data[s]?.status === 'completed' ? 'completed' : data[s]?.status === 'active' ? 'inprogress' : 'draft'}">${data[s]?.status || 'idle'}</span></td>
+                <td style="color:var(--text-muted)">${data[s]?.last_run || '—'}</td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error('Pipeline load failed:', e); }
+}
+
+async function loadActivity() {
+    try {
+        const res = await fetch('/api/v1/dashboard/activity?limit=5', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const tbody = document.getElementById('activity-table');
+        if (!data.activities || data.activities.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">No recent activity</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.activities.map(a => `
+            <tr>
+                <td style="color:var(--text-muted);font-size:0.8rem">${new Date(a.timestamp).toLocaleString()}</td>
+                <td><span class="badge badge-${a.action_type === 'CREATE' ? 'success' : a.action_type === 'UPDATE' ? 'confirmed' : 'draft'}">${a.action_type}</span></td>
+                <td>${a.user || 'System'}</td>
+                <td>${a.table_name}.${a.record_id}</td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error('Activity load failed:', e); }
+}
+
+async function loadQualityFlags() {
+    try {
+        const res = await fetch('/api/v1/dashboard/flags', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const container = document.getElementById('quality-flags');
+        const flags = data.flags || [
+            { label: 'Unallocated PNR', count: 3, color: 'danger' },
+            { label: 'Orphan Vendors', count: 0, color: 'success' },
+            { label: 'Missing Invoices', count: 12, color: 'warning' },
+            { label: 'Stale Rates', count: 0, color: 'success' }
+        ];
+        
+        container.innerHTML = flags.map(f => `
+            <div class="card" style="text-align:center;padding:20px">
+                <div style="font-size:2rem;font-weight:700;color:var(--accent-${f.color === 'danger' ? 'danger' : f.color === 'warning' ? 'warning' : 'success'})">${f.count}</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">${f.label}</div>
+                <div class="progress-bar" style="margin-top:12px">
+                    <div class="progress-bar-fill ${f.color === 'danger' ? 'danger' : f.color}" style="width:${f.count > 0 ? '60%' : '100%'}"></div>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) { console.error('Flags load failed:', e); }
+}
+
+// Initial load
+document.addEventListener('DOMContentLoaded', refreshDashboard);
+</script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

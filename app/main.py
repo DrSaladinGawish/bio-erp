@@ -60,6 +60,7 @@ from app.routers import (
     grdslab,
     htmx_dashboard,
     items,
+    pages,
     petty_cash,
     procurement,
     reports,
@@ -238,6 +239,10 @@ app.mount("/api/v1/incentivehouse", incentivehouse_app)
 # P2 Reverse Flow — Doctor (BIO-ERP) -> Patient (EventCore)
 from app.p2_reverse_flow.reverse_flow import reverse_router
 app.include_router(reverse_router, prefix="/api/v1")
+
+# Jinja2 Page Router — All HTML templates
+from app.routers.pages import router as pages_router
+app.include_router(pages_router)
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):

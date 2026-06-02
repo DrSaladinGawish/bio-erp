@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Bank Reconciliation — IncentiveHouse ERP{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Bank Reconciliation</h1>
+        <p class="card-subtitle">Match bank transactions to ledger entries with sub-ledger allocation</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline" onclick="exportRecon()">📥 Export</button>
+        <button class="btn btn-primary" onclick="runSmartRecon()">🤖 Smart Recon</button>
+    </div>
+</div>
+
+<!-- RECON KPIs -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon blue">🏛️</div>
+        <div class="kpi-value" id="kpi-total-txns">—</div>
+        <div class="kpi-label">Total Transactions</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green">✅</div>
+        <div class="kpi-value" id="kpi-reconciled-count">—</div>
+        <div class="kpi-label">Reconciled</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon gold">⏳</div>
+        <div class="kpi-value" id="kpi-pending-count">—</div>
+        <div class="kpi-label">Pending</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon red">⚠️</div>
+        <div class="kpi-value" id="kpi-exception-count">—</div>
+        <div class="kpi-label">Exceptions</div>
+    </div>
+</div>
+
+<!-- FILTERS -->
+<div class="card" style="padding:16px">
+    <div class="form-row" style="align-items:end">
+        <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Search</label>
+            <input type="text" class="form-input" id="recon-search" placeholder="Description, reference..." oninput="filterRecon()">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Account</label>
+            <select class="form-select" id="recon-account" onchange="filterRecon()">
+                <option value="">All Accounts</option>
+                <option value="Bnk_Cur">Current Account (EGP)</option>
+                <option value="Bnk_Sav">Savings Account</option>
+                <option value="Bnk_Usd">USD Account</option>
+                <option value="Bnk_Eur">EUR Account</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="recon-status" onchange="filterRecon()">
+                <option value="">All Statuses</option>
+                <option value="unreconciled">Unreconciled</option>
+                <option value="reconciled">Reconciled</option>
+                <option value="exception">Exception</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Date Range</label>
+            <select class="form-select" id="recon-date" onchange="filterRecon()">
+                <option value="">All Time</option>
+                <option value="30">Last 30 Days</option>
+                <option value="90">Last 90 Days</option>
+                <option value="365">Last Year</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- RECON GRID -->
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="select-all" onclick="toggleSelectAll()"></th>
+                <th>Date</th>
+                <th>Account</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Debit</th>
+                <th>Credit</th>
+                <th>Sub-Ledger</th>
+                <th>PNR</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="recon-table">
+            <tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:40px">Loading transactions...</td></tr>
+        </tbody>
+    </table>
+    
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color)">
+        <span style="font-size:0.8rem;color:var(--text-muted)" id="recon-count">Showing 0 of 0 transactions</span>
+        <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-outline" onclick="prevPage()" id="btn-prev" disabled>Prev</button>
+            <button class="btn btn-sm btn-outline" onclick="nextPage()" id="btn-next" disabled>Next</button>
+        </div>
+    </div>
+</div>
+
+<!-- SUMMARY CARDS -->
+<div class="grid-4" style="margin-top:20px">
+    <div class="card" style="text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:var(--primary-light)" id="sum-debit">—</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">Total Debits</div>
+    </div>
+    <div class="card" style="text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:var(--accent-success)" id="sum-credit">—</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">Total Credits</div>
+    </div>
+    <div class="card" style="text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:var(--accent)" id="sum-net">—</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">Net Position</div>
+    </div>
+    <div class="card" style="text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:var(--accent-warning)" id="sum-unmatched">—</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">Unmatched</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let reconData = [];
+let currentPage = 1;
+let totalPages = 1;
+let selectedIds = new Set();
+
+async function loadReconData() {
+    try {
+        const res = await fetch(`/api/v1/bank-reconciliation?page=${currentPage}&limit=50`, {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Failed to load');
+        const data = await res.json();
+        reconData = data.transactions || [];
+        totalPages = data.total_pages || 1;
+        renderRecon();
+        updateSummary();
+        updateKPIs(data);
+        document.getElementById('recon-count').textContent = `Showing ${reconData.length} of ${data.total || 0} transactions`;
+        document.getElementById('btn-prev').disabled = currentPage <= 1;
+        document.getElementById('btn-next').disabled = currentPage >= totalPages;
+    } catch (e) {
+        document.getElementById('recon-table').innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--accent-danger);padding:40px">Error: ${e.message}</td></tr>`;
+    }
+}
+
+function renderRecon() {
+    const tbody = document.getElementById('recon-table');
+    if (reconData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:40px">No transactions found</td></tr>';
+        return;
+    }
+    tbody.innerHTML = reconData.map(t => `
+        <tr>
+            <td><input type="checkbox" value="${t.transaction_id}" ${selectedIds.has(t.transaction_id) ? 'checked' : ''} onchange="toggleSelect(${t.transaction_id})"></td>
+            <td style="color:var(--text-muted);font-size:0.8rem">${t.transaction_date ? new Date(t.transaction_date).toLocaleDateString() : '—'}</td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.account_code || '—'}</code></td>
+            <td>${t.description || '—'}</td>
+            <td><span class="badge badge-draft">${t.transaction_type || '—'}</span></td>
+            <td style="color:var(--accent-danger)">${t.debit ? 'EGP ' + Number(t.debit).toLocaleString() : '—'}</td>
+            <td style="color:var(--accent-success)">${t.credit ? 'EGP ' + Number(t.credit).toLocaleString() : '—'}</td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.sub_ledger_code || '—'}</code></td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.pnr_id || '—'}</code></td>
+            <td><span class="badge badge-${t.recon_status || 'unreconciled'}">${(t.recon_status || 'unreconciled').replace('_', ' ')}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline" onclick="reconcileItem(${t.transaction_id})">✓</button>
+                <button class="btn btn-sm btn-outline" onclick="flagException(${t.transaction_id})">⚑</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterRecon() {
+    const search = document.getElementById('recon-search').value.toLowerCase();
+    const account = document.getElementById('recon-account').value;
+    const status = document.getElementById('recon-status').value;
+    const dateRange = document.getElementById('recon-date').value;
+    
+    const filtered = reconData.filter(t => {
+        const matchSearch = !search || (t.description || '').toLowerCase().includes(search) || (t.reference || '').toLowerCase().includes(search);
+        const matchAccount = !account || t.account_code === account;
+        const matchStatus = !status || t.recon_status === status;
+        let matchDate = true;
+        if (dateRange && t.transaction_date) {
+            const days = parseInt(dateRange);
+            const txnDate = new Date(t.transaction_date);
+            const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+            matchDate = txnDate >= cutoff;
+        }
+        return matchSearch && matchAccount && matchStatus && matchDate;
+    });
+    
+    const tbody = document.getElementById('recon-table');
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:40px">No matching transactions</td></tr>';
+        return;
+    }
+    tbody.innerHTML = filtered.map(t => `
+        <tr>
+            <td><input type="checkbox" value="${t.transaction_id}" ${selectedIds.has(t.transaction_id) ? 'checked' : ''} onchange="toggleSelect(${t.transaction_id})"></td>
+            <td style="color:var(--text-muted);font-size:0.8rem">${t.transaction_date ? new Date(t.transaction_date).toLocaleDateString() : '—'}</td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.account_code || '—'}</code></td>
+            <td>${t.description || '—'}</td>
+            <td><span class="badge badge-draft">${t.transaction_type || '—'}</span></td>
+            <td style="color:var(--accent-danger)">${t.debit ? 'EGP ' + Number(t.debit).toLocaleString() : '—'}</td>
+            <td style="color:var(--accent-success)">${t.credit ? 'EGP ' + Number(t.credit).toLocaleString() : '—'}</td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.sub_ledger_code || '—'}</code></td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.pnr_id || '—'}</code></td>
+            <td><span class="badge badge-${t.recon_status || 'unreconciled'}">${(t.recon_status || 'unreconciled').replace('_', ' ')}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline" onclick="reconcileItem(${t.transaction_id})">✓</button>
+                <button class="btn btn-sm btn-outline" onclick="flagException(${t.transaction_id})">⚑</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateSummary() {
+    const totalDebit = reconData.reduce((s, t) => s + (t.debit || 0), 0);
+    const totalCredit = reconData.reduce((s, t) => s + (t.credit || 0), 0);
+    const unmatched = reconData.filter(t => t.recon_status !== 'reconciled').length;
+    
+    document.getElementById('sum-debit').textContent = 'EGP ' + (totalDebit / 1000000).toFixed(1) + 'M';
+    document.getElementById('sum-credit').textContent = 'EGP ' + (totalCredit / 1000000).toFixed(1) + 'M';
+    document.getElementById('sum-net').textContent = 'EGP ' + ((totalCredit - totalDebit) / 1000000).toFixed(1) + 'M';
+    document.getElementById('sum-unmatched').textContent = unmatched.toLocaleString();
+}
+
+function updateKPIs(data) {
+    document.getElementById('kpi-total-txns').textContent = (data.total || 0).toLocaleString();
+    document.getElementById('kpi-reconciled-count').textContent = (data.reconciled_count || 0).toLocaleString();
+    document.getElementById('kpi-pending-count').textContent = (data.pending_count || 0).toLocaleString();
+    document.getElementById('kpi-exception-count').textContent = (data.exception_count || 0).toLocaleString();
+}
+
+function toggleSelect(id) {
+    if (selectedIds.has(id)) selectedIds.delete(id);
+    else selectedIds.add(id);
+}
+
+function toggleSelectAll() {
+    const checkboxes = document.querySelectorAll('#recon-table input[type="checkbox"]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+        const id = parseInt(cb.value);
+        if (!allChecked) selectedIds.add(id);
+        else selectedIds.delete(id);
+    });
+}
+
+function reconcileItem(id) { showToast('Reconcile item ' + id + ' — coming in v2.3', 'warning'); }
+function flagException(id) { showToast('Flag exception ' + id + ' — coming in v2.3', 'warning'); }
+function runSmartRecon() { showToast('Smart reconciliation — coming in v2.3', 'warning'); }
+function exportRecon() { showToast('Export — coming in v2.3', 'warning'); }
+function prevPage() { if (currentPage > 1) { currentPage--; loadReconData(); } }
+function nextPage() { if (currentPage < totalPages) { currentPage++; loadReconData(); } }
+
+document.addEventListener('DOMContentLoaded', loadReconData);
+</script>
+{% endblock %}

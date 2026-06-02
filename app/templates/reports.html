@@ -1,0 +1,533 @@
+{% extends "base.html" %}
+{% block title %}Reports — IncentiveHouse ERP{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>📈 Reports & Analytics</h1>
+  <div class="header-actions">
+    <button class="btn btn-primary" onclick="exportAllReports()">⬇️ Export All</button>
+    <button class="btn btn-secondary" onclick="scheduleReport()">📅 Schedule</button>
+  </div>
+</div>
+
+<!-- Report Categories -->
+<div class="report-categories">
+  <div class="report-card active" data-category="financial" onclick="switchReport('financial')">
+    <div class="report-icon">💰</div>
+    <div class="report-title">Financial</div>
+    <div class="report-count">8 reports</div>
+  </div>
+  <div class="report-card" data-category="sales" onclick="switchReport('sales')">
+    <div class="report-icon">📊</div>
+    <div class="report-title">Sales</div>
+    <div class="report-count">6 reports</div>
+  </div>
+  <div class="report-card" data-category="events" onclick="switchReport('events')">
+    <div class="report-icon">📅</div>
+    <div class="report-title">Events</div>
+    <div class="report-count">5 reports</div>
+  </div>
+  <div class="report-card" data-category="operations" onclick="switchReport('operations')">
+    <div class="report-icon">⚙️</div>
+    <div class="report-title">Operations</div>
+    <div class="report-count">4 reports</div>
+  </div>
+  <div class="report-card" data-category="compliance" onclick="switchReport('compliance')">
+    <div class="report-icon">🛡️</div>
+    <div class="report-title">Compliance</div>
+    <div class="report-count">3 reports</div>
+  </div>
+</div>
+
+<!-- Report Filters -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <label>Date Range</label>
+    <select id="reportPeriod">
+      <option value="today">Today</option>
+      <option value="week">This Week</option>
+      <option value="month" selected>This Month</option>
+      <option value="quarter">This Quarter</option>
+      <option value="year">This Year</option>
+      <option value="custom">Custom Range</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Branch</label>
+    <select id="reportBranch">
+      <option value="all">All Branches</option>
+      <option value="cairo">Cairo HQ</option>
+      <option value="alex">Alexandria</option>
+      <option value="dubai">Dubai</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Currency</label>
+    <select id="reportCurrency">
+      <option value="EGP">EGP</option>
+      <option value="USD">USD</option>
+      <option value="EUR">EUR</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Format</label>
+    <select id="reportFormat">
+      <option value="html">HTML</option>
+      <option value="pdf">PDF</option>
+      <option value="excel">Excel</option>
+      <option value="csv">CSV</option>
+    </select>
+  </div>
+  <button class="btn btn-primary" onclick="generateReport()">🔍 Generate</button>
+</div>
+
+<!-- Financial Reports -->
+<div id="report-financial" class="report-section active">
+  <div class="report-grid">
+    <div class="report-item">
+      <div class="report-header">
+        <h3>Profit & Loss Statement</h3>
+        <span class="badge badge-success">Live</span>
+      </div>
+      <div class="report-preview">
+        <div class="preview-stat">
+          <span class="stat-label">Revenue</span>
+          <span class="stat-value positive">{{ "{:,.0f}".format(report_data.revenue|default(2847500)) }} EGP</span>
+        </div>
+        <div class="preview-stat">
+          <span class="stat-label">COGS</span>
+          <span class="stat-value negative">{{ "{:,.0f}".format(report_data.cogs|default(1423750)) }} EGP</span>
+        </div>
+        <div class="preview-stat">
+          <span class="stat-label">Gross Profit</span>
+          <span class="stat-value positive">{{ "{:,.0f}".format(report_data.gross_profit|default(1423750)) }} EGP</span>
+        </div>
+        <div class="preview-stat highlight">
+          <span class="stat-label">Net Profit</span>
+          <span class="stat-value positive">{{ "{:,.0f}".format(report_data.net_profit|default(569500)) }} EGP</span>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('pnl')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('pnl')">⬇️ Download</button>
+        <button class="btn btn-sm" onclick="shareReport('pnl')">📤 Share</button>
+      </div>
+    </div>
+
+    <div class="report-item">
+      <div class="report-header">
+        <h3>Balance Sheet</h3>
+        <span class="badge badge-success">Live</span>
+      </div>
+      <div class="report-preview">
+        <div class="preview-stat">
+          <span class="stat-label">Total Assets</span>
+          <span class="stat-value">{{ "{:,.0f}".format(report_data.total_assets|default(5230000)) }} EGP</span>
+        </div>
+        <div class="preview-stat">
+          <span class="stat-label">Total Liabilities</span>
+          <span class="stat-value negative">{{ "{:,.0f}".format(report_data.total_liabilities|default(1840000)) }} EGP</span>
+        </div>
+        <div class="preview-stat">
+          <span class="stat-label">Equity</span>
+          <span class="stat-value positive">{{ "{:,.0f}".format(report_data.equity|default(3390000)) }} EGP</span>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('balance')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('balance')">⬇️ Download</button>
+      </div>
+    </div>
+
+    <div class="report-item">
+      <div class="report-header">
+        <h3>Cash Flow Statement</h3>
+        <span class="badge badge-warning">Daily</span>
+      </div>
+      <div class="report-preview">
+        <div class="preview-stat">
+          <span class="stat-label">Operating CF</span>
+          <span class="stat-value positive">{{ "{:,.0f}".format(report_data.operating_cf|default(450000)) }} EGP</span>
+        </div>
+        <div class="preview-stat">
+          <span class="stat-label">Investing CF</span>
+          <span class="stat-value negative">{{ "{:,.0f}".format(report_data.investing_cf|default(-120000)) }} EGP</span>
+        </div>
+        <div class="preview-stat">
+          <span class="stat-label">Financing CF</span>
+          <span class="stat-value">{{ "{:,.0f}".format(report_data.financing_cf|default(0)) }} EGP</span>
+        </div>
+        <div class="preview-stat highlight">
+          <span class="stat-label">Net Cash Flow</span>
+          <span class="stat-value positive">{{ "{:,.0f}".format(report_data.net_cf|default(330000)) }} EGP</span>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('cashflow')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('cashflow')">⬇️ Download</button>
+      </div>
+    </div>
+
+    <div class="report-item">
+      <div class="report-header">
+        <h3>Aged Receivables</h3>
+        <span class="badge badge-danger">Critical</span>
+      </div>
+      <div class="report-preview">
+        <div class="aging-bars">
+          <div class="aging-bar">
+            <span class="aging-label">Current</span>
+            <div class="aging-progress">
+              <div class="aging-fill green" style="width: 45%"></div>
+            </div>
+            <span class="aging-value">1.2M</span>
+          </div>
+          <div class="aging-bar">
+            <span class="aging-label">1-30 days</span>
+            <div class="aging-progress">
+              <div class="aging-fill yellow" style="width: 30%"></div>
+            </div>
+            <span class="aging-value">800K</span>
+          </div>
+          <div class="aging-bar">
+            <span class="aging-label">31-60 days</span>
+            <div class="aging-progress">
+              <div class="aging-fill orange" style="width: 15%"></div>
+            </div>
+            <span class="aging-value">400K</span>
+          </div>
+          <div class="aging-bar">
+            <span class="aging-label">60+ days</span>
+            <div class="aging-progress">
+              <div class="aging-fill red" style="width: 10%"></div>
+            </div>
+            <span class="aging-value">250K</span>
+          </div>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('ar-aging')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('ar-aging')">⬇️ Download</button>
+      </div>
+    </div>
+
+    <div class="report-item">
+      <div class="report-header">
+        <h3>Bank Reconciliation Summary</h3>
+        <span class="badge badge-success">Live</span>
+      </div>
+      <div class="report-preview">
+        <div class="preview-stat">
+          <span class="stat-label">Bank Balance</span>
+          <span class="stat-value">{{ "{:,.0f}".format(report_data.bank_balance|default(2170000)) }} EGP</span>
+        </div>
+        <div class="preview-stat">
+          <span class="stat-label">Book Balance</span>
+          <span class="stat-value">{{ "{:,.0f}".format(report_data.book_balance|default(2158000)) }} EGP</span>
+        </div>
+        <div class="preview-stat">
+          <span class="stat-label">Difference</span>
+          <span class="stat-value">{{ "{:,.0f}".format(report_data.recon_diff|default(12000)) }} EGP</span>
+        </div>
+        <div class="preview-stat">
+          <span class="stat-label">Unreconciled</span>
+          <span class="stat-value warning">{{ report_data.unreconciled|default(23) }} items</span>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('bank-recon')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('bank-recon')">⬇️ Download</button>
+      </div>
+    </div>
+
+    <div class="report-item">
+      <div class="report-header">
+        <h3>Tax Summary (VAT 14%)</h3>
+        <span class="badge badge-warning">Monthly</span>
+      </div>
+      <div class="report-preview">
+        <div class="preview-stat">
+          <span class="stat-label">Output VAT</span>
+          <span class="stat-value">{{ "{:,.0f}".format(report_data.output_vat|default(398650)) }} EGP</span>
+        </div>
+        <div class="preview-stat">
+          <span class="stat-label">Input VAT</span>
+          <span class="stat-value">{{ "{:,.0f}".format(report_data.input_vat|default(199325)) }} EGP</span>
+        </div>
+        <div class="preview-stat highlight">
+          <span class="stat-label">Net VAT Payable</span>
+          <span class="stat-value negative">{{ "{:,.0f}".format(report_data.net_vat|default(199325)) }} EGP</span>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('vat')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('vat')">⬇️ Download</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sales Reports -->
+<div id="report-sales" class="report-section">
+  <div class="report-grid">
+    <div class="report-item">
+      <div class="report-header"><h3>Sales by Client</h3><span class="badge badge-success">Live</span></div>
+      <div class="report-preview">
+        <table class="mini-table">
+          <tr><th>Client</th><th>Sales</th><th>%</th></tr>
+          <tr><td>CISCO</td><td>1.2M</td><td>42%</td></tr>
+          <tr><td>MICROSOFT</td><td>650K</td><td>23%</td></tr>
+          <tr><td>NOVENTIQ</td><td>580K</td><td>20%</td></tr>
+          <tr><td>ABBOTT</td><td>420K</td><td>15%</td></tr>
+        </table>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('sales-client')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('sales-client')">⬇️ Download</button>
+      </div>
+    </div>
+    <div class="report-item">
+      <div class="report-header"><h3>Sales by Category</h3><span class="badge badge-success">Live</span></div>
+      <div class="report-preview">
+        <div class="category-chart" id="salesCategoryChart"></div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('sales-category')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('sales-category')">⬇️ Download</button>
+      </div>
+    </div>
+    <div class="report-item">
+      <div class="report-header"><h3>Sales Pipeline</h3><span class="badge badge-warning">Weekly</span></div>
+      <div class="report-preview">
+        <div class="pipeline-mini">
+          <div class="pipe-stage"><span>Lead</span><b>45</b></div>
+          <div class="pipe-stage"><span>Quote</span><b>28</b></div>
+          <div class="pipe-stage"><span>Negotiation</span><b>12</b></div>
+          <div class="pipe-stage"><span>Closed</span><b>8</b></div>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('pipeline')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('pipeline')">⬇️ Download</button>
+      </div>
+    </div>
+    <div class="report-item">
+      <div class="report-header"><h3>Commission Report</h3><span class="badge badge-warning">Monthly</span></div>
+      <div class="report-preview">
+        <div class="preview-stat"><span class="stat-label">Total Commission</span><span class="stat-value">142,500 EGP</span></div>
+        <div class="preview-stat"><span class="stat-label">Sales Reps</span><span class="stat-value">12 active</span></div>
+        <div class="preview-stat"><span class="stat-label">Avg/Rep</span><span class="stat-value">11,875 EGP</span></div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('commission')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('commission')">⬇️ Download</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Events Reports -->
+<div id="report-events" class="report-section">
+  <div class="report-grid">
+    <div class="report-item">
+      <div class="report-header"><h3>Event Profitability</h3><span class="badge badge-success">Live</span></div>
+      <div class="report-preview">
+        <div class="preview-stat"><span class="stat-label">Events</span><span class="stat-value">{{ report_data.event_count|default(24) }}</span></div>
+        <div class="preview-stat"><span class="stat-label">Revenue</span><span class="stat-value positive">2.8M EGP</span></div>
+        <div class="preview-stat"><span class="stat-label">Cost</span><span class="stat-value negative">1.9M EGP</span></div>
+        <div class="preview-stat highlight"><span class="stat-label">Margin</span><span class="stat-value positive">32%</span></div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('event-profit')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('event-profit')">⬇️ Download</button>
+      </div>
+    </div>
+    <div class="report-item">
+      <div class="report-header"><h3>Event Calendar</h3><span class="badge badge-success">Live</span></div>
+      <div class="report-preview">
+        <div class="calendar-mini">
+          <div class="cal-day active"><span>Mon</span><b>3</b></div>
+          <div class="cal-day"><span>Tue</span><b>1</b></div>
+          <div class="cal-day active"><span>Wed</span><b>2</b></div>
+          <div class="cal-day"><span>Thu</span><b>0</b></div>
+          <div class="cal-day active"><span>Fri</span><b>4</b></div>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('event-calendar')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('event-calendar')">⬇️ Download</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Operations Reports -->
+<div id="report-operations" class="report-section">
+  <div class="report-grid">
+    <div class="report-item">
+      <div class="report-header"><h3>Staff Utilization</h3><span class="badge badge-warning">Weekly</span></div>
+      <div class="report-preview">
+        <div class="preview-stat"><span class="stat-label">Total Staff</span><span class="stat-value">45</span></div>
+        <div class="preview-stat"><span class="stat-label">Assigned</span><span class="stat-value">38</span></div>
+        <div class="preview-stat"><span class="stat-label">Available</span><span class="stat-value">7</span></div>
+        <div class="preview-stat"><span class="stat-label">Utilization</span><span class="stat-value">84%</span></div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('staff-util')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('staff-util')">⬇️ Download</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Compliance Reports -->
+<div id="report-compliance" class="report-section">
+  <div class="report-grid">
+    <div class="report-item">
+      <div class="report-header"><h3>Audit Trail</h3><span class="badge badge-success">Live</span></div>
+      <div class="report-preview">
+        <div class="preview-stat"><span class="stat-label">Total Entries</span><span class="stat-value">12,450</span></div>
+        <div class="preview-stat"><span class="stat-label">This Month</span><span class="stat-value">1,240</span></div>
+        <div class="preview-stat"><span class="stat-label">Flagged</span><span class="stat-value warning">3</span></div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('audit')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('audit')">⬇️ Download</button>
+      </div>
+    </div>
+    <div class="report-item">
+      <div class="report-header"><h3>Data Integrity Score</h3><span class="badge badge-success">Live</span></div>
+      <div class="report-preview">
+        <div class="integrity-ring">
+          <div class="ring-value">{{ report_data.integrity_score|default(94.7) }}%</div>
+          <div class="ring-label">Overall Score</div>
+        </div>
+        <div class="integrity-breakdown">
+          <div class="break-item"><span>Completeness</span><div class="break-bar"><div style="width:96%"></div></div><b>96%</b></div>
+          <div class="break-item"><span>Accuracy</span><div class="break-bar"><div style="width:93%"></div></div><b>93%</b></div>
+          <div class="break-item"><span>Timeliness</span><div class="break-bar"><div style="width:95%"></div></div><b>95%</b></div>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-sm" onclick="viewReport('integrity')">👁️ View</button>
+        <button class="btn btn-sm" onclick="downloadReport('integrity')">⬇️ Download</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scheduled Reports -->
+<div class="scheduled-section">
+  <h2>📅 Scheduled Reports</h2>
+  <table class="data-table">
+    <thead>
+      <tr><th>Report</th><th>Frequency</th><th>Next Run</th><th>Recipients</th><th>Format</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>P&L Statement</td><td>Daily @ 08:00</td><td>Tomorrow</td><td>finance@ih.com</td><td>PDF</td><td><span class="badge badge-success">Active</span></td>
+        <td><button class="btn btn-sm">✏️</button><button class="btn btn-sm">🗑️</button></td>
+      </tr>
+      <tr>
+        <td>Sales Summary</td><td>Weekly (Mon)</td><td>Jun 8</td><td>sales@ih.com</td><td>Excel</td><td><span class="badge badge-success">Active</span></td>
+        <td><button class="btn btn-sm">✏️</button><button class="btn btn-sm">🗑️</button></td>
+      </tr>
+      <tr>
+        <td>Bank Reconciliation</td><td>Daily @ 18:00</td><td>Today</td><td>ops@ih.com</td><td>PDF</td><td><span class="badge badge-success">Active</span></td>
+        <td><button class="btn btn-sm">✏️</button><button class="btn btn-sm">🗑️</button></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function switchReport(category) {
+  document.querySelectorAll('.report-card').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.report-section').forEach(s => s.classList.remove('active'));
+  document.querySelector('[data-category="' + category + '"]').classList.add('active');
+  document.getElementById('report-' + category).classList.add('active');
+}
+function generateReport() {
+  showToast('Generating report...', 'info');
+  setTimeout(() => showToast('Report generated successfully!', 'success'), 1500);
+}
+function viewReport(id) {
+  showToast('Opening report: ' + id, 'info');
+}
+function downloadReport(id) {
+  showToast('Downloading report: ' + id, 'success');
+}
+function shareReport(id) {
+  showToast('Report shared via email', 'success');
+}
+function exportAllReports() {
+  showToast('Exporting all reports...', 'info');
+}
+function scheduleReport() {
+  showToast('Schedule dialog opened', 'info');
+}
+</script>
+
+<style>
+.report-categories { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.report-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s; }
+.report-card:hover, .report-card.active { border-color: var(--accent); background: rgba(56,189,248,0.05); }
+.report-icon { font-size: 28px; margin-bottom: 8px; }
+.report-title { font-weight: 600; color: var(--text); font-size: 14px; }
+.report-count { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.filter-bar { display: flex; gap: 12px; align-items: flex-end; background: var(--card-bg); padding: 16px; border-radius: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.filter-group select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; min-width: 120px; }
+.report-section { display: none; }
+.report-section.active { display: block; }
+.report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.report-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+.report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.report-header h3 { margin: 0; font-size: 16px; color: var(--text); }
+.report-preview { margin-bottom: 16px; }
+.preview-stat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.preview-stat:last-child { border-bottom: none; }
+.preview-stat.highlight { background: rgba(56,189,248,0.08); padding: 10px 12px; border-radius: 6px; margin-top: 4px; }
+.stat-label { font-size: 13px; color: var(--text-muted); }
+.stat-value { font-size: 14px; font-weight: 600; color: var(--text); }
+.stat-value.positive { color: #10b981; }
+.stat-value.negative { color: #ef4444; }
+.stat-value.warning { color: #f59e0b; }
+.report-actions { display: flex; gap: 8px; }
+.aging-bars { display: flex; flex-direction: column; gap: 10px; }
+.aging-bar { display: flex; align-items: center; gap: 10px; }
+.aging-label { font-size: 12px; color: var(--text-muted); width: 70px; }
+.aging-progress { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.aging-fill { height: 100%; border-radius: 4px; }
+.aging-fill.green { background: #10b981; }
+.aging-fill.yellow { background: #f59e0b; }
+.aging-fill.orange { background: #f97316; }
+.aging-fill.red { background: #ef4444; }
+.aging-value { font-size: 12px; font-weight: 600; color: var(--text); width: 60px; text-align: right; }
+.mini-table { width: 100%; font-size: 13px; }
+.mini-table th { text-align: left; padding: 6px 0; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border); }
+.mini-table td { padding: 6px 0; color: var(--text); }
+.pipeline-mini { display: flex; gap: 8px; }
+.pipe-stage { flex: 1; background: var(--bg); border-radius: 8px; padding: 12px; text-align: center; }
+.pipe-stage span { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.pipe-stage b { font-size: 18px; color: var(--text); }
+.calendar-mini { display: flex; gap: 8px; }
+.cal-day { flex: 1; background: var(--bg); border-radius: 8px; padding: 12px; text-align: center; }
+.cal-day.active { background: rgba(56,189,248,0.1); border: 1px solid var(--accent); }
+.cal-day span { display: block; font-size: 11px; color: var(--text-muted); }
+.cal-day b { font-size: 18px; color: var(--text); }
+.integrity-ring { text-align: center; margin-bottom: 16px; }
+.ring-value { font-size: 32px; font-weight: 700; color: var(--accent); }
+.ring-label { font-size: 12px; color: var(--text-muted); }
+.integrity-breakdown { display: flex; flex-direction: column; gap: 8px; }
+.break-item { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.break-item span { width: 90px; color: var(--text-muted); }
+.break-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.break-bar div { height: 100%; background: var(--accent); border-radius: 3px; }
+.break-item b { width: 40px; text-align: right; color: var(--text); }
+.scheduled-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-top: 24px; }
+.scheduled-section h2 { margin: 0 0 16px 0; font-size: 18px; }
+</style>
+
+{% endblock %}

@@ -1,0 +1,591 @@
+{% extends "base.html" %}
+
+{% block title %}Financial — IncentiveHouse ERP{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Financial Operations</h1>
+        <p class="card-subtitle">Bank reconciliation, journal entries, COA, and reporting</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline" onclick="exportFinance()">📥 Export</button>
+        <button class="btn btn-primary" onclick="openJournalModal()">+ Journal Entry</button>
+    </div>
+</div>
+
+<!-- FINANCE KPIs -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon blue">🏛️</div>
+        <div class="kpi-value" id="kpi-bank-total">—</div>
+        <div class="kpi-label">Bank Transactions</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon gold">📒</div>
+        <div class="kpi-value" id="kpi-journal">—</div>
+        <div class="kpi-label">Journal Entries</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green">✅</div>
+        <div class="kpi-value" id="kpi-reconciled">—</div>
+        <div class="kpi-label">Reconciled Items</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon red">⚠️</div>
+        <div class="kpi-value" id="kpi-exceptions">—</div>
+        <div class="kpi-label">Exceptions</div>
+    </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('recon', this)">Bank Reconciliation</div>
+    <div class="tab" onclick="switchTab('journal', this)">Journal Entries</div>
+    <div class="tab" onclick="switchTab('coa', this)">Chart of Accounts</div>
+    <div class="tab" onclick="switchTab('reports', this)">Financial Reports</div>
+</div>
+
+<!-- BANK RECONCILIATION TAB -->
+<div id="tab-recon">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Bank Reconciliation</div>
+                <div class="card-subtitle">Match bank transactions to ledger entries</div>
+            </div>
+            <div style="display:flex;gap:8px">
+                <button class="btn btn-sm btn-primary" onclick="runSmartRecon()">🤖 Smart Recon</button>
+                <button class="btn btn-sm btn-outline" onclick="exportRecon()">📥 Export</button>
+            </div>
+        </div>
+        
+        <div class="form-row" style="margin-bottom:16px">
+            <div class="form-group" style="margin-bottom:0">
+                <input type="text" class="form-input" id="recon-search" placeholder="Search transactions..." oninput="filterRecon()">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+                <select class="form-select" id="recon-account" onchange="filterRecon()">
+                    <option value="">All Accounts</option>
+                    <option value="Bnk_Cur">Current Account (EGP)</option>
+                    <option value="Bnk_Sav">Savings Account</option>
+                    <option value="Bnk_Usd">USD Account</option>
+                    <option value="Bnk_Eur">EUR Account</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+                <select class="form-select" id="recon-status" onchange="filterRecon()">
+                    <option value="">All Statuses</option>
+                    <option value="unreconciled">Unreconciled</option>
+                    <option value="reconciled">Reconciled</option>
+                    <option value="exception">Exception</option>
+                </select>
+            </div>
+        </div>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Account</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                    <th>Sub-Ledger</th>
+                    <th>PNR</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="recon-table">
+                <tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:40px">Loading transactions...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- RECON SUMMARY CARDS -->
+    <div class="grid-4" style="margin-top:20px">
+        <div class="card" style="text-align:center">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--primary-light)" id="recon-debit">—</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">Total Debits</div>
+        </div>
+        <div class="card" style="text-align:center">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent-success)" id="recon-credit">—</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">Total Credits</div>
+        </div>
+        <div class="card" style="text-align:center">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent)" id="recon-net">—</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">Net Position</div>
+        </div>
+        <div class="card" style="text-align:center">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent-warning)" id="recon-unmatched">—</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">Unmatched</div>
+        </div>
+    </div>
+</div>
+
+<!-- JOURNAL ENTRIES TAB -->
+<div id="tab-journal" style="display:none">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Journal Entries</div>
+                <div class="card-subtitle">Double-entry bookkeeping ledger</div>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="openJournalModal()">+ New Entry</button>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Entry #</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Account</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="journal-table">
+                <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:40px">Loading journal entries...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- COA TAB -->
+<div id="tab-coa" style="display:none">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Chart of Accounts</div>
+                <div class="card-subtitle">General ledger account structure</div>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Account Code</th>
+                    <th>Account Name</th>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Balance (EGP)</th>
+                    <th>Active</th>
+                </tr>
+            </thead>
+            <tbody id="coa-table">
+                <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:40px">Loading COA...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- FINANCIAL REPORTS TAB -->
+<div id="tab-reports" style="display:none">
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">Event Profitability</div>
+                    <div class="card-subtitle">P&L by event</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="profitChart"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">Cash Flow</div>
+                    <div class="card-subtitle">Monthly in/out flow</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="cashflowChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" style="margin-top:20px">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Financial Summary Report</div>
+                <div class="card-subtitle">Comprehensive financial overview</div>
+            </div>
+            <button class="btn btn-sm btn-outline" onclick="generateReport()">📄 Generate PDF</button>
+        </div>
+        <div class="grid-3" id="financial-summary">
+            <div style="text-align:center;padding:20px;color:var(--text-muted)">Loading report...</div>
+        </div>
+    </div>
+</div>
+
+<!-- JOURNAL ENTRY MODAL -->
+<div class="modal-overlay" id="journal-modal">
+    <div class="modal" style="max-width:600px">
+        <div class="modal-header">
+            <div>
+                <h3>New Journal Entry</h3>
+                <p class="card-subtitle">Create double-entry journal</p>
+            </div>
+            <button class="modal-close" onclick="closeJournalModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="journal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Entry Date</label>
+                        <input type="date" class="form-input" id="journal-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reference</label>
+                        <input type="text" class="form-input" id="journal-ref" placeholder="JV-2026-001">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="journal-desc" placeholder="Journal entry description..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Debit Account</label>
+                        <select class="form-select" id="journal-debit-acc">
+                            <option value="">Select account...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Debit Amount</label>
+                        <input type="number" step="0.01" class="form-input" id="journal-debit-amt" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Credit Account</label>
+                        <select class="form-select" id="journal-credit-acc">
+                            <option value="">Select account...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Credit Amount</label>
+                        <input type="number" step="0.01" class="form-input" id="journal-credit-amt" placeholder="0.00">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeJournalModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveJournalEntry()">Post Entry</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let reconData = [];
+let coaData = [];
+let profitChart, cashflowChart;
+
+async function loadFinanceData() {
+    await loadRecon();
+    await loadJournal();
+    await loadCOA();
+    await loadFinanceKPIs();
+    await loadFinancialReports();
+}
+
+async function loadRecon() {
+    try {
+        const res = await fetch('/api/v1/bank-reconciliation?limit=100', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        reconData = data.transactions || [];
+        renderRecon();
+        updateReconSummary();
+    } catch (e) {
+        document.getElementById('recon-table').innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--accent-danger);padding:40px">Error: ${e.message}</td></tr>`;
+    }
+}
+
+function renderRecon() {
+    const tbody = document.getElementById('recon-table');
+    if (reconData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:40px">No transactions found</td></tr>';
+        return;
+    }
+    tbody.innerHTML = reconData.slice(0, 50).map(t => `
+        <tr>
+            <td style="color:var(--text-muted);font-size:0.8rem">${t.transaction_date ? new Date(t.transaction_date).toLocaleDateString() : '—'}</td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.account_code || '—'}</code></td>
+            <td>${t.description || '—'}</td>
+            <td><span class="badge badge-draft">${t.transaction_type || '—'}</span></td>
+            <td style="color:var(--accent-danger)">${t.debit ? 'EGP ' + Number(t.debit).toLocaleString() : '—'}</td>
+            <td style="color:var(--accent-success)">${t.credit ? 'EGP ' + Number(t.credit).toLocaleString() : '—'}</td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.sub_ledger_code || '—'}</code></td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.pnr_id || '—'}</code></td>
+            <td><span class="badge badge-${t.recon_status || 'unreconciled'}">${(t.recon_status || 'unreconciled').replace('_', ' ')}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline" onclick="reconcileItem(${t.transaction_id})">✓</button>
+                <button class="btn btn-sm btn-outline" onclick="flagItem(${t.transaction_id})">⚑</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterRecon() {
+    const search = document.getElementById('recon-search').value.toLowerCase();
+    const account = document.getElementById('recon-account').value;
+    const status = document.getElementById('recon-status').value;
+    
+    const filtered = reconData.filter(t => {
+        const matchSearch = !search || (t.description || '').toLowerCase().includes(search);
+        const matchAccount = !account || t.account_code === account;
+        const matchStatus = !status || t.recon_status === status;
+        return matchSearch && matchAccount && matchStatus;
+    });
+    
+    const tbody = document.getElementById('recon-table');
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:40px">No matching transactions</td></tr>';
+        return;
+    }
+    tbody.innerHTML = filtered.slice(0, 50).map(t => `
+        <tr>
+            <td style="color:var(--text-muted);font-size:0.8rem">${t.transaction_date ? new Date(t.transaction_date).toLocaleDateString() : '—'}</td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.account_code || '—'}</code></td>
+            <td>${t.description || '—'}</td>
+            <td><span class="badge badge-draft">${t.transaction_type || '—'}</span></td>
+            <td style="color:var(--accent-danger)">${t.debit ? 'EGP ' + Number(t.debit).toLocaleString() : '—'}</td>
+            <td style="color:var(--accent-success)">${t.credit ? 'EGP ' + Number(t.credit).toLocaleString() : '—'}</td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.sub_ledger_code || '—'}</code></td>
+            <td><code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;font-size:0.75rem">${t.pnr_id || '—'}</code></td>
+            <td><span class="badge badge-${t.recon_status || 'unreconciled'}">${(t.recon_status || 'unreconciled').replace('_', ' ')}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline" onclick="reconcileItem(${t.transaction_id})">✓</button>
+                <button class="btn btn-sm btn-outline" onclick="flagItem(${t.transaction_id})">⚑</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateReconSummary() {
+    const totalDebit = reconData.reduce((s, t) => s + (t.debit || 0), 0);
+    const totalCredit = reconData.reduce((s, t) => s + (t.credit || 0), 0);
+    const unmatched = reconData.filter(t => t.recon_status !== 'reconciled').length;
+    
+    document.getElementById('recon-debit').textContent = 'EGP ' + (totalDebit / 1000000).toFixed(1) + 'M';
+    document.getElementById('recon-credit').textContent = 'EGP ' + (totalCredit / 1000000).toFixed(1) + 'M';
+    document.getElementById('recon-net').textContent = 'EGP ' + ((totalCredit - totalDebit) / 1000000).toFixed(1) + 'M';
+    document.getElementById('recon-unmatched').textContent = unmatched.toLocaleString();
+}
+
+async function loadJournal() {
+    try {
+        const res = await fetch('/api/v2/journal?limit=50', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        const entries = data.entries || [];
+        
+        const tbody = document.getElementById('journal-table');
+        if (entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:40px">No journal entries found</td></tr>';
+            return;
+        }
+        tbody.innerHTML = entries.map(j => `
+            <tr>
+                <td><strong>${j.entry_number || '—'}</strong></td>
+                <td style="color:var(--text-muted);font-size:0.8rem">${j.entry_date ? new Date(j.entry_date).toLocaleDateString() : '—'}</td>
+                <td>${j.description || '—'}</td>
+                <td>${j.account_name || '—'}</td>
+                <td style="color:var(--accent-danger)">${j.debit ? 'EGP ' + Number(j.debit).toLocaleString() : '—'}</td>
+                <td style="color:var(--accent-success)">${j.credit ? 'EGP ' + Number(j.credit).toLocaleString() : '—'}</td>
+                <td><span class="badge badge-draft">${j.source || 'manual'}</span></td>
+                <td><span class="badge badge-${j.status || 'posted'}">${j.status || 'posted'}</span></td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        document.getElementById('journal-table').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--accent-danger);padding:40px">Error: ${e.message}</td></tr>`;
+    }
+}
+
+async function loadCOA() {
+    try {
+        const res = await fetch('/api/v1/coa?limit=200', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        coaData = data.accounts || [];
+        
+        const tbody = document.getElementById('coa-table');
+        if (coaData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:40px">No accounts found</td></tr>';
+            return;
+        }
+        tbody.innerHTML = coaData.map(a => `
+            <tr>
+                <td><code style="background:var(--bg-hover);padding:2px 8px;border-radius:4px;font-size:0.8rem;font-weight:600">${a.account_code || '—'}</code></td>
+                <td><strong>${a.account_name || '—'}</strong></td>
+                <td>${a.category || '—'}</td>
+                <td><span class="badge badge-draft">${a.account_type || '—'}</span></td>
+                <td style="font-weight:600">${a.balance ? 'EGP ' + Number(a.balance).toLocaleString() : '—'}</td>
+                <td><span class="badge badge-${a.is_active ? 'completed' : 'cancelled'}">${a.is_active ? 'Active' : 'Inactive'}</span></td>
+            </tr>
+        `).join('');
+        
+        const options = coaData.map(a => `<option value="${a.account_id}">${a.account_code} — ${a.account_name}</option>`).join('');
+        document.getElementById('journal-debit-acc').innerHTML = '<option value="">Select account...</option>' + options;
+        document.getElementById('journal-credit-acc').innerHTML = '<option value="">Select account...</option>' + options;
+    } catch (e) {
+        document.getElementById('coa-table').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--accent-danger);padding:40px">Error: ${e.message}</td></tr>`;
+    }
+}
+
+async function loadFinanceKPIs() {
+    try {
+        const res = await fetch('/api/v1/dashboard/summary', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById('kpi-bank-total').textContent = (data.total_bank_transactions || 0).toLocaleString();
+        document.getElementById('kpi-journal').textContent = (data.total_journal_entries || 0).toLocaleString();
+        document.getElementById('kpi-reconciled').textContent = (data.reconciled_items || 0).toLocaleString();
+        document.getElementById('kpi-exceptions').textContent = (data.exception_count || 0).toLocaleString();
+    } catch (e) { console.error('Finance KPIs failed:', e); }
+}
+
+async function loadFinancialReports() {
+    try {
+        const res = await fetch('/api/v1/reports/event-profitability?limit=10', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        if (profitChart) profitChart.destroy();
+        profitChart = new Chart(document.getElementById('profitChart'), {
+            type: 'bar',
+            data: {
+                labels: (data.events || []).map(e => e.event_code || '—'),
+                datasets: [
+                    { label: 'Revenue', data: (data.events || []).map(e => e.revenue || 0), backgroundColor: '#324B7F' },
+                    { label: 'Cost', data: (data.events || []).map(e => e.cost || 0), backgroundColor: '#e74c3c' },
+                    { label: 'Profit', data: (data.events || []).map(e => e.profit || 0), backgroundColor: '#2ecc71' }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#a0a0b0' } } },
+                scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0a0b0' } }, x: { grid: { display: false }, ticks: { color: '#a0a0b0' } } }
+            }
+        });
+        
+        if (cashflowChart) cashflowChart.destroy();
+        cashflowChart = new Chart(document.getElementById('cashflowChart'), {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun'],
+                datasets: [
+                    { label: 'Inflow', data: [1200000,1500000,1800000,1400000,2000000,2200000], borderColor: '#2ecc71', backgroundColor: 'rgba(46,204,113,0.1)', fill: true, tension: 0.4 },
+                    { label: 'Outflow', data: [800000,1000000,1200000,1100000,1300000,1500000], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', fill: true, tension: 0.4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#a0a0b0' } } },
+                scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0a0b0' } }, x: { grid: { display: false }, ticks: { color: '#a0a0b0' } } }
+            }
+        });
+        
+        const summary = data.summary || {};
+        document.getElementById('financial-summary').innerHTML = `
+            <div class="card" style="text-align:center">
+                <div style="font-size:1.8rem;font-weight:700;color:var(--primary-light)">EGP ${(summary.total_revenue || 0).toLocaleString()}</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">Total Revenue</div>
+            </div>
+            <div class="card" style="text-align:center">
+                <div style="font-size:1.8rem;font-weight:700;color:var(--accent-danger)">EGP ${(summary.total_cost || 0).toLocaleString()}</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">Total Cost</div>
+            </div>
+            <div class="card" style="text-align:center">
+                <div style="font-size:1.8rem;font-weight:700;color:var(--accent-success)">EGP ${(summary.total_profit || 0).toLocaleString()}</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">Net Profit</div>
+            </div>
+        `;
+    } catch (e) { console.error('Financial reports failed:', e); }
+}
+
+function switchTab(tabName, el) {
+    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-recon').style.display = tabName === 'recon' ? 'block' : 'none';
+    document.getElementById('tab-journal').style.display = tabName === 'journal' ? 'block' : 'none';
+    document.getElementById('tab-coa').style.display = tabName === 'coa' ? 'block' : 'none';
+    document.getElementById('tab-reports').style.display = tabName === 'reports' ? 'block' : 'none';
+}
+
+function openJournalModal() {
+    document.getElementById('journal-form').reset();
+    document.getElementById('journal-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('journal-modal').classList.add('show');
+}
+
+function closeJournalModal() {
+    document.getElementById('journal-modal').classList.remove('show');
+}
+
+async function saveJournalEntry() {
+    const payload = {
+        entry_date: document.getElementById('journal-date').value,
+        reference: document.getElementById('journal-ref').value,
+        description: document.getElementById('journal-desc').value,
+        debit_account_id: parseInt(document.getElementById('journal-debit-acc').value),
+        debit_amount: parseFloat(document.getElementById('journal-debit-amt').value) || 0,
+        credit_account_id: parseInt(document.getElementById('journal-credit-acc').value),
+        credit_amount: parseFloat(document.getElementById('journal-credit-amt').value) || 0
+    };
+    
+    if (payload.debit_amount !== payload.credit_amount) {
+        showToast('Debit and credit amounts must match', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/v2/journal', {
+            method: 'POST',
+            headers: { 
+                'Authorization': 'Bearer ' + authToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+            showToast('Journal entry posted');
+            closeJournalModal();
+            loadJournal();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Failed', 'error');
+        }
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+function reconcileItem(id) { showToast('Reconcile item ' + id + ' — coming in v2.3', 'warning'); }
+function flagItem(id) { showToast('Flag item ' + id + ' — coming in v2.3', 'warning'); }
+function runSmartRecon() { showToast('Smart reconciliation — coming in v2.3', 'warning'); }
+function exportRecon() { showToast('Export — coming in v2.3', 'warning'); }
+function generateReport() { showToast('PDF generation — coming in v2.3', 'warning'); }
+function exportFinance() { showToast('Export — coming in v2.3', 'warning'); }
+
+document.addEventListener('DOMContentLoaded', loadFinanceData);
+</script>
+{% endblock %}

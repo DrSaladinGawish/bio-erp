@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchasing — IncentiveHouse ERP</title>
+    <link rel="stylesheet" href="/static/css/erp-theme.css">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-card: #334155;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #475569;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: url('/static/img/world-map-dark.svg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .app-header {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .brand { display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; }
+        .brand-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 6px; display: grid; place-items: center; }
+        .user-bar { display: flex; align-items: center; gap: 1rem; }
+        .user-bar input {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: var(--accent-hover); }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: rgba(59,130,246,0.1); }
+        .layout { display: flex; min-height: calc(100vh - 60px); }
+        .sidebar {
+            width: 220px;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--border);
+            padding: 1rem 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: rgba(59,130,246,0.08);
+            color: var(--text);
+            border-left-color: var(--accent);
+        }
+        .nav-item.active { font-weight: 600; }
+        .main { flex: 1; padding: 1.5rem; overflow-y: auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .page-title { font-size: 1.5rem; font-weight: 700; }
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            backdrop-filter: blur(4px);
+        }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+        .stat-value { font-size: 1.5rem; font-weight: 700; }
+        .stat-delta { font-size: 0.8rem; margin-top: 0.25rem; }
+        .delta-up { color: var(--success); }
+        .delta-down { color: var(--danger); }
+        .panel {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(4px);
+        }
+        .panel-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-title { font-weight: 600; font-size: 1rem; }
+        .panel-body { padding: 1.25rem; }
+        .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .toolbar input, .toolbar select {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        .data-table th {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .data-table td { padding: 0.75rem; border-bottom: 1px solid rgba(71,85,105,0.4); }
+        .data-table tr:hover td { background: rgba(59,130,246,0.04); }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-pending { background: rgba(245,158,11,0.15); color: var(--warning); }
+        .badge-approved { background: rgba(16,185,129,0.15); color: var(--success); }
+        .badge-rejected { background: rgba(239,68,68,0.15); color: var(--danger); }
+        .badge-draft { background: rgba(148,163,184,0.15); color: var(--text-muted); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 0.4rem; }
+        .dot-green { background: var(--success); box-shadow: 0 0 6px var(--success); }
+        .dot-amber { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+        .action-btns { display: flex; gap: 0.4rem; }
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.3rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .pagination { display: flex; justify-content: flex-end; gap: 0.4rem; margin-top: 1rem; }
+        .page-btn {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.4rem 0.7rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .page-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .q-card {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s;
+            text-decoration: none;
+            color: var(--text);
+        }
+        .q-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+        .q-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .q-title { font-weight: 600; margin-bottom: 0.25rem; }
+        .q-desc { font-size: 0.8rem; color: var(--text-muted); }
+        @media (max-width: 1024px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">
+            <div class="brand-icon">IH</div>
+            <span>IncentiveHouse ERP</span>
+        </div>
+        <div class="user-bar">
+            <input type="text" placeholder="Global search..." id="globalSearch">
+            <span style="color: var(--text-muted); font-size: 0.875rem;">{{ user_name or 'Administrator' }}</span>
+            <button class="btn btn-outline" onclick="location.href='/logout'">Logout</button>
+        </div>
+    </header>
+
+    <div class="layout">
+        <nav class="sidebar">
+            <a href="/dashboard" class="nav-item">📊 Dashboard</a>
+            <a href="/analysis" class="nav-item">📈 Analysis</a>
+            <a href="/sales" class="nav-item">🛒 Sales</a>
+            <a href="/purchasing" class="nav-item active">📦 Purchasing</a>
+            <a href="/events" class="nav-item">🎉 Events</a>
+            <a href="/operations" class="nav-item">⚙️ Operation</a>
+            <a href="/employees" class="nav-item">👥 Employees</a>
+            <a href="/accounts" class="nav-item">💰 Accounts</a>
+            <a href="/preferences" class="nav-item">🔧 Preferences</a>
+        </nav>
+
+        <main class="main">
+            <div class="page-header">
+                <h1 class="page-title">Purchasing</h1>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button class="btn" onclick="createPO()">+ New Purchase Order</button>
+                    <button class="btn btn-outline" onclick="exportData()">⬇ Export</button>
+                </div>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">Open POs</div>
+                    <div class="stat-value" id="statOpen">0</div>
+                    <div class="stat-delta delta-up">↑ 12% vs last month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Pending Approval</div>
+                    <div class="stat-value" id="statPending">0</div>
+                    <div class="stat-delta delta-down">3 urgent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">YTD Spend</div>
+                    <div class="stat-value" id="statSpend">EGP 0</div>
+                    <div class="stat-delta delta-up">↑ 8.4%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Lead Time</div>
+                    <div class="stat-value" id="statLead">0d</div>
+                    <div class="stat-delta delta-up">↓ 1.2 days</div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <a href="/purchasing/requests" class="q-card">
+                    <div class="q-icon">📝</div>
+                    <div class="q-title">Purchase Requests</div>
+                    <div class="q-desc">Create and track internal requisitions</div>
+                </a>
+                <a href="/purchasing/orders" class="q-card">
+                    <div class="q-icon">📋</div>
+                    <div class="q-title">Purchase Orders</div>
+                    <div class="q-desc">Manage vendor POs and line items</div>
+                </a>
+                <a href="/purchasing/vendors" class="q-card">
+                    <div class="q-icon">🏢</div>
+                    <div class="q-title">Vendor Management</div>
+                    <div class="q-desc">Vendor master, ratings, and contracts</div>
+                </a>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Recent Purchase Orders</span>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" onclick="refreshGrid()">🔄 Refresh</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="toolbar">
+                        <input type="text" id="searchPO" placeholder="Search PO #, vendor, item..." onkeyup="filterGrid()" style="width: 260px;">
+                        <select id="filterStatus" onchange="filterGrid()">
+                            <option value="">All Status</option>
+                            <option value="draft">Draft</option>
+                            <option value="pending">Pending Approval</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        <select id="filterVendor">
+                            <option value="">All Vendors</option>
+                        </select>
+                        <input type="date" id="filterFrom" placeholder="From">
+                        <input type="date" id="filterTo" placeholder="To">
+                    </div>
+                    <table class="data-table" id="poTable">
+                        <thead>
+                            <tr>
+                                <th>PO Number</th>
+                                <th>Vendor</th>
+                                <th>Description</th>
+                                <th>Amount (EGP)</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Expected</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="poTableBody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                    <div class="pagination" id="pagination">
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">3</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Vendor Performance Snapshot</span>
+                </div>
+                <div class="panel-body">
+                    <table class="data-table" id="vendorTable">
+                        <thead>
+                            <tr>
+                                <th>Vendor</th>
+                                <th>On-Time %</th>
+                                <th>Quality Score</th>
+                                <th>Open POs</th>
+                                <th>YTD Spend</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vendorTableBody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const poData = [
+            { id: 'PO-2026-0042', vendor: 'CISCO Systems', desc: 'Network switches & routers', amount: 284750, status: 'approved', created: '2026-05-28', expected: '2026-06-15' },
+            { id: 'PO-2026-0041', vendor: 'Microsoft Corp', desc: 'Office 365 licenses Q3', amount: 156000, status: 'pending', created: '2026-05-27', expected: '2026-06-01' },
+            { id: 'PO-2026-0040', vendor: 'NOVENTIQ', desc: 'IT support services', amount: 95000, status: 'approved', created: '2026-05-25', expected: '2026-06-10' },
+            { id: 'PO-2026-0039', vendor: 'ABBOTT Labs', desc: 'Medical equipment spare parts', amount: 42300, status: 'draft', created: '2026-05-24', expected: '2026-07-01' },
+            { id: 'PO-2026-0038', vendor: 'Local Supplier', desc: 'Office stationery bulk', amount: 12500, status: 'approved', created: '2026-05-22', expected: '2026-05-30' },
+            { id: 'PO-2026-0037', vendor: 'CISCO Systems', desc: 'Firewall upgrade project', amount: 198500, status: 'rejected', created: '2026-05-20', expected: '2026-06-20' },
+        ];
+
+        const vendorData = [
+            { name: 'CISCO Systems', onTime: 94, quality: 4.6, open: 2, spend: 483250, rating: 'A' },
+            { name: 'Microsoft Corp', onTime: 100, quality: 4.8, open: 1, spend: 156000, rating: 'A+' },
+            { name: 'NOVENTIQ', onTime: 88, quality: 4.2, open: 1, spend: 95000, rating: 'B+' },
+            { name: 'ABBOTT Labs', onTime: 91, quality: 4.5, open: 1, spend: 42300, rating: 'A-' },
+        ];
+
+        function renderPOTable(data) {
+            const tbody = document.getElementById('poTableBody');
+            tbody.innerHTML = data.map(po => {
+                const statusClass = {
+                    'draft': 'badge-draft',
+                    'pending': 'badge-pending',
+                    'approved': 'badge-approved',
+                    'rejected': 'badge-rejected'
+                }[po.status] || 'badge-draft';
+                return `<tr>
+                    <td><strong>${po.id}</strong></td>
+                    <td>${po.vendor}</td>
+                    <td>${po.desc}</td>
+                    <td>EGP ${po.amount.toLocaleString()}</td>
+                    <td><span class="badge ${statusClass}">${po.status}</span></td>
+                    <td>${po.created}</td>
+                    <td>${po.expected}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="action-btn" onclick="viewPO('${po.id}')">View</button>
+                            <button class="action-btn" onclick="editPO('${po.id}')">Edit</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderVendorTable(data) {
+            const tbody = document.getElementById('vendorTableBody');
+            tbody.innerHTML = data.map(v => {
+                const dotClass = v.onTime >= 95 ? 'dot-green' : v.onTime >= 85 ? 'dot-amber' : '';
+                return `<tr>
+                    <td><strong>${v.name}</strong></td>
+                    <td><span class="status-dot ${dotClass}"></span>${v.onTime}%</td>
+                    <td>${'★'.repeat(Math.floor(v.quality))}${'☆'.repeat(5-Math.floor(v.quality))} ${v.quality}</td>
+                    <td>${v.open}</td>
+                    <td>EGP ${v.spend.toLocaleString()}</td>
+                    <td><span class="badge badge-approved">${v.rating}</span></td>
+                </tr>`;
+            }).join('');
+        }
+
+        function filterGrid() {
+            const search = document.getElementById('searchPO').value.toLowerCase();
+            const status = document.getElementById('filterStatus').value;
+            const filtered = poData.filter(po => {
+                const matchSearch = !search || po.id.toLowerCase().includes(search) || po.vendor.toLowerCase().includes(search) || po.desc.toLowerCase().includes(search);
+                const matchStatus = !status || po.status === status;
+                return matchSearch && matchStatus;
+            });
+            renderPOTable(filtered);
+        }
+
+        function createPO() { alert('Create PO modal — wire to POST /api/v1/purchase-orders'); }
+        function exportData() { alert('Export to Excel/CSV — wire to GET /api/v1/purchase-orders/export'); }
+        function refreshGrid() { renderPOTable(poData); renderVendorTable(vendorData); }
+        function viewPO(id) { window.location.href = `/purchasing/orders/${id}`; }
+        function editPO(id) { window.location.href = `/purchasing/orders/${id}/edit`; }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPOTable(poData);
+            renderVendorTable(vendorData);
+            document.getElementById('statOpen').textContent = poData.filter(p => p.status === 'approved').length;
+            document.getElementById('statPending').textContent = poData.filter(p => p.status === 'pending').length;
+            document.getElementById('statSpend').textContent = 'EGP ' + poData.reduce((a,b) => a + b.amount, 0).toLocaleString();
+            document.getElementById('statLead').textContent = '14d';
+        });
+    </script>
+</body>
+</html>

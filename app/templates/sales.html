@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}Sales — IncentiveHouse ERP{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Sales</h1>
+        <p class="card-subtitle">Sales invoices, quotes, and revenue tracking</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline" onclick="exportSales()">📥 Export</button>
+        <button class="btn btn-primary" onclick="openInvoiceModal()">+ New Invoice</button>
+    </div>
+</div>
+
+<!-- SALES KPIs -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon blue">📄</div>
+        <div class="kpi-value" id="kpi-invoices">—</div>
+        <div class="kpi-label">Total Invoices</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon gold">💵</div>
+        <div class="kpi-value" id="kpi-sales-revenue">—</div>
+        <div class="kpi-label">Total Revenue (EGP)</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green">✅</div>
+        <div class="kpi-value" id="kpi-paid">—</div>
+        <div class="kpi-label">Paid Invoices</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon red">⏳</div>
+        <div class="kpi-value" id="kpi-outstanding">—</div>
+        <div class="kpi-label">Outstanding (EGP)</div>
+    </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('invoices', this)">Sales Invoices</div>
+    <div class="tab" onclick="switchTab('quotes', this)">Quotes</div>
+    <div class="tab" onclick="switchTab('categories', this)">Categories</div>
+</div>
+
+<!-- INVOICES TABLE -->
+<div id="tab-invoices">
+    <div class="card">
+        <div class="form-row" style="margin-bottom:16px">
+            <div class="form-group" style="margin-bottom:0">
+                <input type="text" class="form-input" id="invoice-search" placeholder="Search invoices..." oninput="filterInvoices()">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+                <select class="form-select" id="invoice-status" onchange="filterInvoices()">
+                    <option value="">All Statuses</option>
+                    <option value="draft">Draft</option>
+                    <option value="sent">Sent</option>
+                    <option value="paid">Paid</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+                <select class="form-select" id="invoice-client" onchange="filterInvoices()">
+                    <option value="">All Clients</option>
+                </select>
+            </div>
+        </div>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Client</th>
+                    <th>Event</th>
+                    <th>Date</th>
+                    <th>Due Date</th>
+                    <th>Amount (EGP)</th>
+                    <th>VAT (14%)</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="invoices-table">
+                <tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:40px">Loading invoices...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- QUOTES TAB -->
+<div id="tab-quotes" style="display:none">
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <h3 style="color:var(--text-primary);margin-bottom:8px">Quotes Module</h3>
+            <p>Quote management coming in v2.3</p>
+        </div>
+    </div>
+</div>
+
+<!-- CATEGORIES TAB -->
+<div id="tab-categories" style="display:none">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Sales Categories</div>
+                <div class="card-subtitle">Service categories with sub-categories</div>
+            </div>
+        </div>
+        <table class="data-table" id="categories-table">
+            <thead>
+                <tr><th>Category</th><th>Sub-Categories</th><th>Fields</th><th>Revenue (EGP)</th></tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:40px">Loading categories...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- INVOICE MODAL -->
+<div class="modal-overlay" id="invoice-modal">
+    <div class="modal" style="max-width:700px">
+        <div class="modal-header">
+            <div>
+                <h3 id="inv-modal-title">New Invoice</h3>
+                <p class="card-subtitle">Generate client invoice</p>
+            </div>
+            <button class="modal-close" onclick="closeInvoiceModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="invoice-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Client *</label>
+                        <select class="form-select" id="inv-client" required>
+                            <option value="">Select client...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Event</label>
+                        <select class="form-select" id="inv-event">
+                            <option value="">Select event...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Invoice Date</label>
+                        <input type="date" class="form-input" id="inv-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" class="form-input" id="inv-due-date" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="inv-description" placeholder="Invoice description..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Subtotal (EGP)</label>
+                        <input type="number" step="0.01" class="form-input" id="inv-subtotal" placeholder="0.00" oninput="calcTotal()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">VAT 14%</label>
+                        <input type="number" step="0.01" class="form-input" id="inv-vat" readonly style="background:var(--bg-hover)">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Total (EGP)</label>
+                        <input type="number" step="0.01" class="form-input" id="inv-total" readonly style="background:var(--bg-hover);font-weight:700">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeInvoiceModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveInvoice()">Generate Invoice</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let invoicesData = [];
+
+async function loadSalesData() {
+    await loadInvoices();
+    await loadSalesKPIs();
+    await loadCategories();
+    await loadClientsForSales();
+}
+
+async function loadInvoices() {
+    try {
+        const res = await fetch('/api/v1/finance/invoices?limit=50', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        invoicesData = data.invoices || [];
+        renderInvoices();
+    } catch (e) {
+        document.getElementById('invoices-table').innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--accent-danger);padding:40px">Error: ${e.message}</td></tr>`;
+    }
+}
+
+function renderInvoices() {
+    const tbody = document.getElementById('invoices-table');
+    if (invoicesData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:40px">No invoices found</td></tr>';
+        return;
+    }
+    tbody.innerHTML = invoicesData.map(inv => `
+        <tr>
+            <td><strong>${inv.invoice_number || '—'}</strong></td>
+            <td>${inv.client_name || '—'}</td>
+            <td>${inv.event_code || '—'}</td>
+            <td style="color:var(--text-muted)">${inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString() : '—'}</td>
+            <td style="color:var(--text-muted)">${inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</td>
+            <td>${inv.subtotal ? 'EGP ' + Number(inv.subtotal).toLocaleString() : '—'}</td>
+            <td>${inv.vat_amount ? 'EGP ' + Number(inv.vat_amount).toLocaleString() : '—'}</td>
+            <td style="font-weight:600">${inv.total_amount ? 'EGP ' + Number(inv.total_amount).toLocaleString() : '—'}</td>
+            <td><span class="badge badge-${inv.status || 'draft'}">${(inv.status || 'draft').replace('_', ' ')}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline" onclick="viewInvoice(${inv.invoice_id})">👁️</button>
+                <button class="btn btn-sm btn-outline" onclick="downloadInvoice(${inv.invoice_id})">📄</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterInvoices() {
+    const search = document.getElementById('invoice-search').value.toLowerCase();
+    const status = document.getElementById('invoice-status').value;
+    const client = document.getElementById('invoice-client').value;
+    
+    const filtered = invoicesData.filter(inv => {
+        const matchSearch = !search || (inv.invoice_number || '').toLowerCase().includes(search) || (inv.client_name || '').toLowerCase().includes(search);
+        const matchStatus = !status || inv.status === status;
+        const matchClient = !client || inv.client_id == client;
+        return matchSearch && matchStatus && matchClient;
+    });
+    
+    const tbody = document.getElementById('invoices-table');
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:40px">No matching invoices</td></tr>';
+        return;
+    }
+    tbody.innerHTML = filtered.map(inv => `
+        <tr>
+            <td><strong>${inv.invoice_number || '—'}</strong></td>
+            <td>${inv.client_name || '—'}</td>
+            <td>${inv.event_code || '—'}</td>
+            <td style="color:var(--text-muted)">${inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString() : '—'}</td>
+            <td style="color:var(--text-muted)">${inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</td>
+            <td>${inv.subtotal ? 'EGP ' + Number(inv.subtotal).toLocaleString() : '—'}</td>
+            <td>${inv.vat_amount ? 'EGP ' + Number(inv.vat_amount).toLocaleString() : '—'}</td>
+            <td style="font-weight:600">${inv.total_amount ? 'EGP ' + Number(inv.total_amount).toLocaleString() : '—'}</td>
+            <td><span class="badge badge-${inv.status || 'draft'}">${(inv.status || 'draft').replace('_', ' ')}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline" onclick="viewInvoice(${inv.invoice_id})">👁️</button>
+                <button class="btn btn-sm btn-outline" onclick="downloadInvoice(${inv.invoice_id})">📄</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function loadSalesKPIs() {
+    try {
+        const res = await fetch('/api/v1/dashboard/summary', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById('kpi-invoices').textContent = (data.total_invoices || 0).toLocaleString();
+        document.getElementById('kpi-sales-revenue').textContent = 'EGP ' + ((data.total_revenue || 0) / 1000000).toFixed(1) + 'M';
+        document.getElementById('kpi-paid').textContent = (data.paid_invoices || 0).toLocaleString();
+        document.getElementById('kpi-outstanding').textContent = 'EGP ' + ((data.outstanding_amount || 0) / 1000000).toFixed(1) + 'M';
+    } catch (e) { console.error('Sales KPIs failed:', e); }
+}
+
+async function loadCategories() {
+    try {
+        const res = await fetch('/api/v1/categories', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const tbody = document.querySelector('#categories-table tbody');
+        if (!data.categories || data.categories.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:40px">No categories found</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.categories.map(c => `
+            <tr>
+                <td><strong>${c.category_name}</strong></td>
+                <td>${c.sub_category_count || 0}</td>
+                <td>${c.field_count || 0}</td>
+                <td style="font-weight:600">${c.revenue ? 'EGP ' + Number(c.revenue).toLocaleString() : '—'}</td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error('Categories failed:', e); }
+}
+
+async function loadClientsForSales() {
+    try {
+        const res = await fetch('/api/v1/clients?limit=200', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const clients = data.clients || [];
+        
+        document.getElementById('invoice-client').innerHTML = '<option value="">All Clients</option>' + 
+            clients.map(c => `<option value="${c.client_id}">${c.client_name}</option>`).join('');
+        document.getElementById('inv-client').innerHTML = '<option value="">Select client...</option>' + 
+            clients.map(c => `<option value="${c.client_id}">${c.client_name}</option>`).join('');
+    } catch (e) { console.error('Clients load failed:', e); }
+}
+
+function switchTab(tabName, el) {
+    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-invoices').style.display = tabName === 'invoices' ? 'block' : 'none';
+    document.getElementById('tab-quotes').style.display = tabName === 'quotes' ? 'block' : 'none';
+    document.getElementById('tab-categories').style.display = tabName === 'categories' ? 'block' : 'none';
+}
+
+function openInvoiceModal() {
+    document.getElementById('invoice-form').reset();
+    document.getElementById('inv-date').value = new Date().toISOString().split('T')[0];
+    const due = new Date(); due.setDate(due.getDate() + 30);
+    document.getElementById('inv-due-date').value = due.toISOString().split('T')[0];
+    document.getElementById('invoice-modal').classList.add('show');
+}
+
+function closeInvoiceModal() {
+    document.getElementById('invoice-modal').classList.remove('show');
+}
+
+function calcTotal() {
+    const subtotal = parseFloat(document.getElementById('inv-subtotal').value) || 0;
+    const vat = subtotal * 0.14;
+    document.getElementById('inv-vat').value = vat.toFixed(2);
+    document.getElementById('inv-total').value = (subtotal + vat).toFixed(2);
+}
+
+async function saveInvoice() {
+    const payload = {
+        client_id: parseInt(document.getElementById('inv-client').value),
+        event_id: parseInt(document.getElementById('inv-event').value) || null,
+        invoice_date: document.getElementById('inv-date').value,
+        due_date: document.getElementById('inv-due-date').value,
+        description: document.getElementById('inv-description').value,
+        subtotal: parseFloat(document.getElementById('inv-subtotal').value) || 0,
+        vat_amount: parseFloat(document.getElementById('inv-vat').value) || 0,
+        total_amount: parseFloat(document.getElementById('inv-total').value) || 0,
+        status: 'draft'
+    };
+    
+    try {
+        const res = await fetch('/api/v1/finance/generate-invoice', {
+            method: 'POST',
+            headers: { 
+                'Authorization': 'Bearer ' + authToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+            showToast('Invoice generated successfully');
+            closeInvoiceModal();
+            loadInvoices();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Failed', 'error');
+        }
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+function viewInvoice(id) { showToast('View invoice ' + id + ' — coming in v2.3', 'warning'); }
+function downloadInvoice(id) { showToast('Download PDF — coming in v2.3', 'warning'); }
+function exportSales() { showToast('Export — coming in v2.3', 'warning'); }
+
+document.addEventListener('DOMContentLoaded', loadSalesData);
+</script>
+{% endblock %}

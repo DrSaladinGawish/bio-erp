@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search — IncentiveHouse ERP</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-card: #334155;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #475569;
+            --success: #10b981;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: url('/static/img/world-map-dark.svg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .search-hero {
+            max-width: 900px;
+            margin: 4rem auto 2rem;
+            padding: 0 1.5rem;
+        }
+        .search-hero h1 { font-size: 2rem; margin-bottom: 1.5rem; text-align: center; }
+        .search-box {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 1rem 1.25rem 1rem 3rem;
+            font-size: 1.125rem;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-box input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.25rem;
+            opacity: 0.6;
+        }
+        .filters { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; justify-content: center; }
+        .filter-chip {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text-muted);
+        }
+        .filter-chip:hover, .filter-chip.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        .results-container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+        .result-group { margin-bottom: 2rem; }
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .result-item {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.1s, border-color 0.1s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+        .result-item:hover {
+            transform: translateX(4px);
+            border-color: var(--accent);
+        }
+        .result-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
+        .result-badge {
+            background: rgba(59,130,246,0.1);
+            color: var(--accent);
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+        .shortcut-hint {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        kbd {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-hero">
+        <h1>Global Search</h1>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search events, POs, clients, vendors, transactions..." autocomplete="off">
+        </div>
+        <div class="filters">
+            <span class="filter-chip active" data-filter="all">All</span>
+            <span class="filter-chip" data-filter="events">Events</span>
+            <span class="filter-chip" data-filter="purchase_orders">Purchase Orders</span>
+            <span class="filter-chip" data-filter="clients">Clients</span>
+            <span class="filter-chip" data-filter="vendors">Vendors</span>
+            <span class="filter-chip" data-filter="transactions">Bank Transactions</span>
+            <span class="filter-chip" data-filter="employees">Employees</span>
+        </div>
+    </div>
+
+    <div class="results-container" id="results">
+        <div class="no-results">Start typing to search across all modules...</div>
+    </div>
+
+    <div class="shortcut-hint">Press <kbd>Esc</kbd> to clear &nbsp;•&nbsp; <kbd>/</kbd> to focus search</div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const resultsContainer = document.getElementById('results');
+        let activeFilter = 'all';
+
+        const index = [
+            { type: 'events', title: 'CISCO Partner Summit 2026', meta: 'Event #EV-1042 • CISCO • 15-18 Jun 2026 • Sharm El-Sheikh', url: '/events/1042', badge: 'Event' },
+            { type: 'purchase_orders', title: 'PO-2026-0042 — Network Infrastructure', meta: 'CISCO Systems • EGP 284,750 • Approved', url: '/purchasing/orders/PO-2026-0042', badge: 'PO' },
+            { type: 'purchase_orders', title: 'PO-2026-0041 — Office 365 Licenses', meta: 'Microsoft Corp • EGP 156,000 • Pending Approval', url: '/purchasing/orders/PO-2026-0041', badge: 'PO' },
+            { type: 'clients', title: 'CISCO Systems, Inc.', meta: 'Client #CL-0084 • 12 events • EGP 3.2M lifetime', url: '/clients/84', badge: 'Client' },
+            { type: 'clients', title: 'Microsoft Corporation', meta: 'Client #CL-0044 • 8 events • EGP 1.8M lifetime', url: '/clients/44', badge: 'Client' },
+            { type: 'vendors', title: 'NOVENTIQ Egypt', meta: 'Vendor #VN-0042 • IT Services • 3 active contracts', url: '/vendors/42', badge: 'Vendor' },
+            { type: 'transactions', title: 'Bnk_TRNX-002891 — ATM Withdrawal', meta: 'Bnk_Cur • EGP 5,000 • 28 May 2026 • MR. MAGED ATM', url: '/accounts/transactions/2891', badge: 'Bank' },
+            { type: 'transactions', title: 'Bnk_TRNX-002890 — Client Payment', meta: 'Bnk_Sav • EGP 125,000 • 27 May 2026 • CISCO', url: '/accounts/transactions/2890', badge: 'Bank' },
+            { type: 'employees', title: 'Ahmed Hassan — Senior Event Manager', meta: 'EMP-0245 • Operations • since 2019', url: '/employees/245', badge: 'Staff' },
+        ];
+
+        function renderResults(query) {
+            if (!query || query.length < 2) {
+                resultsContainer.innerHTML = '<div class="no-results">Start typing to search across all modules...</div>';
+                return;
+            }
+            const q = query.toLowerCase();
+            const filtered = index.filter(item => {
+                const matchesQuery = item.title.toLowerCase().includes(q) || item.meta.toLowerCase().includes(q);
+                const matchesType = activeFilter === 'all' || item.type === activeFilter;
+                return matchesQuery && matchesType;
+            });
+
+            if (filtered.length === 0) {
+                resultsContainer.innerHTML = `<div class="no-results">No results found for "<strong>${escapeHtml(query)}</strong>"</div>`;
+                return;
+            }
+
+            const groups = {};
+            filtered.forEach(item => {
+                groups[item.type] = groups[item.type] || [];
+                groups[item.type].push(item);
+            });
+
+            const typeLabels = {
+                events: '🎉 Events',
+                purchase_orders: '📦 Purchase Orders',
+                clients: '🏢 Clients',
+                vendors: '🤝 Vendors',
+                transactions: '💰 Bank Transactions',
+                employees: '👥 Employees'
+            };
+
+            resultsContainer.innerHTML = Object.keys(groups).map(type => `
+                <div class="result-group">
+                    <div class="group-header">${typeLabels[type] || type} <span style="margin-left:auto; opacity:0.6;">${groups[type].length}</span></div>
+                    ${groups[type].map(item => `
+                        <a href="${item.url}" class="result-item">
+                            <div>
+                                <div style="font-weight:600;">${highlight(item.title, q)}</div>
+                                <div class="result-meta">${highlight(item.meta, q)}</div>
+                            </div>
+                            <span class="result-badge">${item.badge}</span>
+                        </a>
+                    `).join('')}
+                </div>
+            `).join('');
+        }
+
+        function highlight(text, query) {
+            const re = new RegExp('(' + escapeRegExp(query) + ')', 'gi');
+            return text.replace(re, '<mark style="background:rgba(59,130,246,0.3); color:var(--text); border-radius:2px; padding:0 2px;">$1</mark>');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                activeFilter = chip.dataset.filter;
+                renderResults(searchInput.value);
+            });
+        });
+
+        let debounceTimer;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => renderResults(e.target.value), 150);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                searchInput.value = '';
+                renderResults('');
+                searchInput.blur();
+            }
+            if (e.key === '/' && document.activeElement !== searchInput) {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+
+        searchInput.focus();
+    </script>
+</body>
+</html>

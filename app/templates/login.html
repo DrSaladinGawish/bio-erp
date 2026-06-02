@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — IncentiveHouse ERP</title>
+    <link rel="stylesheet" href="/static/css/erp-theme.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔷</text></svg>">
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-card">
+            <div class="login-logo">
+                <div class="brand-icon">🔷</div>
+                <h1>IncentiveHouse ERP</h1>
+                <p>Event Management & Financial Operations</p>
+            </div>
+            
+            <div class="login-error" id="login-error"></div>
+            
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="username" placeholder="Enter username" required autofocus>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="password" placeholder="Enter password" required>
+                </div>
+                
+                <div class="form-group" style="display:flex;align-items:center;gap:8px">
+                    <input type="checkbox" id="remember" style="width:auto">
+                    <label for="remember" style="font-size:0.85rem;color:var(--text-secondary);cursor:pointer">Remember me</label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px">
+                    <span id="login-btn-text">Sign In</span>
+                    <span class="loading" id="login-spinner" style="display:none"></span>
+                </button>
+            </form>
+            
+            <div style="text-align:center;margin-top:20px;font-size:0.8rem;color:var(--text-muted)">
+                <p>Default: admin / admin123</p>
+                <p style="margin-top:8px">v2.2.2 | Port 9001 | SSL Active</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    async function handleLogin(e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const btnText = document.getElementById('login-btn-text');
+        const spinner = document.getElementById('login-spinner');
+        const errorDiv = document.getElementById('login-error');
+        
+        btnText.style.display = 'none';
+        spinner.style.display = 'inline-block';
+        errorDiv.classList.remove('show');
+        
+        try {
+            const res = await fetch('/api/v1/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const data = await res.json();
+            
+            if (res.ok && data.access_token) {
+                localStorage.setItem('incentivehouse_token', data.access_token);
+                window.location.href = '/dashboard';
+            } else {
+                errorDiv.textContent = data.detail || 'Invalid username or password';
+                errorDiv.classList.add('show');
+            }
+        } catch (err) {
+            errorDiv.textContent = 'Server error. Please try again.';
+            errorDiv.classList.add('show');
+        } finally {
+            btnText.style.display = 'inline';
+            spinner.style.display = 'none';
+        }
+    }
+    </script>
+</body>
+</html>

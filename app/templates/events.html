@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+
+{% block title %}Event Management — IncentiveHouse ERP{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Event Management</h1>
+        <p class="card-subtitle">Plan, execute, and track events from inquiry to billing</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline" onclick="exportEvents()">📥 Export</button>
+        <button class="btn btn-primary" onclick="openEventModal()">+ New Event</button>
+    </div>
+</div>
+
+<!-- EVENT FILTERS -->
+<div class="card" style="padding:16px">
+    <div class="form-row" style="align-items:end">
+        <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Search</label>
+            <input type="text" class="form-input" id="event-search" placeholder="Event name, client, code..." oninput="filterEvents()">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="event-status" onchange="filterEvents()">
+                <option value="">All Statuses</option>
+                <option value="draft">Draft</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Date Range</label>
+            <select class="form-select" id="event-date-range" onchange="filterEvents()">
+                <option value="">All Time</option>
+                <option value="30">Last 30 Days</option>
+                <option value="90">Last 90 Days</option>
+                <option value="365">Last Year</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Client</label>
+            <select class="form-select" id="event-client" onchange="filterEvents()">
+                <option value="">All Clients</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- EVENTS TABLE -->
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Event Code</th>
+                <th>Client</th>
+                <th>Description</th>
+                <th>Start Date</th>
+                <th>Status</th>
+                <th>Value (EGP)</th>
+                <th>Progress</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="events-table">
+            <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:40px">Loading events...</td></tr>
+        </tbody>
+    </table>
+    
+    <!-- PAGINATION -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color)">
+        <span style="font-size:0.8rem;color:var(--text-muted)" id="events-count">Showing 0 of 0 events</span>
+        <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-outline" onclick="prevPage()" id="btn-prev" disabled>← Prev</button>
+            <button class="btn btn-sm btn-outline" onclick="nextPage()" id="btn-next" disabled>Next →</button>
+        </div>
+    </div>
+</div>
+
+<!-- EVENT DETAIL MODAL -->
+<div class="modal-overlay" id="event-modal">
+    <div class="modal" style="max-width:800px">
+        <div class="modal-header">
+            <div>
+                <h3 id="modal-title">New Event</h3>
+                <p class="card-subtitle" id="modal-subtitle">Create a new event</p>
+            </div>
+            <button class="modal-close" onclick="closeEventModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="event-form">
+                <input type="hidden" id="event-id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Event Code *</label>
+                        <input type="text" class="form-input" id="event-code" placeholder="EVT-2026-001" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Work Order Code</label>
+                        <input type="text" class="form-input" id="event-wo-code" placeholder="WO-2026-001">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Client *</label>
+                        <select class="form-select" id="event-client-select" required>
+                            <option value="">Select client...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Event Status</label>
+                        <select class="form-select" id="event-status-select">
+                            <option value="draft">Draft</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Event Description</label>
+                    <textarea class="form-textarea" id="event-description" placeholder="Describe the event..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-input" id="event-start-date">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-input" id="event-end-date">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Location</label>
+                        <input type="text" class="form-input" id="event-location" placeholder="Cairo, Egypt">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Expected Attendees</label>
+                        <input type="number" class="form-input" id="event-size" placeholder="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Currency</label>
+                        <select class="form-select" id="event-currency">
+                            <option value="EGP">EGP</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Conversion Rate</label>
+                        <input type="number" step="0.0001" class="form-input" id="event-rate" value="1.0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Gross Sales</label>
+                        <input type="number" step="0.01" class="form-input" id="event-gross-sales" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Payment Terms</label>
+                        <input type="text" class="form-input" id="event-payment-terms" placeholder="Net 30">
+                    </div>
+                </div>
+            </form>
+            
+            <!-- LINE ITEMS SECTION (edit mode only) -->
+            <div id="line-items-section" style="display:none;margin-top:24px;padding-top:24px;border-top:1px solid var(--border-color)">
+                <div class="card-header" style="padding:0;margin-bottom:16px">
+                    <div>
+                        <div class="card-title">Line Items</div>
+                        <div class="card-subtitle">Services for this event</div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="addLineItem()">+ Add Service</button>
+                </div>
+                <table class="data-table" id="line-items-table">
+                    <thead>
+                        <tr><th>Category</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            
+            <!-- STAFF SECTION (edit mode only) -->
+            <div id="staff-section" style="display:none;margin-top:24px;padding-top:24px;border-top:1px solid var(--border-color)">
+                <div class="card-header" style="padding:0;margin-bottom:16px">
+                    <div>
+                        <div class="card-title">Staff Assignments</div>
+                        <div class="card-subtitle">Personnel scheduled for this event</div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="addStaff()">+ Assign Staff</button>
+                </div>
+                <table class="data-table" id="staff-table">
+                    <thead>
+                        <tr><th>Staff</th><th>Role</th><th>Start</th><th>End</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeEventModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveEvent()" id="save-event-btn">Save Event</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentPage = 1;
+let totalPages = 1;
+let eventsData = [];
+let clientsData = [];
+
+async function loadEvents() {
+    try {
+        const res = await fetch(`/api/v1/events?page=${currentPage}&limit=20`, {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Failed to load');
+        const data = await res.json();
+        eventsData = data.events || [];
+        totalPages = data.total_pages || 1;
+        renderEvents();
+        document.getElementById('events-count').textContent = `Showing ${eventsData.length} of ${data.total || 0} events`;
+        document.getElementById('btn-prev').disabled = currentPage <= 1;
+        document.getElementById('btn-next').disabled = currentPage >= totalPages;
+    } catch (e) {
+        document.getElementById('events-table').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--accent-danger);padding:40px">Error: ${e.message}</td></tr>`;
+    }
+}
+
+function renderEvents() {
+    const tbody = document.getElementById('events-table');
+    if (eventsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:40px">No events found</td></tr>';
+        return;
+    }
+    tbody.innerHTML = eventsData.map(e => `
+        <tr>
+            <td><strong>${e.event_code || '—'}</strong></td>
+            <td>${e.client_name || '—'}</td>
+            <td>${e.event_description || '—'}</td>
+            <td style="color:var(--text-muted)">${e.start_date ? new Date(e.start_date).toLocaleDateString() : '—'}</td>
+            <td><span class="badge badge-${e.event_status || 'draft'}">${(e.event_status || 'draft').replace('_', ' ')}</span></td>
+            <td style="font-weight:600">${e.gross_sales ? 'EGP ' + Number(e.gross_sales).toLocaleString() : '—'}</td>
+            <td>
+                <div class="progress-bar" style="width:100px">
+                    <div class="progress-bar-fill ${e.progress > 80 ? 'success' : e.progress > 40 ? 'warning' : 'danger'}" style="width:${e.progress || 0}%"></div>
+                </div>
+                <span style="font-size:0.75rem;color:var(--text-muted)">${e.progress || 0}%</span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline" onclick="editEvent(${e.event_id})">✏️</button>
+                <button class="btn btn-sm btn-outline" onclick="viewEvent(${e.event_id})">👁️</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterEvents() {
+    const search = document.getElementById('event-search').value.toLowerCase();
+    const status = document.getElementById('event-status').value;
+    const client = document.getElementById('event-client').value;
+    
+    const filtered = eventsData.filter(e => {
+        const matchSearch = !search || (e.event_code || '').toLowerCase().includes(search) || (e.event_description || '').toLowerCase().includes(search);
+        const matchStatus = !status || e.event_status === status;
+        const matchClient = !client || e.client_id == client;
+        return matchSearch && matchStatus && matchClient;
+    });
+    
+    const tbody = document.getElementById('events-table');
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:40px">No matching events</td></tr>';
+        return;
+    }
+    tbody.innerHTML = filtered.map(e => `
+        <tr>
+            <td><strong>${e.event_code || '—'}</strong></td>
+            <td>${e.client_name || '—'}</td>
+            <td>${e.event_description || '—'}</td>
+            <td style="color:var(--text-muted)">${e.start_date ? new Date(e.start_date).toLocaleDateString() : '—'}</td>
+            <td><span class="badge badge-${e.event_status || 'draft'}">${(e.event_status || 'draft').replace('_', ' ')}</span></td>
+            <td style="font-weight:600">${e.gross_sales ? 'EGP ' + Number(e.gross_sales).toLocaleString() : '—'}</td>
+            <td>
+                <div class="progress-bar" style="width:100px">
+                    <div class="progress-bar-fill ${e.progress > 80 ? 'success' : e.progress > 40 ? 'warning' : 'danger'}" style="width:${e.progress || 0}%"></div>
+                </div>
+                <span style="font-size:0.75rem;color:var(--text-muted)">${e.progress || 0}%</span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline" onclick="editEvent(${e.event_id})">✏️</button>
+                <button class="btn btn-sm btn-outline" onclick="viewEvent(${e.event_id})">👁️</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function loadClients() {
+    try {
+        const res = await fetch('/api/v1/clients?limit=200', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        clientsData = data.clients || [];
+        
+        const filterSelect = document.getElementById('event-client');
+        filterSelect.innerHTML = '<option value="">All Clients</option>' + 
+            clientsData.map(c => `<option value="${c.client_id}">${c.client_name}</option>`).join('');
+        
+        const modalSelect = document.getElementById('event-client-select');
+        modalSelect.innerHTML = '<option value="">Select client...</option>' + 
+            clientsData.map(c => `<option value="${c.client_id}">${c.client_name}</option>`).join('');
+    } catch (e) { console.error('Clients load failed:', e); }
+}
+
+function openEventModal() {
+    document.getElementById('event-form').reset();
+    document.getElementById('event-id').value = '';
+    document.getElementById('modal-title').textContent = 'New Event';
+    document.getElementById('modal-subtitle').textContent = 'Create a new event';
+    document.getElementById('line-items-section').style.display = 'none';
+    document.getElementById('staff-section').style.display = 'none';
+    document.getElementById('event-modal').classList.add('show');
+}
+
+function closeEventModal() {
+    document.getElementById('event-modal').classList.remove('show');
+}
+
+async function editEvent(id) {
+    try {
+        const res = await fetch(`/api/v1/events/${id}`, {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Failed to load event');
+        const e = await res.json();
+        
+        document.getElementById('event-id').value = e.event_id;
+        document.getElementById('event-code').value = e.event_code || '';
+        document.getElementById('event-wo-code').value = e.work_order_code || '';
+        document.getElementById('event-client-select').value = e.client_id || '';
+        document.getElementById('event-status-select').value = e.event_status || 'draft';
+        document.getElementById('event-description').value = e.event_description || '';
+        document.getElementById('event-start-date').value = e.start_date ? e.start_date.split('T')[0] : '';
+        document.getElementById('event-end-date').value = e.end_date ? e.end_date.split('T')[0] : '';
+        document.getElementById('event-location').value = e.location || '';
+        document.getElementById('event-size').value = e.expected_attendees || '';
+        document.getElementById('event-currency').value = e.currency_id || 'EGP';
+        document.getElementById('event-rate').value = e.conversion_rate || 1.0;
+        document.getElementById('event-gross-sales').value = e.gross_sales || '';
+        document.getElementById('event-payment-terms').value = e.payment_terms || '';
+        
+        document.getElementById('modal-title').textContent = 'Edit Event';
+        document.getElementById('modal-subtitle').textContent = e.event_code || 'Edit event details';
+        document.getElementById('line-items-section').style.display = 'block';
+        document.getElementById('staff-section').style.display = 'block';
+        document.getElementById('event-modal').classList.add('show');
+        
+        loadLineItems(id);
+        loadStaffAssignments(id);
+    } catch (e) { showToast('Error loading event: ' + e.message, 'error'); }
+}
+
+async function saveEvent() {
+    const id = document.getElementById('event-id').value;
+    const payload = {
+        event_code: document.getElementById('event-code').value,
+        work_order_code: document.getElementById('event-wo-code').value,
+        client_id: parseInt(document.getElementById('event-client-select').value),
+        event_status: document.getElementById('event-status-select').value,
+        event_description: document.getElementById('event-description').value,
+        start_date: document.getElementById('event-start-date').value || null,
+        end_date: document.getElementById('event-end-date').value || null,
+        location: document.getElementById('event-location').value,
+        expected_attendees: parseInt(document.getElementById('event-size').value) || null,
+        currency_id: document.getElementById('event-currency').value,
+        conversion_rate: parseFloat(document.getElementById('event-rate').value) || 1.0,
+        gross_sales: parseFloat(document.getElementById('event-gross-sales').value) || null,
+        payment_terms: document.getElementById('event-payment-terms').value
+    };
+    
+    const url = id ? `/api/v1/events/${id}` : '/api/v1/events';
+    const method = id ? 'PUT' : 'POST';
+    
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 
+                'Authorization': 'Bearer ' + authToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+            showToast(id ? 'Event updated successfully' : 'Event created successfully');
+            closeEventModal();
+            loadEvents();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Save failed', 'error');
+        }
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+function viewEvent(id) {
+    window.location.href = `/events/${id}`;
+}
+
+async function loadLineItems(eventId) {
+    try {
+        const res = await fetch(`/api/v1/events/${eventId}/line-items`, {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        const data = await res.json();
+        const tbody = document.querySelector('#line-items-table tbody');
+        if (!data.line_items || data.line_items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No line items</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.line_items.map(li => `
+            <tr>
+                <td>${li.service_category || '—'}</td>
+                <td>${li.description || '—'}</td>
+                <td>${li.qty || 0}</td>
+                <td>${li.unit_price ? 'EGP ' + Number(li.unit_price).toLocaleString() : '—'}</td>
+                <td style="font-weight:600">${li.total ? 'EGP ' + Number(li.total).toLocaleString() : '—'}</td>
+                <td><span class="badge badge-${li.delivery_status || 'pending'}">${(li.delivery_status || 'pending').replace('_', ' ')}</span></td>
+                <td><button class="btn btn-sm btn-outline" onclick="removeLineItem(${li.id})">🗑️</button></td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error('Line items load failed:', e); }
+}
+
+async function loadStaffAssignments(eventId) {
+    try {
+        const res = await fetch(`/api/v1/events/${eventId}/staff`, {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        const data = await res.json();
+        const tbody = document.querySelector('#staff-table tbody');
+        if (!data.assignments || data.assignments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">No staff assigned</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.assignments.map(s => `
+            <tr>
+                <td>${s.staff_name || '—'}</td>
+                <td>${s.role || '—'}</td>
+                <td style="color:var(--text-muted)">${s.scheduled_start ? new Date(s.scheduled_start).toLocaleString() : '—'}</td>
+                <td style="color:var(--text-muted)">${s.scheduled_end ? new Date(s.scheduled_end).toLocaleString() : '—'}</td>
+                <td><span class="badge badge-${s.status || 'pending'}">${(s.status || 'pending').replace('_', ' ')}</span></td>
+                <td><button class="btn btn-sm btn-outline" onclick="removeStaff(${s.assignment_id})">🗑️</button></td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error('Staff load failed:', e); }
+}
+
+function addLineItem() { showToast('Add line item — coming in v2.3', 'warning'); }
+function addStaff() { showToast('Assign staff — coming in v2.3', 'warning'); }
+function removeLineItem(id) { showToast('Remove line item — coming in v2.3', 'warning'); }
+function removeStaff(id) { showToast('Remove staff — coming in v2.3', 'warning'); }
+function exportEvents() { showToast('Export — coming in v2.3', 'warning'); }
+function prevPage() { if (currentPage > 1) { currentPage--; loadEvents(); } }
+function nextPage() { if (currentPage < totalPages) { currentPage++; loadEvents(); } }
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadEvents();
+    loadClients();
+});
+</script>
+{% endblock %}

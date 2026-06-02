@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+
+{% block title %}Operations — IncentiveHouse ERP{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Operations</h1>
+        <p class="card-subtitle">Staff scheduling, delivery tracking, and operational workflow</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline" onclick="exportOps()">📥 Export</button>
+        <button class="btn btn-primary" onclick="openStaffModal()">+ Assign Staff</button>
+    </div>
+</div>
+
+<!-- OPERATIONS KPIs -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon blue">👷</div>
+        <div class="kpi-value" id="kpi-staff">—</div>
+        <div class="kpi-label">Active Staff</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon gold">📋</div>
+        <div class="kpi-value" id="kpi-pending-ops">—</div>
+        <div class="kpi-label">Pending Operations</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green">✅</div>
+        <div class="kpi-value" id="kpi-completed-ops">—</div>
+        <div class="kpi-label">Completed Today</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon red">⏰</div>
+        <div class="kpi-value" id="kpi-overdue">—</div>
+        <div class="kpi-label">Overdue Tasks</div>
+    </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('pending', this)">Pending Operations</div>
+    <div class="tab" onclick="switchTab('staff', this)">Staff Schedule</div>
+    <div class="tab" onclick="switchTab('delivery', this)">Delivery Tracking</div>
+    <div class="tab" onclick="switchTab('calendar', this)">Event Calendar</div>
+</div>
+
+<!-- PENDING OPERATIONS TAB -->
+<div id="tab-pending">
+    <div class="card">
+        <div class="form-row" style="margin-bottom:16px">
+            <div class="form-group" style="margin-bottom:0">
+                <input type="text" class="form-input" id="ops-search" placeholder="Search operations..." oninput="filterOps()">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+                <select class="form-select" id="ops-priority" onchange="filterOps()">
+                    <option value="">All Priorities</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+                <select class="form-select" id="ops-event" onchange="filterOps()">
+                    <option value="">All Events</option>
+                </select>
+            </div>
+        </div>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Event</th>
+                    <th>Assigned To</th>
+                    <th>Due Date</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="ops-table">
+                <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">Loading operations...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- STAFF SCHEDULE TAB -->
+<div id="tab-staff" style="display:none">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Staff Schedule</div>
+                <div class="card-subtitle">Personnel assignments across events</div>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Staff</th>
+                    <th>Role</th>
+                    <th>Event</th>
+                    <th>Scheduled Start</th>
+                    <th>Scheduled End</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="staff-schedule-table">
+                <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">Loading staff schedule...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- DELIVERY TRACKING TAB -->
+<div id="tab-delivery" style="display:none">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Delivery Tracking</div>
+                <div class="card-subtitle">Event line item delivery status</div>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Event</th>
+                    <th>Category</th>
+                    <th>Qty</th>
+                    <th>Expected Delivery</th>
+                    <th>Actual Delivery</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="delivery-table">
+                <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">Loading delivery data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- EVENT CALENDAR TAB -->
+<div id="tab-calendar" style="display:none">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Event Calendar</div>
+                <div class="card-subtitle">Upcoming events timeline</div>
+            </div>
+        </div>
+        <div id="calendar-view" style="padding:20px">
+            <div style="text-align:center;color:var(--text-muted);padding:40px">Calendar view coming in v2.3</div>
+        </div>
+    </div>
+</div>
+
+<!-- STAFF ASSIGNMENT MODAL -->
+<div class="modal-overlay" id="staff-modal">
+    <div class="modal" style="max-width:600px">
+        <div class="modal-header">
+            <div>
+                <h3>Assign Staff</h3>
+                <p class="card-subtitle">Schedule personnel for an event</p>
+            </div>
+            <button class="modal-close" onclick="closeStaffModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="staff-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Staff Member *</label>
+                        <select class="form-select" id="staff-member" required>
+                            <option value="">Select staff...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Event *</label>
+                        <select class="form-select" id="staff-event" required>
+                            <option value="">Select event...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <input type="text" class="form-input" id="staff-role" placeholder="e.g., Event Manager, Technician">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Scheduled Start</label>
+                        <input type="datetime-local" class="form-input" id="staff-start">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Scheduled End</label>
+                        <input type="datetime-local" class="form-input" id="staff-end">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-textarea" id="staff-notes" placeholder="Additional notes..."></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeStaffModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveStaffAssignment()">Assign</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let opsData = [];
+let staffData = [];
+
+async function loadOperationsData() {
+    await loadPendingOps();
+    await loadStaffSchedule();
+    await loadDeliveryTracking();
+    await loadOperationsKPIs();
+    await loadDropdowns();
+}
+
+async function loadPendingOps() {
+    try {
+        const res = await fetch('/api/v1/operations/pending?limit=50', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        opsData = data.operations || [];
+        renderOps();
+    } catch (e) {
+        document.getElementById('ops-table').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--accent-danger);padding:40px">Error: ${e.message}</td></tr>`;
+    }
+}
+
+function renderOps() {
+    const tbody = document.getElementById('ops-table');
+    if (opsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No pending operations</td></tr>';
+        return;
+    }
+    tbody.innerHTML = opsData.map(op => `
+        <tr>
+            <td><strong>${op.task_name || '—'}</strong></td>
+            <td>${op.event_code || '—'}</td>
+            <td>${op.assigned_to || 'Unassigned'}</td>
+            <td style="color:var(--text-muted)">${op.due_date ? new Date(op.due_date).toLocaleDateString() : '—'}</td>
+            <td><span class="badge badge-${op.priority === 'high' ? 'danger' : op.priority === 'medium' ? 'warning' : 'draft'}">${op.priority || 'low'}</span></td>
+            <td><span class="badge badge-${op.status || 'pending'}">${(op.status || 'pending').replace('_', ' ')}</span></td>
+            <td>
+                <button class="btn btn-sm btn-success" onclick="confirmOp(${op.operation_id})">✓</button>
+                <button class="btn btn-sm btn-outline" onclick="editOp(${op.operation_id})">✏️</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterOps() {
+    const search = document.getElementById('ops-search').value.toLowerCase();
+    const priority = document.getElementById('ops-priority').value;
+    const event = document.getElementById('ops-event').value;
+    
+    const filtered = opsData.filter(op => {
+        const matchSearch = !search || (op.task_name || '').toLowerCase().includes(search);
+        const matchPriority = !priority || op.priority === priority;
+        const matchEvent = !event || op.event_id == event;
+        return matchSearch && matchPriority && matchEvent;
+    });
+    
+    const tbody = document.getElementById('ops-table');
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No matching operations</td></tr>';
+        return;
+    }
+    tbody.innerHTML = filtered.map(op => `
+        <tr>
+            <td><strong>${op.task_name || '—'}</strong></td>
+            <td>${op.event_code || '—'}</td>
+            <td>${op.assigned_to || 'Unassigned'}</td>
+            <td style="color:var(--text-muted)">${op.due_date ? new Date(op.due_date).toLocaleDateString() : '—'}</td>
+            <td><span class="badge badge-${op.priority === 'high' ? 'danger' : op.priority === 'medium' ? 'warning' : 'draft'}">${op.priority || 'low'}</span></td>
+            <td><span class="badge badge-${op.status || 'pending'}">${(op.status || 'pending').replace('_', ' ')}</span></td>
+            <td>
+                <button class="btn btn-sm btn-success" onclick="confirmOp(${op.operation_id})">✓</button>
+                <button class="btn btn-sm btn-outline" onclick="editOp(${op.operation_id})">✏️</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function loadStaffSchedule() {
+    try {
+        const res = await fetch('/api/v1/staff-assignments?limit=50', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        staffData = data.assignments || [];
+        
+        const tbody = document.getElementById('staff-schedule-table');
+        if (staffData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No staff assignments</td></tr>';
+            return;
+        }
+        tbody.innerHTML = staffData.map(s => `
+            <tr>
+                <td><strong>${s.staff_name || '—'}</strong></td>
+                <td>${s.role || '—'}</td>
+                <td>${s.event_code || '—'}</td>
+                <td style="color:var(--text-muted)">${s.scheduled_start ? new Date(s.scheduled_start).toLocaleString() : '—'}</td>
+                <td style="color:var(--text-muted)">${s.scheduled_end ? new Date(s.scheduled_end).toLocaleString() : '—'}</td>
+                <td><span class="badge badge-${s.status || 'pending'}">${(s.status || 'pending').replace('_', ' ')}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline" onclick="editStaff(${s.assignment_id})">✏️</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        document.getElementById('staff-schedule-table').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--accent-danger);padding:40px">Error: ${e.message}</td></tr>`;
+    }
+}
+
+async function loadDeliveryTracking() {
+    try {
+        const res = await fetch('/api/v1/operations/delivery?limit=50', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        const items = data.items || [];
+        
+        const tbody = document.getElementById('delivery-table');
+        if (items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No delivery items</td></tr>';
+            return;
+        }
+        tbody.innerHTML = items.map(i => `
+            <tr>
+                <td><strong>${i.item_name || '—'}</strong></td>
+                <td>${i.event_code || '—'}</td>
+                <td>${i.service_category || '—'}</td>
+                <td>${i.qty || 0}</td>
+                <td style="color:var(--text-muted)">${i.expected_delivery ? new Date(i.expected_delivery).toLocaleDateString() : '—'}</td>
+                <td style="color:var(--text-muted)">${i.actual_delivery ? new Date(i.actual_delivery).toLocaleDateString() : '—'}</td>
+                <td><span class="badge badge-${i.delivery_status || 'pending'}">${(i.delivery_status || 'pending').replace('_', ' ')}</span></td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        document.getElementById('delivery-table').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--accent-danger);padding:40px">Error: ${e.message}</td></tr>`;
+    }
+}
+
+async function loadOperationsKPIs() {
+    try {
+        const res = await fetch('/api/v1/dashboard/summary', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById('kpi-staff').textContent = (data.active_staff || 0).toLocaleString();
+        document.getElementById('kpi-pending-ops').textContent = (data.pending_operations || 0).toLocaleString();
+        document.getElementById('kpi-completed-ops').textContent = (data.completed_today || 0).toLocaleString();
+        document.getElementById('kpi-overdue').textContent = (data.overdue_tasks || 0).toLocaleString();
+    } catch (e) { console.error('Ops KPIs failed:', e); }
+}
+
+async function loadDropdowns() {
+    try {
+        const staffRes = await fetch('/api/v1/staff?limit=200', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (staffRes.ok) {
+            const data = await staffRes.json();
+            const staff = data.staff || [];
+            document.getElementById('staff-member').innerHTML = '<option value="">Select staff...</option>' + 
+                staff.map(s => `<option value="${s.staff_id}">${s.full_name}</option>`).join('');
+        }
+    } catch (e) { console.error('Staff dropdown failed:', e); }
+    
+    try {
+        const eventsRes = await fetch('/api/v1/events?limit=200&status=confirmed,in_progress', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (eventsRes.ok) {
+            const data = await eventsRes.json();
+            const events = data.events || [];
+            document.getElementById('staff-event').innerHTML = '<option value="">Select event...</option>' + 
+                events.map(e => `<option value="${e.event_id}">${e.event_code} — ${e.event_description || ''}</option>`).join('');
+            document.getElementById('ops-event').innerHTML = '<option value="">All Events</option>' + 
+                events.map(e => `<option value="${e.event_id}">${e.event_code}</option>`).join('');
+        }
+    } catch (e) { console.error('Events dropdown failed:', e); }
+}
+
+function switchTab(tabName, el) {
+    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-pending').style.display = tabName === 'pending' ? 'block' : 'none';
+    document.getElementById('tab-staff').style.display = tabName === 'staff' ? 'block' : 'none';
+    document.getElementById('tab-delivery').style.display = tabName === 'delivery' ? 'block' : 'none';
+    document.getElementById('tab-calendar').style.display = tabName === 'calendar' ? 'block' : 'none';
+}
+
+function openStaffModal() {
+    document.getElementById('staff-form').reset();
+    document.getElementById('staff-modal').classList.add('show');
+}
+
+function closeStaffModal() {
+    document.getElementById('staff-modal').classList.remove('show');
+}
+
+async function saveStaffAssignment() {
+    const payload = {
+        staff_id: parseInt(document.getElementById('staff-member').value),
+        event_id: parseInt(document.getElementById('staff-event').value),
+        role: document.getElementById('staff-role').value,
+        scheduled_start: document.getElementById('staff-start').value,
+        scheduled_end: document.getElementById('staff-end').value,
+        notes: document.getElementById('staff-notes').value,
+        status: 'scheduled'
+    };
+    
+    try {
+        const res = await fetch('/api/v1/staff-assignments', {
+            method: 'POST',
+            headers: { 
+                'Authorization': 'Bearer ' + authToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+            showToast('Staff assigned successfully');
+            closeStaffModal();
+            loadStaffSchedule();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Failed', 'error');
+        }
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+function confirmOp(id) { showToast('Confirm operation ' + id + ' — coming in v2.3', 'warning'); }
+function editOp(id) { showToast('Edit operation ' + id + ' — coming in v2.3', 'warning'); }
+function editStaff(id) { showToast('Edit staff ' + id + ' — coming in v2.3', 'warning'); }
+function exportOps() { showToast('Export — coming in v2.3', 'warning'); }
+
+document.addEventListener('DOMContentLoaded', loadOperationsData);
+</script>
+{% endblock %}

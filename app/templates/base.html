@@ -1,65 +1,264 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIO ERP v5 - {% block title %}Dashboard{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="/static/css/dashboard.css" rel="stylesheet">
+    <title>{% block title %}IncentiveHouse ERP{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/erp-theme.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔷</text></svg>">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">
-                <i class="bi bi bi-hexagon me-2"></i>BIO ERP v5
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/api/v1/accounting/ledger-inquiry">
-                            <i class="bi bi-book me-1"></i>Ledger
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="http://localhost:8001/dashboard" target="_blank">
-                            <i class="bi bi-box-arrow-up-right me-1"></i>EventCore
-                        </a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    {% if current_user %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle me-1"></i>{{ current_user.full_name_en }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
-                        </ul>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a>
-                    </li>
-                    {% endif %}
-                </ul>
+    {% if request.url.path != '/login' %}
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">🔷</div>
+            <div>
+                <div class="brand-text">IncentiveHouse</div>
+                <div style="font-size:0.7rem;color:var(--text-muted)">ERP System</div>
+            </div>
+            <span class="brand-version">v2.2.2</span>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <!-- MAIN MODULES -->
+            <div class="nav-section">
+                <div class="nav-section-title">Main Modules</div>
+                
+                <a href="/dashboard" class="nav-item {% if request.url.path == '/dashboard' %}active{% endif %}">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                
+                <a href="/events" class="nav-item {% if request.url.path.startswith('/events') %}active{% endif %}">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-label">Event Management</span>
+                    <span class="nav-badge success" id="nav-active-events">0</span>
+                </a>
+                
+                <a href="/sales" class="nav-item {% if request.url.path.startswith('/sales') %}active{% endif %}">
+                    <span class="nav-icon">💰</span>
+                    <span class="nav-label">Sales</span>
+                    <span class="nav-badge" id="nav-sales-count">0</span>
+                </a>
+                
+                <a href="/purchasing" class="nav-item {% if request.url.path.startswith('/purchasing') %}active{% endif %}">
+                    <span class="nav-icon">🛒</span>
+                    <span class="nav-label">Purchasing</span>
+                    <span class="nav-badge" id="nav-po-count">0</span>
+                </a>
+                
+                <a href="/finance" class="nav-item {% if request.url.path.startswith('/finance') %}active{% endif %}">
+                    <span class="nav-icon">🏦</span>
+                    <span class="nav-label">Financial</span>
+                    <span class="nav-badge warning" id="nav-pending-invoices">0</span>
+                </a>
+                
+                <a href="/operations" class="nav-item {% if request.url.path.startswith('/operations') %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Operations</span>
+                    <span class="nav-badge" id="nav-pending-ops">0</span>
+                </a>
+            </div>
+            
+            <!-- DATA & REPORTS -->
+            <div class="nav-section">
+                <div class="nav-section-title">Data & Reports</div>
+                
+                <a href="/bank-reconciliation" class="nav-item {% if request.url.path.startswith('/bank-reconciliation') %}active{% endif %}">
+                    <span class="nav-icon">🏛️</span>
+                    <span class="nav-label">Bank Reconciliation</span>
+                    <span class="nav-badge" id="nav-unreconciled">0</span>
+                </a>
+                
+                <a href="/reports" class="nav-item {% if request.url.path.startswith('/reports') %}active{% endif %}">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-label">Reports</span>
+                </a>
+            </div>
+            
+            <!-- SYSTEM -->
+            <div class="nav-section">
+                <div class="nav-section-title">System</div>
+                
+                <a href="/settings" class="nav-item {% if request.url.path.startswith('/settings') %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Settings</span>
+                </a>
+                
+                <button class="nav-item" onclick="logout()" style="color:var(--accent-danger)">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-label">Logout</span>
+                </button>
+            </div>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="system-status">
+                <span class="status-dot"></span>
+                <span id="system-status-text">System Online</span>
+            </div>
+            <div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">
+                Port 9001 | SSL Active
             </div>
         </div>
-    </nav>
-
-    <div class="container-fluid py-3">
+    </aside>
+    
+    <!-- TOP HEADER -->
+    <header class="top-header">
+        <div class="logo-section">
+            <div class="logo-icon">🔷</div>
+            <div>
+                <div class="logo-text">IncentiveHouse ERP</div>
+                <div class="logo-sub">Event Management & Financial Operations</div>
+            </div>
+        </div>
+        
+        <div class="header-actions">
+            <div class="search-box">
+                <input type="text" placeholder="Search events, clients, invoices..." id="global-search">
+            </div>
+            
+            <div class="notification-bell" onclick="showNotifications()">
+                🔔
+                <span class="badge" id="notification-count">0</span>
+            </div>
+            
+            <div class="user-profile" onclick="toggleUserMenu()">
+                <div class="avatar" id="user-avatar">A</div>
+                <div class="user-info">
+                    <div class="user-name" id="user-name">Admin</div>
+                    <div class="user-role" id="user-role">Administrator</div>
+                </div>
+            </div>
+        </div>
+    </header>
+    {% endif %}
+    
+    <!-- MAIN CONTENT -->
+    <main class="main-content" id="main-content">
         {% block content %}{% endblock %}
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-    <script src="/static/js/navigation.js"></script>
+    </main>
+    
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toast-container"></div>
+    
+    <script>
+    // JWT Token management
+    let authToken = localStorage.getItem('incentivehouse_token') || '';
+    
+    // Load user info on page load
+    document.addEventListener('DOMContentLoaded', async function() {
+        if (!authToken && window.location.pathname !== '/login') {
+            window.location.href = '/login';
+            return;
+        }
+        
+        if (authToken) {
+            await loadUserInfo();
+            await loadSidebarCounts();
+            startAutoRefresh();
+        }
+    });
+    
+    async function loadUserInfo() {
+        try {
+            const res = await fetch('/api/v1/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + authToken }
+            });
+            if (res.ok) {
+                const user = await res.json();
+                document.getElementById('user-name').textContent = user.username;
+                document.getElementById('user-role').textContent = user.role;
+                document.getElementById('user-avatar').textContent = user.username[0].toUpperCase();
+            }
+        } catch (e) {
+            console.error('Failed to load user info:', e);
+        }
+    }
+    
+    async function loadSidebarCounts() {
+        try {
+            const res = await fetch('/api/v1/dashboard/summary', {
+                headers: { 'Authorization': 'Bearer ' + authToken }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('nav-active-events').textContent = data.active_events || 0;
+                document.getElementById('nav-pending-ops').textContent = data.pending_operations || 0;
+                document.getElementById('nav-pending-invoices').textContent = data.items_pending_review || 0;
+            }
+        } catch (e) {
+            console.error('Failed to load counts:', e);
+        }
+    }
+    
+    function startAutoRefresh() {
+        setInterval(loadSidebarCounts, 60000);
+    }
+    
+    function logout() {
+        localStorage.removeItem('incentivehouse_token');
+        window.location.href = '/login';
+    }
+    
+    function showNotifications() {
+        showToast('Notifications panel — coming in v2.3', 'warning');
+    }
+    
+    function toggleUserMenu() {
+        const menu = document.createElement('div');
+        menu.style.cssText = 'position:fixed;top:60px;right:24px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;padding:8px 0;min-width:180px;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,0.4);';
+        menu.innerHTML = `
+            <div style="padding:8px 16px;font-size:0.875rem;color:var(--text-secondary);border-bottom:1px solid var(--border-color);margin-bottom:4px">My Account</div>
+            <a href="/settings" style="display:block;padding:8px 16px;color:var(--text-primary);text-decoration:none;font-size:0.875rem" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">⚙️ Settings</a>
+            <a href="#" onclick="logout();return false" style="display:block;padding:8px 16px;color:var(--accent-danger);text-decoration:none;font-size:0.875rem" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">🚪 Logout</a>
+        `;
+        document.body.appendChild(menu);
+        setTimeout(() => {
+            document.addEventListener('click', function close(e) {
+                if (!menu.contains(e.target)) {
+                    menu.remove();
+                    document.removeEventListener('click', close);
+                }
+            });
+        }, 10);
+    }
+    
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+    
+    // HTMX event handlers
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        if (authToken) {
+            evt.detail.xhr.setRequestHeader('Authorization', 'Bearer ' + authToken);
+        }
+    });
+    
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.xhr.status === 401) {
+            logout();
+        }
+    });
+    
+    // Global search
+    document.getElementById('global-search')?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            const q = e.target.value;
+            if (q) window.location.href = `/search?q=${encodeURIComponent(q)}`;
+        }
+    });
+    </script>
+    
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>
