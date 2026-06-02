@@ -246,6 +246,16 @@ def new_event_form(request: Request):
 def recon_form(request: Request):
     return templates.TemplateResponse("bank_recon_form.html", {"request": request})
 
+@app.get("/api/v1/incentivehouse/purchasing", response_class=HTMLResponse)
+def purchasing_page(request: Request):
+    """Purchase Orders & Vendor Management page."""
+    return templates.TemplateResponse("purchasing.html", {"request": request})
+
+@app.get("/api/v1/incentivehouse/search", response_class=HTMLResponse)
+def search_page(request: Request):
+    """Global cross-module search page."""
+    return templates.TemplateResponse("search.html", {"request": request})
+
 @app.get("/api/v1/incentivehouse/docs")
 def api_docs_redirect():
     return RedirectResponse(url="/docs")

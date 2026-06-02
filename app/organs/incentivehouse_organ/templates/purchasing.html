@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purchasing — IncentiveHouse ERP</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;background:#D3D3D3;color:#333;font-size:13px;display:flex;min-height:100vh}
+:root{--gold:#D4A017;--dark-gold:#B8860B;--light-gold:#F5DEB3;--bg-gray:#C0C0C0;--panel:#D3D3D3;--border:#A9A9A9;--sidebar-bg:#2C2C2C;--sidebar-hover:#3A3A3A;--sidebar-active:#6B8E9F;--accent-blue:#5B9BD5;--green:#28a745;--yellow:#ffc107;--red:#dc3545;--blue:#17a2b8}
+.sidebar{width:220px;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;flex-shrink:0;min-height:100vh}
+.sidebar-header{padding:15px;border-bottom:1px solid #444}
+.sidebar-logo{font-family:"Times New Roman",serif;font-size:20px;font-weight:bold;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
+.sidebar-logo small{display:block;font-size:11px;color:#999;letter-spacing:1px;font-weight:normal}
+.sidebar-user{padding:12px 15px;border-bottom:1px solid #444;font-size:12px;color:#ccc}
+.sidebar-user span{display:block;font-size:14px;color:#fff;font-weight:600}
+.sidebar-nav{flex:1;padding:8px 0}
+.nav-item{display:flex;align-items:center;padding:10px 15px;color:#ccc;text-decoration:none;font-size:13px;transition:all 0.2s;cursor:pointer;border-left:3px solid transparent}
+.nav-item:hover{background:var(--sidebar-hover);color:#fff}
+.nav-item.active{background:var(--sidebar-active);color:#fff;border-left-color:var(--gold)}
+.nav-item .icon{margin-right:12px;font-size:16px;width:20px;text-align:center}
+.nav-item .badge{margin-left:auto;background:var(--gold);color:#333;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:700}
+.sidebar-footer{padding:15px;border-top:1px solid #444;font-size:11px;color:#666}
+.main{flex:1;display:flex;flex-direction:column}
+.header{background:linear-gradient(180deg,#3A3A3A,#2C2C2C);padding:12px 25px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+.header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400' opacity='0.12'%3E%3Cpath fill='none' stroke='white' stroke-width='1' d='M100 200 Q200 150 300 200 T500 200 T700 200'/%3E%3Ccircle fill='white' opacity='0.08' cx='150' cy='180' r='4'/%3E%3Ccircle fill='white' opacity='0.08' cx='250' cy='220' r='3'/%3E%3Ccircle fill='white' opacity='0.08' cx='350' cy='190' r='5'/%3E%3Ccircle fill='white' opacity='0.08' cx='450' cy='210' r='3'/%3E%3Ccircle fill='white' opacity='0.08' cx='550' cy='180' r='4'/%3E%3C/svg%3E") center/cover;pointer-events:none}
+.header-title{position:relative;z-index:1;color:#fff;font-size:22px;font-weight:300;letter-spacing:1px}
+.header-user{position:relative;z-index:1;display:flex;align-items:center;gap:12px}
+.header-user input{border:1px solid #555;background:#3A3A3A;color:#fff;padding:4px 10px;border-radius:3px;font-size:12px;width:160px}
+.header-user .logout-btn{background:transparent;color:#ccc;border:1px solid #555;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:5px}
+.header-user .logout-btn:hover{background:#c0392b;border-color:#c0392b;color:#fff}
+.content{padding:20px;flex:1;overflow-y:auto}
+.page-header{background:var(--panel);border:1px solid var(--border);padding:12px 18px;margin-bottom:16px;border-radius:4px;display:flex;justify-content:space-between;align-items:center}
+.page-header h2{font-size:18px;font-weight:600;color:#444}
+.btn{padding:6px 14px;border:1px solid var(--border);background:linear-gradient(180deg,#f8f9fa,#e9ecef);color:#333;border-radius:3px;cursor:pointer;font-size:12px;font-weight:600}
+.btn:hover{background:linear-gradient(180deg,#e9ecef,#dee2e6);border-color:#888}
+.btn-primary{background:linear-gradient(180deg,var(--gold),var(--dark-gold));border-color:var(--dark-gold);color:#fff}
+.btn-primary:hover{background:linear-gradient(180deg,var(--dark-gold),#9c7009)}
+.btn-outline{background:transparent}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:4px;padding:12px;border-top:3px solid var(--gold)}
+.stat-card .label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
+.stat-card .value{font-size:22px;font-weight:700;color:#333}
+.stat-card .delta{font-size:11px;margin-top:4px;color:#666}
+.delta-up{color:var(--green)}
+.delta-down{color:var(--red)}
+.quick-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.q-card{background:#fff;border:1px solid var(--border);border-radius:4px;padding:14px;cursor:pointer;transition:all 0.2s;text-decoration:none;color:#333;display:block}
+.q-card:hover{box-shadow:0 3px 10px rgba(0,0,0,0.12);transform:translateY(-2px);border-color:var(--gold)}
+.q-card .icon{font-size:28px;margin-bottom:6px}
+.q-card h3{font-size:13px;font-weight:600;margin-bottom:2px}
+.q-card p{font-size:11px;color:#888}
+.panel{background:#fff;border:1px solid var(--border);border-radius:4px;margin-bottom:16px}
+.panel-header{padding:10px 14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#f0f0f0,#e0e0e0);font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.panel-body{padding:14px}
+.toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.toolbar input,.toolbar select{border:1px solid var(--border);background:#fff;padding:5px 8px;border-radius:3px;font-size:12px;color:#333}
+.toolbar input:focus,.toolbar select:focus{outline:none;border-color:var(--accent-blue);box-shadow:0 0 0 2px rgba(91,155,213,0.2)}
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);background:#f5f5f5;color:#555;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.03em}
+.data-table td{padding:8px 10px;border-bottom:1px solid #e0e0e0}
+.data-table tr:hover td{background:#f8f9fa}
+.badge-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.03em}
+.badge-pending{background:#fff3cd;color:#856404}
+.badge-approved{background:#d4edda;color:#155724}
+.badge-rejected{background:#f8d7da;color:#721c24}
+.badge-draft{background:#e9ecef;color:#666}
+.action-btns{display:flex;gap:4px}
+.action-btn{background:transparent;border:1px solid var(--border);color:#555;padding:2px 8px;border-radius:3px;cursor:pointer;font-size:11px}
+.action-btn:hover{border-color:var(--accent-blue);color:var(--accent-blue);background:#e7f1fa}
+.pagination{display:flex;justify-content:flex-end;gap:4px;margin-top:10px}
+.page-btn{background:#fff;border:1px solid var(--border);color:#555;padding:4px 9px;border-radius:3px;cursor:pointer;font-size:11px}
+.page-btn.active{background:var(--gold);color:#fff;border-color:var(--dark-gold);font-weight:700}
+.status-bar{background:linear-gradient(180deg,#C0C0C0,#A9A9A9);border-top:1px solid var(--border);padding:6px 20px;font-size:11px;display:flex;justify-content:space-between;color:#444;position:sticky;bottom:0}
+.status-items{display:flex;gap:20px}
+.status-items span{display:flex;align-items:center;gap:4px}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot-green{background:var(--green)}
+.dot-yellow{background:var(--yellow)}
+.dot-red{background:var(--red)}
+.dot-blue{background:var(--blue)}
+@media(max-width:1024px){.stats-row{grid-template-columns:repeat(2,1fr)}.quick-actions{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.sidebar{display:none}.stats-row{grid-template-columns:1fr}.quick-actions{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-logo">INCENTIVE HOUSE<small>OF EGYPT</small></div>
+</div>
+<div class="sidebar-user">Welcome<span id="userDisplay">Admin</span></div>
+<nav class="sidebar-nav">
+<a class="nav-item" href="/" onclick="return navigate(this,'dashboard')"><span class="icon">🏠</span> Dashboard</a>
+<a class="nav-item" href="/api/v1/incentivehouse/recon/status" onclick="return navigate(this,'analysis')"><span class="icon">📊</span> Analysis</a>
+<a class="nav-item" href="/api/v1/incentivehouse/recon/form" onclick="return navigate(this,'sales')"><span class="icon">💰</span> Sales <span class="badge">344</span></a>
+<a class="nav-item active" href="/api/v1/incentivehouse/purchasing" onclick="return navigate(this,'purchase')"><span class="icon">🛒</span> Purchase <span class="badge">1,107</span></a>
+<a class="nav-item" href="/api/v1/incentivehouse/events/new" onclick="return navigate(this,'events')"><span class="icon">🎭</span> Events <span class="badge">0</span></a>
+<a class="nav-item" href="/api/v1/incentivehouse/builder/protocol" onclick="return navigate(this,'operation')"><span class="icon">⚙️</span> Operation</a>
+<a class="nav-item" href="/api/v1/incentivehouse/v2/docs" onclick="return navigate(this,'v2')"><span class="icon">⚡</span> v2 Pipeline <span class="badge">NEW</span></a>
+<a class="nav-item" href="#" onclick="return navigate(this,'employees')"><span class="icon">👥</span> Employees</a>
+<a class="nav-item" href="/api/v1/incentivehouse/recon/form" onclick="return navigate(this,'accounts')"><span class="icon">🏦</span> Accounts</a>
+<a class="nav-item" href="/api/v1/incentivehouse/search" onclick="return navigate(this,'search')"><span class="icon">🔍</span> Search</a>
+<a class="nav-item" href="#" onclick="return navigate(this,'preferences')"><span class="icon">🔧</span> Preferences</a>
+</nav>
+<div class="sidebar-footer">v2.0.0 • Bio-ERP</div>
+</div>
+<div class="main">
+<div class="header">
+<div class="header-title">📦 Purchasing — Purchase Orders & Vendors</div>
+<div class="header-user">
+<input type="text" id="globalSearch" placeholder="🔍 Search POs, vendors..." onkeyup="if(event.key==='Enter')window.location.href='/api/v1/incentivehouse/search?q='+encodeURIComponent(this.value)">
+<button class="logout-btn" onclick="logout()">🚪 Logout</button>
+</div>
+</div>
+<div class="content">
+<div class="page-header">
+<div><h2>📦 Purchase Orders & Vendor Management</h2></div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-primary" onclick="createPO()">+ New Purchase Order</button>
+<button class="btn" onclick="exportData()">⬇ Export CSV</button>
+</div>
+</div>
+
+<div class="stats-row">
+<div class="stat-card">
+<div class="label">Open POs</div>
+<div class="value" id="statOpen">—</div>
+<div class="delta delta-up">↑ 12% vs last month</div>
+</div>
+<div class="stat-card">
+<div class="label">Pending Approval</div>
+<div class="value" id="statPending">—</div>
+<div class="delta delta-down">3 urgent</div>
+</div>
+<div class="stat-card">
+<div class="label">YTD Spend</div>
+<div class="value" id="statSpend">EGP —</div>
+<div class="delta delta-up">↑ 8.4%</div>
+</div>
+<div class="stat-card">
+<div class="label">Avg Lead Time</div>
+<div class="value" id="statLead">—d</div>
+<div class="delta delta-up">↓ 1.2 days</div>
+</div>
+</div>
+
+<div class="quick-actions">
+<a href="#" class="q-card" onclick="alert('Open Purchase Requests module');return false">
+<div class="icon">📝</div>
+<h3>Purchase Requests</h3>
+<p>Create & track internal requisitions</p>
+</a>
+<a href="#" class="q-card" onclick="alert('Open Purchase Orders module');return false">
+<div class="icon">📋</div>
+<h3>Purchase Orders</h3>
+<p>Manage vendor POs & line items</p>
+</a>
+<a href="#" class="q-card" onclick="alert('Open Vendor Management module');return false">
+<div class="icon">🏢</div>
+<h3>Vendor Management</h3>
+<p>Vendor master, ratings, contracts</p>
+</a>
+</div>
+
+<div class="panel">
+<div class="panel-header">
+<span>📋 Recent Purchase Orders</span>
+<button class="btn btn-outline" style="padding:3px 10px;font-size:11px" onclick="refreshGrid()">🔄 Refresh</button>
+</div>
+<div class="panel-body">
+<div class="toolbar">
+<input type="text" id="searchPO" placeholder="Search PO #, vendor, item..." onkeyup="filterGrid()" style="width:240px">
+<select id="filterStatus" onchange="filterGrid()">
+<option value="">All Status</option>
+<option value="draft">Draft</option>
+<option value="pending">Pending</option>
+<option value="approved">Approved</option>
+<option value="rejected">Rejected</option>
+</select>
+<select id="filterVendor">
+<option value="">All Vendors</option>
+</select>
+<input type="date" id="filterFrom" title="From date">
+<input type="date" id="filterTo" title="To date">
+</div>
+<table class="data-table" id="poTable">
+<thead>
+<tr>
+<th>PO Number</th>
+<th>Vendor</th>
+<th>Description</th>
+<th>Amount (EGP)</th>
+<th>Status</th>
+<th>Created</th>
+<th>Expected</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="poTableBody"></tbody>
+</table>
+<div class="pagination" id="pagination">
+<button class="page-btn active">1</button>
+<button class="page-btn">2</button>
+<button class="page-btn">3</button>
+<button class="page-btn">Next ›</button>
+</div>
+</div>
+</div>
+
+<div class="panel">
+<div class="panel-header"><span>🏢 Vendor Performance Snapshot</span></div>
+<div class="panel-body">
+<table class="data-table" id="vendorTable">
+<thead>
+<tr>
+<th>Vendor</th>
+<th>On-Time %</th>
+<th>Quality</th>
+<th>Open POs</th>
+<th>YTD Spend</th>
+<th>Rating</th>
+</tr>
+</thead>
+<tbody id="vendorTableBody"></tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="status-bar">
+<div class="status-items">
+<span><span class="status-dot dot-green"></span> Module: <strong>Purchasing</strong></span>
+<span><span class="status-dot dot-green"></span> Active POs: <strong id="sActive">—</strong></span>
+<span><span class="status-dot dot-yellow"></span> Pending: <strong id="sPending">—</strong></span>
+<span><span class="status-dot dot-blue"></span> Vendors: <strong id="sVendors">—</strong></span>
+<span><span class="status-dot dot-green"></span> Server: <strong>Online</strong></span>
+</div>
+<span id="sTimestamp">—</span>
+</div>
+</div>
+<script>
+let navItems=document.querySelectorAll('.nav-item');
+function navigate(el,page){navItems.forEach(i=>i.classList.remove('active'));el.classList.add('active');return true}
+function logout(){if(confirm('Logout from IncentiveHouse ERP?'))document.getElementById('userDisplay').textContent='Guest';document.getElementById('userNameInput').value='Guest'}
+const poData=[
+{id:'PO-2026-0042',vendor:'CISCO Systems',desc:'Network switches & routers',amount:284750,status:'approved',created:'2026-05-28',expected:'2026-06-15'},
+{id:'PO-2026-0041',vendor:'Microsoft Corp',desc:'Office 365 licenses Q3',amount:156000,status:'pending',created:'2026-05-27',expected:'2026-06-01'},
+{id:'PO-2026-0040',vendor:'NOVENTIQ',desc:'IT support services',amount:95000,status:'approved',created:'2026-05-25',expected:'2026-06-10'},
+{id:'PO-2026-0039',vendor:'ABBOTT Labs',desc:'Medical equipment spare parts',amount:42300,status:'draft',created:'2026-05-24',expected:'2026-07-01'},
+{id:'PO-2026-0038',vendor:'Local Supplier',desc:'Office stationery bulk',amount:12500,status:'approved',created:'2026-05-22',expected:'2026-05-30'},
+{id:'PO-2026-0037',vendor:'CISCO Systems',desc:'Firewall upgrade project',amount:198500,status:'rejected',created:'2026-05-20',expected:'2026-06-20'}
+];
+const vendorData=[
+{name:'CISCO Systems',onTime:94,quality:4.6,open:2,spend:483250,rating:'A'},
+{name:'Microsoft Corp',onTime:100,quality:4.8,open:1,spend:156000,rating:'A+'},
+{name:'NOVENTIQ',onTime:88,quality:4.2,open:1,spend:95000,rating:'B+'},
+{name:'ABBOTT Labs',onTime:91,quality:4.5,open:1,spend:42300,rating:'A-'}
+];
+function renderPOTable(data){
+const tb=document.getElementById('poTableBody');
+tb.innerHTML=data.map(po=>{
+const cls={draft:'badge-draft',pending:'badge-pending',approved:'badge-approved',rejected:'badge-rejected'}[po.status]||'badge-draft';
+return `<tr>
+<td><strong>${po.id}</strong></td>
+<td>${po.vendor}</td>
+<td>${po.desc}</td>
+<td>EGP ${po.amount.toLocaleString()}</td>
+<td><span class="badge-pill ${cls}">${po.status}</span></td>
+<td>${po.created}</td>
+<td>${po.expected}</td>
+<td><div class="action-btns">
+<button class="action-btn" onclick="viewPO('${po.id}')">View</button>
+<button class="action-btn" onclick="editPO('${po.id}')">Edit</button>
+</div></td>
+</tr>`;}).join('');
+}
+function renderVendorTable(data){
+const tb=document.getElementById('vendorTableBody');
+tb.innerHTML=data.map(v=>{
+const stars='★'.repeat(Math.floor(v.quality))+'☆'.repeat(5-Math.floor(v.quality));
+return `<tr>
+<td><strong>${v.name}</strong></td>
+<td>${v.onTime}%</td>
+<td>${stars} ${v.quality}</td>
+<td>${v.open}</td>
+<td>EGP ${v.spend.toLocaleString()}</td>
+<td><span class="badge-pill badge-approved">${v.rating}</span></td>
+</tr>`;}).join('');
+}
+function filterGrid(){
+const s=document.getElementById('searchPO').value.toLowerCase();
+const st=document.getElementById('filterStatus').value;
+const f=poData.filter(po=>{
+const ms=!s||po.id.toLowerCase().includes(s)||po.vendor.toLowerCase().includes(s)||po.desc.toLowerCase().includes(s);
+const mst=!st||po.status===st;
+return ms&&mst;});
+renderPOTable(f);
+}
+function createPO(){alert('Create PO modal — wire to POST /api/v1/purchase-orders')}
+function exportData(){alert('Export to CSV — wire to GET /api/v1/purchase-orders/export')}
+function refreshGrid(){renderPOTable(poData);renderVendorTable(vendorData)}
+function viewPO(id){alert('Open PO '+id+' details — wire to GET /api/v1/purchase-orders/'+id)}
+function editPO(id){alert('Edit PO '+id+' — wire to GET /api/v1/purchase-orders/'+id+'/edit')}
+document.addEventListener('DOMContentLoaded',()=>{
+renderPOTable(poData);
+renderVendorTable(vendorData);
+document.getElementById('statOpen').textContent=poData.filter(p=>p.status==='approved').length;
+document.getElementById('statPending').textContent=poData.filter(p=>p.status==='pending').length;
+document.getElementById('statSpend').textContent='EGP '+poData.reduce((a,b)=>a+b.amount,0).toLocaleString();
+document.getElementById('statLead').textContent='14d';
+document.getElementById('sActive').textContent=poData.filter(p=>p.status==='approved').length;
+document.getElementById('sPending').textContent=poData.filter(p=>p.status==='pending').length;
+document.getElementById('sVendors').textContent=vendorData.length;
+document.getElementById('sTimestamp').textContent='Loaded: '+new Date().toLocaleTimeString();
+});
+</script>
+</body>
+</html>
