@@ -1,0 +1,7 @@
+﻿INVOICE INV-2026-0042
+Date: 2026-05-15
+Supplier: Tech Solutions Inc.
+Customer: XYZ Corp
+Total: 9918.00
+VAT: 1218.00
+GL Account: 4000

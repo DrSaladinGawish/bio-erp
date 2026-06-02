@@ -112,7 +112,7 @@ class EventBridge:
     @staticmethod
     async def sync_local_to_web(
         db: AsyncSession,
-        web_api_url: str = "http://localhost:8000/api/v1/events/receive",
+        web_api_url: str = "http://localhost:8001/api/v1/events/receive",
     ) -> int:
         import httpx
 

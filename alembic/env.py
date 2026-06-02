@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.database import Base
 from app.models import *  # noqa: F401, F403 — register all models with Base.metadata
+import app.ai_ingest.models  # noqa: F401 — register AI ingestion tables with Base.metadata
 
 config = context.config
 if config.config_file_name is not None:

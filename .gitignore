@@ -1,24 +1,82 @@
-# Python
+# === Python ===
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
 .env
-venv/
 .venv/
+venv/
+ENV/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# IDEs
+# === Database ===
+*.db
+*.sqlite
+*.sqlite3
+*.accdb
+*.mdb
+*.ldb
+*.mde
+
+# === Node / Frontend ===
+node_modules/
+frontend/node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+*.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# === Office Temp Files ===
+~$*
+*.tmp
+*.xlk
+
+# === Runtime / Logs ===
+*.log
+out.txt
+server.err
+bio_erp_stdout.txt
+bio_erp_stderr.txt
+err.txt
+*.pid
+*.dump
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Data / Binary ===
+Data Base/
+Data Base/D5D49330
+*.bak
+*.backup
+
+# === IDE ===
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# OS
-Thumbs.db
-.Desktop.ini
-
-# Logs
-*.log
-
-# Test DB
-*.db
-
-# Archives
+# === Build / Deploy artifacts ===
+deploy_package/
+bio_erp_all_phases/
 *.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# === Aider / AI tooling caches ===
+.aider*
+.aider.chat.history.md
+.aider.input.history
+.aider.tags.cache.v4/

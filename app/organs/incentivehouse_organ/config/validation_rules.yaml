@@ -1,0 +1,22 @@
+protocell:
+  rule_1_mandatory_fields:
+    required:
+      - DESCRIPTION_NORM
+      - AMOUNT_EGP
+    min_description_length: 5
+  rule_2_sub_led_validation:
+    enabled: true
+  rule_3_pnr_validation:
+    enabled: true
+  rule_4_dual_entry_balance:
+    enabled: true
+    tolerance: 0.01
+  rule_5_date_validation:
+    min_date: "2022-01-01"
+  rule_6_amount_validation:
+    max_without_approval_egp: 500000
+  rule_7_duplicate_detection:
+    composite_key:
+      - TRANSACTION_DATE
+      - AMOUNT_EGP
+      - DESCRIPTION_NORM

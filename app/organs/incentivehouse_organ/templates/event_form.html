@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Event Job Order - IncentiveHouse ERP</title>
+    <style>
+        /* === INCENTIVEHOUSE THEME === */
+        :root {
+            --primary-gold: #D4A017;
+            --dark-gold: #B8860B;
+            --light-gold: #F5DEB3;
+            --bg-gray: #E8E8E8;
+            --panel-gray: #D3D3D3;
+            --border-gray: #A9A9A9;
+            --text-dark: #333333;
+            --text-light: #666666;
+            --error-red: #CC0000;
+            --success-green: #228B22;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            font-size: 12px;
+        }
+
+        /* === HEADER === */
+        .header {
+            background: linear-gradient(180deg, #C0C0C0 0%, #A9A9A9 100%);
+            border-bottom: 2px solid var(--border-gray);
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-gold);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .header-title {
+            font-family: "Brush Script MT", "Segoe Script", cursive;
+            font-size: 24px;
+            color: var(--primary-gold);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            font-style: italic;
+        }
+
+        .header-right {
+            text-align: center;
+        }
+
+        .company-name {
+            font-family: "Times New Roman", serif;
+            font-size: 22px;
+            font-weight: bold;
+            color: #4A4A4A;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .company-sub {
+            font-family: "Times New Roman", serif;
+            font-size: 14px;
+            color: #4A4A4A;
+            letter-spacing: 2px;
+        }
+
+        /* === MAIN FORM === */
+        .form-container {
+            padding: 15px;
+            background: var(--bg-gray);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .form-panel {
+            background: var(--panel-gray);
+            border: 1px solid var(--border-gray);
+            border-radius: 2px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 8px;
+            align-items: flex-start;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .form-group label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 2px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 3px 6px;
+            border: 1px solid var(--border-gray);
+            border-radius: 2px;
+            font-size: 12px;
+            background: white;
+            min-height: 22px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 3px var(--light-gold);
+        }
+
+        .form-group input[readonly],
+        .form-group input.disabled {
+            background: #F0F0F0;
+            color: var(--text-light);
+        }
+
+        .form-group input.error {
+            background: #FFE4E1;
+            border-color: var(--error-red);
+        }
+
+        /* Field sizes matching the screenshot */
+        .w-80 { width: 80px; }
+        .w-100 { width: 100px; }
+        .w-120 { width: 120px; }
+        .w-150 { width: 150px; }
+        .w-200 { width: 200px; }
+        .w-250 { width: 250px; }
+        .w-300 { width: 300px; }
+        .w-350 { width: 350px; }
+        .w-400 { width: 400px; }
+        .w-full { flex: 1; min-width: 150px; }
+
+        .textarea-lg {
+            min-height: 50px;
+            resize: vertical;
+        }
+
+        /* === BUTTONS === */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 6px 15px;
+            border: 1px solid var(--border-gray);
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(180deg, var(--light-gold) 0%, var(--primary-gold) 100%);
+            color: var(--text-dark);
+            border-color: var(--dark-gold);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(180deg, var(--primary-gold) 0%, var(--dark-gold) 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(180deg, #F0F0F0 0%, #C0C0C0 100%);
+            color: var(--text-dark);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(180deg, #E0E0E0 0%, #B0B0B0 100%);
+        }
+
+        .btn-icon {
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            justify-content: center;
+            font-size: 20px;
+            flex-direction: column;
+        }
+
+        .btn-post {
+            background: linear-gradient(180deg, #90EE90 0%, #32CD32 100%);
+            border-color: #228B22;
+        }
+
+        .btn-post:hover {
+            background: linear-gradient(180deg, #32CD32 0%, #228B22 100%);
+        }
+
+        /* === GRID / SUBFORM === */
+        .subform {
+            margin-top: 15px;
+            border: 1px solid var(--border-gray);
+            background: white;
+        }
+
+        .subform-header {
+            background: linear-gradient(180deg, #808080 0%, #696969 100%);
+            color: white;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            gap: 15px;
+        }
+
+        .subform-header span {
+            cursor: pointer;
+        }
+
+        .subform-header span:hover {
+            text-decoration: underline;
+        }
+
+        .subform-grid {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .subform-grid th {
+            background: linear-gradient(180deg, #A9A9A9 0%, #808080 100%);
+            color: white;
+            padding: 4px 8px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            border-right: 1px solid #696969;
+        }
+
+        .subform-grid td {
+            padding: 3px 8px;
+            border-bottom: 1px solid #E0E0E0;
+            border-right: 1px solid #E0E0E0;
+            font-size: 12px;
+        }
+
+        .subform-grid tr:nth-child(even) {
+            background: #F5F5F5;
+        }
+
+        .subform-grid tr:hover {
+            background: var(--light-gold);
+        }
+
+        .subform-grid input,
+        .subform-grid select {
+            width: 100%;
+            border: none;
+            background: transparent;
+            padding: 2px;
+            font-size: 12px;
+        }
+
+        .subform-grid input:focus,
+        .subform-grid select:focus {
+            background: white;
+            outline: 1px solid var(--primary-gold);
+        }
+
+        /* === STATUS BAR === */
+        .status-bar {
+            background: linear-gradient(180deg, #C0C0C0 0%, #A9A9A9 100%);
+            border-top: 1px solid var(--border-gray);
+            padding: 4px 10px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        /* === FILE UPLOAD === */
+        .file-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .file-upload-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(180deg, #E0E0E0 0%, #C0C0C0 100%);
+            border: 2px solid var(--border-gray);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload-icon:hover {
+            background: linear-gradient(180deg, var(--light-gold) 0%, var(--primary-gold) 100%);
+            border-color: var(--dark-gold);
+        }
+
+        .file-upload-label {
+            font-size: 10px;
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        /* === CALCULATION FIELDS === */
+        .calc-field {
+            background: #F0F8FF !important;
+            border: 1px dashed var(--border-gray) !important;
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .calc-field.error {
+            color: var(--error-red);
+            background: #FFE4E1 !important;
+        }
+
+        /* === SECTION DIVIDER === */
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-dark);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 10px 0 5px 0;
+            padding-bottom: 3px;
+            border-bottom: 1px solid var(--border-gray);
+        }
+
+        /* === SCROLLBAR === */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #F0F0F0; }
+        ::-webkit-scrollbar-thumb { background: #A9A9A9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #808080; }
+
+        /* === MESSAGES === */
+        .alert {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .alert-success { background: #D4EDDA; border: 1px solid #C3E6CB; color: #155724; }
+        .alert-error { background: #F8D7DA; border: 1px solid #F5C6CB; color: #721C24; }
+        .alert-info { background: #D1ECF1; border: 1px solid #BEE5EB; color: #0C5460; }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo-icon">🎭</div>
+            <div class="header-title">Create New Event Job-Order</div>
+        </div>
+        <div class="header-right">
+            <div class="company-name">Incentive House</div>
+            <div class="company-sub">OF EGYPT</div>
+        </div>
+    </div>
+
+    <!-- MAIN FORM -->
+    <div class="form-container">
+        <div id="message-area"></div>
+
+        <form id="event-form" method="POST" action="/api/v1/incentivehouse/events/create">
+            <!-- TOP PANEL: IDs & Branch -->
+            <div class="form-panel">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>CoCen_Key_ID</label>
+                        <input type="number" name="cocen_key_id" class="w-80" value="{{ next_cocen }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>PNR_ID</label>
+                        <input type="text" name="pnr_id" class="w-120" value="9.22.C0002.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Branch</label>
+                        <select name="branch" class="w-150">
+                            {% for branch in branches %}
+                            <option value="{{ branch }}" {% if branch == 'Dubai Branch' %}selected{% endif %}>{{ branch }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group w-full">
+                        <label>Customer PO Refrance</label>
+                        <input type="text" name="customer_po_ref" class="w-full">
+                    </div>
+                </div>
+            </div>
+
+            <!-- MIDDLE PANEL: Client, Currency, PO -->
+            <div class="form-panel">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Client ID</label>
+                        <select name="client_id" class="w-200" required>
+                            <option value="">-- Select Client --</option>
+                            {% for client in clients %}
+                            <option value="{{ client[0] }}" {% if client[1] == 'Abbott Laboratories' %}selected{% endif %}>{{ client[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Currency_ID</label>
+                        <select name="currency_id" class="w-100">
+                            {% for curr in currencies %}
+                            <option value="{{ curr }}" {% if curr == 'USD' %}selected{% endif %}>{{ curr }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Conversion Rate</label>
+                        <input type="number" name="conversion_rate" class="w-120" value="35.15" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <div class="file-upload">
+                            <div class="file-upload-icon" onclick="document.getElementById('po_file').click()" title="Upload PO Copy">📤</div>
+                            <div class="file-upload-label">PO COPY</div>
+                            <input type="file" id="po_file" name="po_file" style="display:none;" accept=".pdf,.jpg,.png,.doc,.docx">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EVENT DETAILS PANEL -->
+            <div class="form-panel">
+                <div class="form-row">
+                    <div class="form-group w-full">
+                        <label>Event Name - Description</label>
+                        <textarea name="event_description" class="w-full textarea-lg" placeholder="Enter event description...">Standalone 4 days / 3 nights 30 singles Athnes / Greece</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" name="start_date" class="w-120">
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" name="end_date" class="w-120">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Size</label>
+                        <input type="number" name="size" class="w-80" value="38">
+                    </div>
+                    <div class="form-group w-full">
+                        <label>Location</label>
+                        <input type="text" name="location" class="w-full">
+                    </div>
+                    <div class="form-group w-full">
+                        <label>Avenue</label>
+                        <input type="text" name="avenue" class="w-full">
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM PANEL: Payment, Requester, Gross Sales, Buttons -->
+            <div class="form-panel">
+                <div class="form-row" style="align-items: flex-end;">
+                    <div class="form-group">
+                        <label>Payment Terms</label>
+                        <input type="text" name="payment_terms" class="w-200">
+                    </div>
+                    <div class="form-group">
+                        <label>Requester</label>
+                        <select name="requester" class="w-200">
+                            <option value="">-- Select --</option>
+                            {% for s in staff %}
+                            <option value="{{ s[0] }}">{{ s[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Gross_Sales</label>
+                        <input type="text" name="gross_sales" class="w-120 calc-field error" value="#Error" readonly>
+                    </div>
+                    <div class="btn-group" style="margin-left: auto;">
+                        <button type="button" class="btn btn-post btn-icon" title="POST Event" onclick="postEvent()">📋<br><small>POST</small></button>
+                        <button type="submit" class="btn btn-primary btn-icon" title="Save Event">💾<br><small>SAVE</small></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUBFORM: Sales Line Items -->
+            <div class="section-title">Sales Line Items</div>
+            <div class="subform">
+                <div class="subform-header">
+                    <span>ID_sales</span>
+                    <span>Sales Category</span>
+                    <span>PNR_ID</span>
+                    <span>Service Category</span>
+                    <span>Item</span>
+                </div>
+                <table class="subform-grid">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">ID_sales</th>
+                            <th style="width: 150px;">Sales Category ▼</th>
+                            <th style="width: 120px;">PNR_ID ▼</th>
+                            <th style="width: 150px;">Service Category ▼</th>
+                            <th style="width: 200px;">Item</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sales_lines">
+                        <tr>
+                            <td><input type="text" name="line_items[0][id_sales]" placeholder="*"></td>
+                            <td>
+                                <select name="line_items[0][sales_category]">
+                                    <option value="">-- Select --</option>
+                                    <option value="hotel">Hotel</option>
+                                    <option value="flight">Flight</option>
+                                    <option value="transfer">Transfer</option>
+                                    <option value="tour">Tour</option>
+                                    <option value="dining">Dining</option>
+                                </select>
+                            </td>
+                            <td><input type="text" name="line_items[0][pnr_id]" value="9.22.C0002.1"></td>
+                            <td>
+                                <select name="line_items[0][service_category]">
+                                    <option value="">-- Select --</option>
+                                    <option value="accommodation">Accommodation</option>
+                                    <option value="transport">Transport</option>
+                                    <option value="activity">Activity</option>
+                                </select>
+                            </td>
+                            <td><input type="text" name="line_items[0][item]" placeholder="Enter item..."></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="padding: 5px; text-align: right;">
+                    <button type="button" class="btn btn-secondary" onclick="addLineItem()">+ Add Line</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+        <span>Record: 1 of 1 | No Filter | Search</span>
+        <span>Record: 1 of 147</span>
+    </div>
+
+    <script>
+        let lineCount = 1;
+
+        function addLineItem() {
+            const tbody = document.getElementById('sales_lines');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><input type="text" name="line_items[${lineCount}][id_sales]" placeholder="*"></td>
+                <td>
+                    <select name="line_items[${lineCount}][sales_category]">
+                        <option value="">-- Select --</option>
+                        <option value="hotel">Hotel</option>
+                        <option value="flight">Flight</option>
+                        <option value="transfer">Transfer</option>
+                        <option value="tour">Tour</option>
+                        <option value="dining">Dining</option>
+                    </select>
+                </td>
+                <td><input type="text" name="line_items[${lineCount}][pnr_id]"></td>
+                <td>
+                    <select name="line_items[${lineCount}][service_category]">
+                        <option value="">-- Select --</option>
+                        <option value="accommodation">Accommodation</option>
+                        <option value="transport">Transport</option>
+                        <option value="activity">Activity</option>
+                    </select>
+                </td>
+                <td><input type="text" name="line_items[${lineCount}][item]" placeholder="Enter item..."></td>
+            `;
+            tbody.appendChild(newRow);
+            lineCount++;
+        }
+
+        function postEvent() {
+            const form = document.getElementById('event-form');
+            const formData = new FormData(form);
+
+            // Convert to JSON
+            const data = {};
+            formData.forEach((value, key) => {
+                if (key.startsWith('line_items')) {
+                    // Handle line items array
+                    const match = key.match(/line_items\[(\d+)\]\[(\w+)\]/);
+                    if (match) {
+                        const idx = parseInt(match[1]);
+                        const field = match[2];
+                        if (!data.line_items) data.line_items = [];
+                        if (!data.line_items[idx]) data.line_items[idx] = {};
+                        data.line_items[idx][field] = value;
+                    }
+                } else {
+                    data[key] = value;
+                }
+            });
+
+            fetch('/api/v1/incentivehouse/events/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(result => {
+                showMessage(result.status === 'success' ? 'success' : 'error', result.message);
+                if (result.status === 'success') {
+                    // Post to production
+                    return fetch(`/api/v1/incentivehouse/events/post/${result.evn_id}`, { method: 'POST' });
+                }
+            })
+            .then(r => r ? r.json() : null)
+            .then(postResult => {
+                if (postResult) {
+                    showMessage('info', postResult.message);
+                }
+            })
+            .catch(err => showMessage('error', err.message));
+        }
+
+        function showMessage(type, text) {
+            const area = document.getElementById('message-area');
+            const div = document.createElement('div');
+            div.className = `alert alert-${type}`;
+            div.textContent = text;
+            area.appendChild(div);
+            setTimeout(() => div.remove(), 5000);
+        }
+
+        // File upload preview
+        document.getElementById('po_file').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                showMessage('info', 'PO Copy uploaded: ' + e.target.files[0].name);
+            }
+        });
+
+        // Form submission handler
+        document.getElementById('event-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = {};
+            formData.forEach((value, key) => {
+                if (key.startsWith('line_items')) {
+                    const match = key.match(/line_items\[(\d+)\]\[(\w+)\]/);
+                    if (match) {
+                        const idx = parseInt(match[1]);
+                        const field = match[2];
+                        if (!data.line_items) data.line_items = [];
+                        if (!data.line_items[idx]) data.line_items[idx] = {};
+                        data.line_items[idx][field] = value;
+                    }
+                } else {
+                    data[key] = value;
+                }
+            });
+
+            fetch('/api/v1/incentivehouse/events/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(result => {
+                showMessage(result.status === 'success' ? 'success' : 'error', result.message);
+            })
+            .catch(err => showMessage('error', err.message));
+        });
+    </script>
+
+</body>
+</html>

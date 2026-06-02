@@ -14,6 +14,9 @@ celery_app = Celery(
         "app.tasks.alert_tasks",
         "app.tasks.scm_tasks",
         "app.tasks.backup_tasks",
+        "app.tasks.auto_trigger_tasks",
+        "app.tasks.or_tasks",
+        "app.tasks.report_tasks",
     ],
 )
 

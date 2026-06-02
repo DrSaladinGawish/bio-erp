@@ -1,0 +1,19 @@
+{
+  "clients": [
+    {"id": 1, "name": "Abbott Laboratories Egypt", "type": "Pharma", "keywords": ["ABBOTT", "ABT"]},
+    {"id": 2, "name": "ELIXIR PHARMA", "type": "Pharma", "keywords": ["ELIXIR", "ELX"]},
+    {"id": 3, "name": "MS EGYPT", "type": "Pharma", "keywords": ["MS EGYPT", "MSE", "MS"]},
+    {"id": 4, "name": "SO VALUE", "type": "Technology", "keywords": ["SO VALUE", "SOV"]},
+    {"id": 5, "name": "CISCO", "type": "Technology", "keywords": ["CISCO", "CSCO"]},
+    {"id": 6, "name": "NASCO", "type": "Manufacturing", "keywords": ["NASCO", "NSC"]},
+    {"id": 7, "name": "Orange Care", "type": "Telecom", "keywords": ["ORANGE", "ORG"]},
+    {"id": 8, "name": "Webex One Morocco", "type": "Events", "keywords": ["WEBEX", "WBX"]},
+    {"id": 9, "name": "theView Hotel", "type": "Hospitality", "keywords": ["THEVIEW", "VIEW", "THE VIEW"]},
+    {"id": 10, "name": "Integral", "type": "Consulting", "keywords": ["INTEGRAL", "ITG"]},
+    {"id": 11, "name": "Egy Trust", "type": "Financial", "keywords": ["EGY TRUST", "EGT"]},
+    {"id": 12, "name": "Speak Easy", "type": "Events", "keywords": ["SPEAK EASY", "SE"]},
+    {"id": 13, "name": "Malak Since", "type": "Retail", "keywords": ["MALAK", "MLK"]},
+    {"id": 14, "name": "Dr. Hendy Legal Case", "type": "Legal", "keywords": ["HENDY", "DR HENDY"]},
+    {"id": 15, "name": "Incentive House Internal", "type": "Internal", "keywords": ["IH", "INCENTIVE HOUSE", "INTERNAL"]}
+  ]
+}

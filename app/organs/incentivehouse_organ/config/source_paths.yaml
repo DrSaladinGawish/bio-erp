@@ -1,0 +1,68 @@
+# config/source_paths.yaml
+# Auto-discovered F:\ source files for IncentiveHouse ERP Protocell
+sources:
+  Bnk:
+    path: "F:\\JUN@25 Actual\\Bnk_LED.xlsx"
+    sheet: null
+    description: "Bank ledger transactions"
+    file_size_bytes: 162382
+  Sal:
+    path: "F:\\JUN@25 Actual\\SAL_LEDGER.xlsx"
+    sheet: null
+    description: "Sales ledger (1.1 MB, standalone)"
+    file_size_bytes: 1107723
+  Pur:
+    path: "F:\\JUN@25 Actual\\SAL&PUR LEDGER.xlsx"
+    sheet: null
+    description: "Combined SAL&PUR ledger (1.15 MB, primary)"
+    file_size_bytes: 1154405
+  SalPortal:
+    path: "F:\\Source Data\\Sales Portal Invoices Up to 16 Jul 2025.xlsx"
+    sheet: null
+    description: "E-Invoice portal sales export"
+    file_size_bytes: 61380
+  PurPortal:
+    path: "F:\\Source Data\\Purchase Portal Invoices Up to 16 Jul 2025.xlsx"
+    sheet: null
+    description: "E-Invoice portal purchases export"
+    file_size_bytes: 152294
+  GL:
+    path: "F:\\JUN@25 Actual\\Gen_LED.xlsx"
+    sheet: null
+    description: "General ledger (681 KB)"
+    file_size_bytes: 681139
+    split_to: [Evn, Env]
+  GLJuly:
+    path: "F:\\JUN@25 Actual\\Gen_LED JULY25.xlsx"
+    sheet: null
+    description: "General ledger July 2025 (464 KB)"
+    file_size_bytes: 464730
+    split_to: [Evn, Env]
+  Manual:
+    path: "F:\\JUN@25 Actual\\Manual Transaction.xlsx"
+    sheet: null
+    description: "Manual journal entries"
+    file_size_bytes: 84447
+
+# Mapping from module key to filesystem paths
+module_groups:
+  Bnk:
+    - Bnk
+  Sal:
+    - Sal
+    - SalPortal
+  Pur:
+    - Pur
+    - PurPortal
+  GL:
+    - GL
+    - GLJuly
+  Manual:
+    - Manual
+
+# Default module when --module all is used
+all_modules:
+  - Bnk
+  - Sal
+  - Pur
+  - Manual

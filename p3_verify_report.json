@@ -1,0 +1,132 @@
+{
+  "phase": "P3",
+  "checks": [
+    {
+      "name": "File exists: bank_reimport_engine.py",
+      "status": "PASS",
+      "detail": "Expected: D:\\ERP System\\BIO_ERP\\app\\scm_module\\bank_reimport_engine.py"
+    },
+    {
+      "name": "File exists: bank_reimport_router.py",
+      "status": "PASS",
+      "detail": "Expected: D:\\ERP System\\BIO_ERP\\app\\scm_module\\bank_reimport_router.py"
+    },
+    {
+      "name": "Syntax: engine",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Syntax: router",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Import: bank_reimport_engine",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Class: BankReimportEngine",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Class: BankTransactionValidator",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Function: run_reimport",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Constant: STAGING_TABLE",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Valid tx passes",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Valid tx has tx_hash",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Invalid tx fails",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Invalid tx has errors",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Zero amount passes with warning",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Zero amount warning",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Currency normalized to uppercase",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Import: bank_reimport_router",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Router object exists",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Route: /reimport",
+      "status": "PASS",
+      "detail": "Found: /api/v1/scm/bank/reimport /api/v1/scm/bank/staging/status /api/v1/scm/bank/staging/approve /api/v1/scm/bank/staging/deploy /api/v1/scm/bank/health"
+    },
+    {
+      "name": "Route: /staging/status",
+      "status": "PASS",
+      "detail": "Found: /api/v1/scm/bank/reimport /api/v1/scm/bank/staging/status /api/v1/scm/bank/staging/approve /api/v1/scm/bank/staging/deploy /api/v1/scm/bank/health"
+    },
+    {
+      "name": "Route: /staging/approve",
+      "status": "PASS",
+      "detail": "Found: /api/v1/scm/bank/reimport /api/v1/scm/bank/staging/status /api/v1/scm/bank/staging/approve /api/v1/scm/bank/staging/deploy /api/v1/scm/bank/health"
+    },
+    {
+      "name": "Route: /staging/deploy",
+      "status": "PASS",
+      "detail": "Found: /api/v1/scm/bank/reimport /api/v1/scm/bank/staging/status /api/v1/scm/bank/staging/approve /api/v1/scm/bank/staging/deploy /api/v1/scm/bank/health"
+    },
+    {
+      "name": "Route: /health",
+      "status": "PASS",
+      "detail": "Found: /api/v1/scm/bank/reimport /api/v1/scm/bank/staging/status /api/v1/scm/bank/staging/approve /api/v1/scm/bank/staging/deploy /api/v1/scm/bank/health"
+    },
+    {
+      "name": "Dry run default",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Production write protection",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "passed": 25,
+  "failed": 0
+}

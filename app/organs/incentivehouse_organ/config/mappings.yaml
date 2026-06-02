@@ -1,0 +1,38 @@
+modules:
+  Bnk:
+    sub_led_defaults:
+      CIB_EGP: { code: 1002, name: "CIB Bank EGP" }
+      CIB_USD: { code: 1003, name: "CIB Bank USD" }
+      QNB_EGP: { code: 1004, name: "QNB Bank EGP" }
+      QNB_USD: { code: 1005, name: "QNB Bank USD" }
+      CASH: { code: 1001, name: "Cash on Hand" }
+      default: { code: 1002, name: "CIB Bank EGP (default)" }
+    pnr_defaults:
+      TRANSFER: { id: 1, name: "Bank Transfer" }
+      CHEQUE: { id: 2, name: "Cheque" }
+      CASH: { id: 3, name: "Cash Transaction" }
+      STANDING: { id: 4, name: "Standing Order" }
+      default: { id: 1, name: "Bank Transfer (default)" }
+  Sal:
+    sub_led_defaults:
+      REVENUE_EVENT: { code: 4001, name: "Revenue - Event Management" }
+      REVENUE_CONSULT: { code: 4002, name: "Revenue - Consulting" }
+      REVENUE_PROD: { code: 4003, name: "Revenue - Production" }
+      VAT_OUTPUT: { code: 7001, name: "VAT Output" }
+      default: { code: 4001, name: "Revenue - Event (default)" }
+    pnr_defaults:
+      INVOICE: { id: 10, name: "Sales Invoice" }
+      CREDIT_NOTE: { id: 11, name: "Credit Note" }
+      EINVOICE: { id: 12, name: "E-Invoice" }
+      default: { id: 10, name: "Sales Invoice (default)" }
+  Pur:
+    sub_led_defaults:
+      COS: { code: 5001, name: "Cost of Services" }
+      COGS: { code: 5101, name: "Cost of Goods Sold" }
+      VAT_INPUT: { code: 7002, name: "VAT Input" }
+      default: { code: 5001, name: "Cost of Services (default)" }
+    pnr_defaults:
+      INVOICE: { id: 20, name: "Purchase Invoice" }
+      DEBIT_NOTE: { id: 21, name: "Debit Note" }
+      EINVOICE: { id: 22, name: "E-Invoice Received" }
+      default: { id: 20, name: "Purchase Invoice (default)" }

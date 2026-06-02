@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IncentiveHouse ERP Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;background:#D3D3D3;color:#333;font-size:13px;display:flex;min-height:100vh}
+:root{--gold:#D4A017;--dark-gold:#B8860B;--light-gold:#F5DEB3;--bg-gray:#C0C0C0;--panel:#D3D3D3;--border:#A9A9A9;--sidebar-bg:#2C2C2C;--sidebar-hover:#3A3A3A;--sidebar-active:#6B8E9F;--accent-blue:#5B9BD5}
+.sidebar{width:220px;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;flex-shrink:0;min-height:100vh}
+.sidebar-header{padding:15px;border-bottom:1px solid #444}
+.sidebar-logo{font-family:"Times New Roman",serif;font-size:20px;font-weight:bold;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
+.sidebar-logo small{display:block;font-size:11px;color:#999;letter-spacing:1px;font-weight:normal}
+.sidebar-user{padding:12px 15px;border-bottom:1px solid #444;font-size:12px;color:#ccc}
+.sidebar-user span{display:block;font-size:14px;color:#fff;font-weight:600}
+.sidebar-nav{flex:1;padding:8px 0}
+.nav-item{display:flex;align-items:center;padding:10px 15px;color:#ccc;text-decoration:none;font-size:13px;transition:all 0.2s;cursor:pointer;border-left:3px solid transparent}
+.nav-item:hover{background:var(--sidebar-hover);color:#fff}
+.nav-item.active{background:var(--sidebar-active);color:#fff;border-left-color:var(--gold)}
+.nav-item .icon{margin-right:12px;font-size:16px;width:20px;text-align:center}
+.nav-item .badge{margin-left:auto;background:var(--gold);color:#333;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:700}
+.sidebar-footer{padding:15px;border-top:1px solid #444;font-size:11px;color:#666}
+.main{flex:1;display:flex;flex-direction:column}
+.header{background:linear-gradient(180deg,#3A3A3A,#2C2C2C);padding:12px 25px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+.header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400' opacity='0.12'%3E%3Cpath fill='none' stroke='white' stroke-width='1' d='M100 200 Q200 150 300 200 T500 200 T700 200'/%3E%3Ccircle fill='white' opacity='0.08' cx='150' cy='180' r='4'/%3E%3Ccircle fill='white' opacity='0.08' cx='250' cy='220' r='3'/%3E%3Ccircle fill='white' opacity='0.08' cx='350' cy='190' r='5'/%3E%3Ccircle fill='white' opacity='0.08' cx='450' cy='210' r='3'/%3E%3Ccircle fill='white' opacity='0.08' cx='550' cy='180' r='4'/%3E%3C/svg%3E") center/cover;pointer-events:none}
+.header-title{position:relative;z-index:1;color:#fff;font-size:22px;font-weight:300;letter-spacing:1px}
+.header-user{position:relative;z-index:1;display:flex;align-items:center;gap:12px}
+.header-user input{border:1px solid #555;background:#3A3A3A;color:#fff;padding:4px 10px;border-radius:3px;font-size:12px;width:140px}
+.header-user .logout-btn{background:transparent;color:#ccc;border:1px solid #555;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:5px}
+.header-user .logout-btn:hover{background:#c0392b;border-color:#c0392b;color:#fff}
+.content{padding:20px;flex:1;overflow-y:auto}
+.welcome-bar{background:var(--panel);border:1px solid var(--border);padding:12px 18px;margin-bottom:20px;border-radius:4px;display:flex;justify-content:space-between;align-items:center}
+.welcome-bar h2{font-size:18px;font-weight:600;color:#444}
+.welcome-bar .date{color:#666;font-size:12px}
+.module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.module-card{background:#fff;border:1px solid var(--border);border-radius:4px;padding:18px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.module-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.15);transform:translateY(-2px);border-color:var(--gold)}
+.module-card .card-icon{font-size:36px;margin-bottom:10px}
+.module-card h3{font-size:14px;font-weight:600;color:#333;margin-bottom:4px}
+.module-card p{font-size:11px;color:#888;margin-bottom:8px}
+.module-card .card-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.badge-green{background:#d4edda;color:#155724}
+.badge-blue{background:#cce5ff;color:#004085}
+.badge-yellow{background:#fff3cd;color:#856404}
+.badge-red{background:#f8d7da;color:#721c24}
+.status-bar{background:linear-gradient(180deg,#C0C0C0,#A9A9A9);border-top:1px solid var(--border);padding:6px 20px;font-size:11px;display:flex;justify-content:space-between;color:#444;position:sticky;bottom:0}
+.status-items{display:flex;gap:20px}
+.status-items span{display:flex;align-items:center;gap:4px}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot-green{background:#28a745}
+.dot-yellow{background:#ffc107}
+.dot-red{background:#dc3545}
+.dot-blue{background:#17a2b8}
+@media(max-width:900px){.module-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.module-grid{grid-template-columns:1fr}.sidebar{width:60px}.nav-item span:not(.icon){display:none}}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-logo">INCENTIVE HOUSE<small>OF EGYPT</small></div>
+</div>
+<div class="sidebar-user">Welcome<span id="userDisplay">Admin</span></div>
+<nav class="sidebar-nav">
+<a class="nav-item active" href="/" onclick="return navigate(this,'dashboard')"><span class="icon">🏠</span> Dashboard</a>
+<a class="nav-item" href="/api/v1/incentivehouse/recon/status" onclick="return navigate(this,'analysis')"><span class="icon">📊</span> Analysis</a>
+<a class="nav-item" href="/api/v1/incentivehouse/recon/form" onclick="return navigate(this,'sales')"><span class="icon">💰</span> Sales <span class="badge">344</span></a>
+<a class="nav-item" href="/api/v1/incentivehouse/recon/form" onclick="return navigate(this,'purchase')"><span class="icon">🛒</span> Purchase <span class="badge">1,107</span></a>
+<a class="nav-item" href="/api/v1/incentivehouse/events/new" onclick="return navigate(this,'events')"><span class="icon">🎭</span> Events <span class="badge">0</span></a>
+<a class="nav-item" href="/api/v1/incentivehouse/builder/protocol" onclick="return navigate(this,'operation')"><span class="icon">⚙️</span> Operation</a>
+<a class="nav-item" href="/api/v1/incentivehouse/v2/docs" onclick="return navigate(this,'v2')"><span class="icon">⚡</span> v2 Pipeline <span class="badge">NEW</span></a>
+<a class="nav-item" href="#" onclick="return navigate(this,'employees')"><span class="icon">👥</span> Employees</a>
+<a class="nav-item" href="/api/v1/incentivehouse/recon/form" onclick="return navigate(this,'accounts')"><span class="icon">🏦</span> Accounts</a>
+<a class="nav-item" href="#" onclick="return navigate(this,'preferences')"><span class="icon">🔧</span> Preferences</a>
+</nav>
+<div class="sidebar-footer">v2.0.0 • Bio-ERP</div>
+</div>
+<div class="main">
+<div class="header">
+<div class="header-title">Welcome to Main Dashboard</div>
+<div class="header-user">
+<input type="text" id="userNameInput" placeholder="#Name?" value="Admin">
+<button class="logout-btn" onclick="logout()">🚪 Logout</button>
+</div>
+</div>
+<div class="content">
+<div class="welcome-bar">
+<div><h2>📋 Overview Dashboard</h2></div>
+<div class="date" id="currentDate"></div>
+</div>
+<div class="module-grid">
+<div class="module-card" onclick="location.href='/api/v1/incentivehouse/events/new'">
+<div class="card-icon">🎭</div>
+<h3>Event Management</h3>
+<p>Create & manage event job orders</p>
+<span class="card-badge badge-green">Ready</span>
+</div>
+<div class="module-card" onclick="location.href='/api/v1/incentivehouse/recon/form'">
+<div class="card-icon">🏦</div>
+<h3>Bank Reconciliation</h3>
+<p>ERP Builder Protocol — 5 steps</p>
+<span class="card-badge badge-blue" id="reconBadge">Loading...</span>
+</div>
+<div class="module-card" onclick="location.href='/api/v1/incentivehouse/builder/protocol'">
+<div class="card-icon">🔧</div>
+<h3>ERP Builder</h3>
+<p>Protocell extraction pipeline</p>
+<span class="card-badge badge-yellow">3,111 staged</span>
+</div>
+<div class="module-card" onclick="location.href='/api/v1/incentivehouse/recon/variances'">
+<div class="card-icon">📊</div>
+<h3>View Variances</h3>
+<p>Open reconciliation items</p>
+<span class="card-badge badge-red" id="varianceBadge">Loading...</span>
+</div>
+<div class="module-card" onclick="location.href='/api/v1/incentivehouse/recon/check-books'">
+<div class="card-icon">📋</div>
+<h3>Check Books</h3>
+<p>Per-account summary</p>
+<span class="card-badge badge-blue">4 accounts</span>
+</div>
+<div class="module-card" onclick="location.href='/api/v1/incentivehouse/v2/docs'">
+<div class="card-icon">⚡</div>
+<h3>v2 Pipeline</h3>
+<p>7-stage OR-optimized protocol</p>
+<span class="card-badge badge-green">NEW</span>
+</div>
+<div class="module-card" onclick="location.href='/api/v1/incentivehouse/docs'">
+<div class="card-icon">📖</div>
+<h3>API Documentation</h3>
+<p>Swagger UI for all endpoints</p>
+<span class="card-badge badge-green">v2.0.0</span>
+</div>
+</div>
+<div id="reconSummary" style="background:#fff;border:1px solid var(--border);border-radius:4px;padding:15px;margin-bottom:10px">
+<h3 style="font-size:14px;margin-bottom:10px;color:#444">🏦 Reconciliation Summary</h3>
+<div id="summaryCards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+<div style="text-align:center;padding:10px;background:#f8f9fa;border-radius:4px"><div style="font-size:24px;font-weight:700;color:#28a745" id="totalCount">-</div><div style="font-size:11px;color:#888">Total Rows</div></div>
+<div style="text-align:center;padding:10px;background:#d4edda;border-radius:4px"><div style="font-size:24px;font-weight:700;color:#155724" id="reconciledCount">-</div><div style="font-size:11px;color:#155724">Reconciled</div></div>
+<div style="text-align:center;padding:10px;background:#fff3cd;border-radius:4px"><div style="font-size:24px;font-weight:700;color:#856404" id="mismatchCount">-</div><div style="font-size:11px;color:#856404">Mismatch</div></div>
+<div style="text-align:center;padding:10px;background:#f8d7da;border-radius:4px"><div style="font-size:24px;font-weight:700;color:#721c24" id="unmatchedCount">-</div><div style="font-size:11px;color:#721c24">Unmatched</div></div>
+</div>
+</div>
+</div>
+<div class="status-bar">
+<div class="status-items">
+<span><span class="status-dot dot-green"></span> Bank Records: <strong id="sBank">-</strong></span>
+<span><span class="status-dot dot-green"></span> Reconciled: <strong id="sRecon">-</strong></span>
+<span><span class="status-dot dot-yellow"></span> Open Items: <strong id="sOpen">-</strong></span>
+<span><span class="status-dot dot-blue"></span> Events: <strong id="sEvents">0</strong></span>
+<span><span class="status-dot dot-green"></span> Server: <strong>Online</strong></span>
+</div>
+<span id="sTimestamp">-</span>
+</div>
+</div>
+<script>
+let navItems=document.querySelectorAll('.nav-item');
+function navigate(el,page){navItems.forEach(i=>i.classList.remove('active'));el.classList.add('active');return true}
+function logout(){if(confirm('Logout from IncentiveHouse ERP?'))document.getElementById('userDisplay').textContent='Guest';document.getElementById('userNameInput').value='Guest'}
+document.getElementById('currentDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+async function loadReconData(){try{
+let r=await fetch('/api/v1/incentivehouse/recon/status');let data=await r.json();
+let total=0,rec=0,mis=0,unm=0;
+data.forEach(d=>{total+=d.count;if(d.recon_status==='RECONCILED')rec=d.count;else if(d.recon_status==='AMOUNT_MISMATCH')mis=d.count;else unm=d.count});
+document.getElementById('totalCount').textContent=total;
+document.getElementById('reconciledCount').textContent=rec;
+document.getElementById('mismatchCount').textContent=mis;
+document.getElementById('unmatchedCount').textContent=unm;
+document.getElementById('sBank').textContent=total;
+document.getElementById('sRecon').textContent=rec;
+document.getElementById('sOpen').textContent=mis+unm;
+let badge=document.getElementById('reconBadge');badge.textContent=rec+' rec';badge.className='card-badge '+(unm>0?'badge-yellow':'badge-green');
+document.getElementById('varianceBadge').textContent=(mis+unm)+' open';
+document.getElementById('sTimestamp').textContent='Last updated: '+new Date().toLocaleTimeString();
+}catch(e){document.getElementById('totalCount').textContent='?';document.getElementById('reconciledCount').textContent='?';document.getElementById('mismatchCount').textContent='?';document.getElementById('unmatchedCount').textContent='?'}}
+loadReconData();setInterval(loadReconData,30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+# module_router.yaml - FIXED VERSION
+# GL_TRNX splitting rules: Evn vs Env
+# CHANGE: Added more Env keywords, lowered priority threshold
+
+gl_trnx_router:
+  route_to_evn:
+    description_keywords:
+      - "event"
+      - "venue"
+      - "catering"
+      - "conference"
+      - "exhibition"
+      - "wedding"
+      - "corporate event"
+      - "seminar"
+      - "workshop"
+      - "launch"
+      - " gala "
+      - "reception"
+      - "banquet"
+    account_code_prefixes: ["300"]
+    cost_center_keywords:
+      - "events"
+      - "marketing events"
+      - "project events"
+    # Minimum match threshold: require 2+ keywords or explicit prefix
+    min_confidence: 0.6
+
+  route_to_env:
+    description_keywords:
+      - "petty cash"
+      - "misc"
+      - "reimbursement"
+      - "advance"
+      - "office"
+      - "stationery"
+      - "travel"
+      - "meal"
+      - "taxi"
+      - "parking"
+      - "utilities"
+      - "rent"
+      - "salary"
+      - "insurance"
+      - "maintenance"
+      - "repair"
+      - "cleaning"
+      - "security"
+      - "telecom"
+      - "internet"
+      - "subscription"
+      - "license"
+      - "fee"
+      - "charge"
+      - "commission"
+      - "interest"
+      - "bank charge"
+      - "transfer fee"
+      - "atm"
+      - "withdrawal"
+      - "deposit"
+      - "cash"
+      - "general"
+      - "admin"
+      - "overhead"
+      - "operating"
+    account_code_prefixes: ["500", "600", "700"]
+    cost_center_keywords:
+      - "admin"
+      - "general"
+      - "operations"
+      - "overhead"
+      - "shared"
+    # Lower threshold for Env - catch more records
+    min_confidence: 0.3
+
+  default_module: "Env"
+  priority: ["Evn", "Env"]
+
+  # NEW: Fallback routing for unclassified records
+  fallback:
+    if_no_match: "Env"
+    if_both_match: "Env"  # Changed: tie goes to Env (more general)
+    if_description_empty: "Env"

@@ -7,8 +7,18 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy import select
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from app.middleware.logging_middleware import CorrelationIDMiddleware
+from app.middleware.audit_middleware import AuditMiddleware
+from app.middleware.metrics import PrometheusMiddleware
 
 from app.config import settings
 from app.database import get_async_engine, get_db, init_db
@@ -20,6 +30,9 @@ from app.organs.or_organ.sub_app import or_app
 
 # SCM Costing & Performance Sub-Application
 from app.organs.scm_organ.sub_app import scm_app
+
+# IncentiveHouse ERP Legacy Migration Sub-Application
+from app.organs.incentivehouse_organ.sub_app import incentivehouse_app
 
 from app.routers import (
     accounting,
@@ -108,6 +121,36 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Rate limiting
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+
+# Middleware stack (last added = outermost/first executed)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(CorrelationIDMiddleware)
+app.add_middleware(PrometheusMiddleware)
+app.add_middleware(AuditMiddleware)
+
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 # Core accounting (merged: login + HTMX ledger + financial reports)
@@ -189,6 +232,9 @@ app.mount("/api/v1/or", or_app)
 # SCM Costing & Performance Module (mounted at /api/v1/scm)
 app.mount("/api/v1/scm", scm_app)
 
+# IncentiveHouse ERP Legacy Migration Module (mounted at /api/v1/incentivehouse)
+app.mount("/api/v1/incentivehouse", incentivehouse_app)
+
 # P2 Reverse Flow — Doctor (BIO-ERP) -> Patient (EventCore)
 from app.p2_reverse_flow.reverse_flow import reverse_router
 app.include_router(reverse_router, prefix="/api/v1")
@@ -266,4 +312,3 @@ async def health():
         "version": "5.3.0",
         "database": db_status,
     }
-

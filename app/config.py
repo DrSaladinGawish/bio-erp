@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
+    # EventCore integration
+    eventcore_base_url: str = "http://localhost:8001"
+    BIO_ERP_BRIDGE_TOKEN: str = "ec-bridge-token-dev"
+
     DEFAULT_BRANCH_ID: int = 1
     DEFAULT_CURRENCY_ID: int = 1
     VAT_RATE_EG: float = 0.14

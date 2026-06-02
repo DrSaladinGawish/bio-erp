@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incentive House ERP - Transactions</title>
+    <link rel="stylesheet" href="css/erp-theme.css">
+    <style>
+        .transactions-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .transactions-layout { grid-template-columns: 1fr; }
+        }
+
+        .form-section {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+        }
+
+        .form-section-header {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: var(--white);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-section-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .form-section-body {
+            padding: 20px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            padding: 16px 20px;
+            background: var(--gray-50);
+            border-top: 1px solid var(--gray-200);
+            flex-wrap: wrap;
+        }
+
+        .line-items-section {
+            margin-top: 20px;
+        }
+
+        .line-items-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .line-items-header h4 {
+            color: var(--primary);
+            font-size: 1rem;
+        }
+
+        .line-items-table-container {
+            overflow-x: auto;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+        }
+
+        .totals-section {
+            background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+            border: 2px solid var(--primary-light);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--gray-300);
+        }
+
+        .totals-row:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary);
+        }
+
+        .totals-label {
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        .totals-value {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            margin-bottom: 4px;
+        }
+
+        .transactions-list {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+        }
+
+        .transactions-list-header {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: var(--white);
+        }
+
+        .transactions-list-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .transactions-list-body {
+            padding: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .print-header {
+            display: none;
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .print-header h2 {
+            color: var(--primary);
+            margin: 0 0 8px;
+        }
+
+        .print-header .print-date {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+
+        @media print {
+            .erp-header, .erp-sidebar, .erp-footer, .form-actions, .no-print {
+                display: none !important;
+            }
+
+            .erp-main {
+                margin: 0;
+                padding: 0;
+            }
+
+            .transactions-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .transactions-list {
+                display: none;
+            }
+
+            .print-header {
+                display: block !important;
+            }
+
+            .form-section {
+                box-shadow: none;
+                border: 1px solid var(--gray-300);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="erp-header">
+        <div class="header-brand">
+            <div class="company-logo">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="36" height="36" rx="8" fill="#1a3a5c"/>
+                    <path d="M18 8L28 28H8L18 8Z" fill="#c9a227"/>
+                    <circle cx="18" cy="20" r="6" fill="white"/>
+                </svg>
+            </div>
+            <div class="company-info">
+                <h1 class="company-name">Incentive House</h1>
+                <div class="tagline company-tagline">Enterprise Resource Planning</div>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button class="header-btn">
+                <span>🔔</span>
+                Notifications
+                <span class="badge">3</span>
+            </button>
+            <button class="header-btn">
+                <span>⚙</span>
+                Settings
+            </button>
+            <div class="user-menu">
+                <div class="user-avatar">AD</div>
+                <div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">Admin User</div>
+                    <div style="font-size: 0.75rem; opacity: 0.8;">System Administrator</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside class="erp-sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-title">Main Menu</div>
+            <a href="index.html" class="nav-item">
+                <span class="icon">📊</span>
+                Dashboard
+            </a>
+            <a href="transactions.html" class="nav-item active">
+                <span class="icon">📝</span>
+                Transactions
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">📋</span>
+                Journal Entries
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">📈</span>
+                Reports
+            </a>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Modules</div>
+            <a href="#" class="nav-item">
+                <span class="icon">🏭</span>
+                SCM Module
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">🔬</span>
+                OR Module
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">🧬</span>
+                Bio-ERP
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">📚</span>
+                AALS Library
+            </a>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Configuration</div>
+            <a href="#" class="nav-item">
+                <span class="icon">⚙</span>
+                Settings
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">👥</span>
+                Users
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">🔒</span>
+                Security
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="erp-main">
+        <div class="page-header">
+            <h2 class="page-title">
+                <span class="icon">📝</span>
+                Transactions
+            </h2>
+            <div class="current-date" style="color: var(--gray-500); font-size: 0.9rem;"></div>
+        </div>
+
+        <!-- Print Header -->
+        <div class="print-header">
+            <h2>Incentive House ERP</h2>
+            <div class="print-date" id="print-date"></div>
+            <div style="font-size: 0.85rem; color: var(--gray-600); margin-top: 4px;">
+                Transaction Entry Form
+            </div>
+        </div>
+
+        <div class="transactions-layout">
+            <!-- TRANSACTION ENTRY FORM -->
+            <div>
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <h3 id="form-title">📝 New Transaction</h3>
+                        <span style="font-size: 0.85rem; opacity: 0.9;">Journal Voucher Entry</span>
+                    </div>
+
+                    <form id="transaction-form" class="form-section-body">
+                        <!-- Header Fields -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required">Transaction Type</label>
+                                <select class="form-control form-select" name="transaction_type" required>
+                                    <option value="JV">Journal Voucher (JV)</option>
+                                    <option value="PV">Payment Voucher (PV)</option>
+                                    <option value="RV">Receipt Voucher (RV)</option>
+                                    <option value="CV">Contra Voucher (CV)</option>
+                                    <option value="ADJ">Adjustment</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Reference No</label>
+                                <input type="text" class="form-control" name="reference_no" 
+                                    placeholder="Auto-generated if empty">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required">Date</label>
+                                <input type="date" class="form-control" name="transaction_date" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Currency</label>
+                                <select class="form-control form-select" name="currency">
+                                    <option value="USD">USD - US Dollar</option>
+                                    <option value="EUR">EUR - Euro</option>
+                                    <option value="GBP">GBP - British Pound</option>
+                                    <option value="AED">AED - UAE Dirham</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Description</label>
+                            <textarea class="form-control" name="description" rows="2" 
+                                placeholder="Enter transaction description..." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="2" 
+                                placeholder="Additional notes..."></textarea>
+                        </div>
+
+                        <!-- Line Items -->
+                        <div class="line-items-section">
+                            <div class="line-items-header">
+                                <h4>📋 Line Items</h4>
+                                <button type="button" class="btn btn-sm btn-primary" id="add-line-btn">
+                                    <span>➕</span> Add Line
+                                </button>
+                            </div>
+
+                            <div class="line-items-table-container">
+                                <table class="line-items-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40px;">#</th>
+                                            <th style="width: 120px;">Account Code *</th>
+                                            <th style="width: 150px;">Account Name</th>
+                                            <th>Description</th>
+                                            <th style="width: 120px;">Debit</th>
+                                            <th style="width: 120px;">Credit</th>
+                                            <th style="width: 120px;">Cost Center</th>
+                                            <th style="width: 50px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="line-items-body">
+                                        <!-- Line items will be added dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Totals -->
+                        <div class="totals-section">
+                            <div class="totals-row">
+                                <span class="totals-label">Total Debit</span>
+                                <span class="totals-value" id="total-debit">$0.00</span>
+                            </div>
+                            <div class="totals-row">
+                                <span class="totals-label">Total Credit</span>
+                                <span class="totals-value" id="total-credit">$0.00</span>
+                            </div>
+                            <div class="totals-row">
+                                <span class="totals-label">Difference</span>
+                                <span class="totals-value text-success" id="total-difference">$0.00</span>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Action Buttons -->
+                    <div class="form-actions no-print">
+                        <button type="button" class="btn btn-success" id="btn-post" disabled>
+                            <span>✓</span> Post
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="btn-save" form="transaction-form">
+                            <span>💾</span> Save Draft
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="btn-new">
+                            <span>🔄</span> New
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="btn-print">
+                            <span>🖨</span> Print
+                        </button>
+                        <div style="flex: 1;"></div>
+                        <button type="button" class="btn btn-danger" id="btn-void" disabled>
+                            <span>✕</span> Void
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRANSACTIONS LIST -->
+            <div>
+                <div class="transactions-list">
+                    <div class="transactions-list-header">
+                        <h3>📋 Transaction History</h3>
+                    </div>
+
+                    <div class="transactions-list-body">
+                        <!-- Filters -->
+                        <div class="filter-section no-print">
+                            <div class="filter-group">
+                                <label>Search</label>
+                                <div class="search-box">
+                                    <span class="search-icon">🔍</span>
+                                    <input type="text" id="transaction-search" placeholder="Search transactions...">
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <label>Status</label>
+                                <select class="form-control form-select" id="filter-status">
+                                    <option value="">All Status</option>
+                                    <option value="draft">Draft</option>
+                                    <option value="posted">Posted</option>
+                                    <option value="void">Void</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>From Date</label>
+                                <input type="date" class="form-control" id="filter-date-from">
+                            </div>
+                            <div class="filter-group">
+                                <label>To Date</label>
+                                <input type="date" class="form-control" id="filter-date-to">
+                            </div>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="line-items-table-container" style="max-height: 500px; overflow-y: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Reference</th>
+                                        <th>Type</th>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th class="text-right">Debit</th>
+                                        <th class="text-right">Credit</th>
+                                        <th>Status</th>
+                                        <th class="no-print">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-table-body">
+                                    <!-- Transactions loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="erp-footer no-print">
+        <div class="footer-left">
+            <span>© 2024 <strong>Incentive House</strong>. All rights reserved.</span>
+            <span class="version-number" style="color: var(--gray-400);"></span>
+        </div>
+        <div class="footer-right">
+            <a href="#" class="footer-link">Support</a>
+            <a href="#" class="footer-link">Documentation</a>
+            <a href="#" class="footer-link">Privacy Policy</a>
+            <div class="system-status">
+                <span class="status-dot"></span>
+                <span>System Online</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- View Transaction Modal -->
+    <div class="modal-overlay" id="view-transaction-modal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3 class="modal-title">📄 Transaction Details</h3>
+                <button class="modal-close" onclick="modal.close('view-transaction-modal')">×</button>
+            </div>
+            <div class="modal-body" id="view-modal-body">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="modal.close('view-transaction-modal')">Close</button>
+                <button class="btn btn-primary" onclick="window.print()">🖨 Print</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/erp-core.js"></script>
+    <script src="js/transactions.js"></script>
+    <script>
+        // Set print date
+        document.getElementById('print-date').textContent = new Date().toLocaleDateString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+    </script>
+</body>
+</html>

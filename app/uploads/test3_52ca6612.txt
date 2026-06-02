@@ -1,0 +1,1 @@
+Invoice INV-2024-003 Supplier: ABC Corp Total: 3000.00 GL: 1001

@@ -1,0 +1,86 @@
+{
+  "results": [
+    {
+      "stage": "FILE: prescriptions_htmx.py",
+      "status": "PASS",
+      "detail": "6021 bytes"
+    },
+    {
+      "stage": "FILE: p5_integration_snippet.py",
+      "status": "PASS",
+      "detail": "1293 bytes"
+    },
+    {
+      "stage": "SYNTAX: prescriptions_htmx.py",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "SYNTAX: p5_integration_snippet.py",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "IMPORT: prescriptions_htmx",
+      "status": "PASS",
+      "detail": "prefix: /api/v1/prescriptions/htmx\nroutes: ['/api/v1/prescriptions/htmx/job/{job_id}', '/api/v1/pres"
+    },
+    {
+      "stage": "ROUTE: /job/{job_id}",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "ROUTE: /{prescription_id}/status",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "ROUTE: /badge/{job_id}",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "HTML: Apply button",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "HTML: Reject button",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "HTML: In Progress button",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "HTML: hx-patch",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "HTML: savings display",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "HTML: badge function",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "HTML: card function",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "WIRING: main.py import",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "passed": 16,
+  "failed": 0
+}

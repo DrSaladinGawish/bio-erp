@@ -1,0 +1,17 @@
+p, admin, report, export, *
+p, admin, or_engine, run, *
+p, admin, scm, write, *
+p, admin, scm, read, *
+p, admin, job, delete, *
+p, admin, rbac, manage, *
+p, strategic_cost_approver, report, export, *
+p, strategic_cost_approver, scm, read, *
+p, strategic_cost_approver, scm, write, *
+p, strategic_cost_approver, or_engine, run, *
+p, cost_viewer, report, export, *
+p, cost_viewer, scm, read, *
+p, cost_viewer, or_engine, run, *
+p, or_analyst, or_engine, run, *
+p, or_analyst, report, export, *
+p, auditor, report, export, *
+p, auditor, scm, read, *

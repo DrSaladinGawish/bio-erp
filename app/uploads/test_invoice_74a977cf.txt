@@ -1,0 +1,7 @@
+Invoice #INV-2024-001
+Date: 2024-01-15
+Supplier: ABC Corp
+Total: 1000.00
+VAT: 150.00
+GL: 5100
+Description: Office supplies

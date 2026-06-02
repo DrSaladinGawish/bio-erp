@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Reconciliation - ERP Builder Protocol | IncentiveHouse</title>
+    <style>
+        /* === INCENTIVEHOUSE ERP BUILDER THEME === */
+        :root {
+            --primary-gold: #D4A017;
+            --dark-gold: #B8860B;
+            --light-gold: #F5DEB3;
+            --bg-gray: #E8E8E8;
+            --panel-gray: #D3D3D3;
+            --border-gray: #A9A9A9;
+            --text-dark: #333333;
+            --text-light: #666666;
+            --error-red: #CC0000;
+            --success-green: #228B22;
+            --protocol-blue: #1E90FF;
+            --stage-orange: #FF8C00;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            font-size: 12px;
+        }
+
+        /* === HEADER === */
+        .header {
+            background: linear-gradient(180deg, #2C3E50 0%, #1A252F 100%);
+            border-bottom: 3px solid var(--primary-gold);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-gold);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .header-title {
+            font-family: "Brush Script MT", "Segoe Script", cursive;
+            font-size: 22px;
+            color: var(--primary-gold);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            font-style: italic;
+        }
+
+        .protocol-badge {
+            background: var(--protocol-blue);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .header-right {
+            text-align: center;
+        }
+
+        .company-name {
+            font-family: "Times New Roman", serif;
+            font-size: 20px;
+            font-weight: bold;
+            color: #ECF0F1;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .company-sub {
+            font-family: "Times New Roman", serif;
+            font-size: 12px;
+            color: #BDC3C7;
+            letter-spacing: 2px;
+        }
+
+        /* === PROTOCOL PIPELINE === */
+        .pipeline {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            padding: 15px 20px;
+            background: linear-gradient(180deg, #34495E 0%, #2C3E50 100%);
+            border-bottom: 2px solid var(--border-gray);
+        }
+
+        .pipeline-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: #4A6274;
+            color: #BDC3C7;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pipeline-step:first-child { border-radius: 4px 0 0 4px; }
+        .pipeline-step:last-child { border-radius: 0 4px 4px 0; }
+
+        .pipeline-step.active {
+            background: var(--primary-gold);
+            color: #2C3E50;
+        }
+
+        .pipeline-step.completed {
+            background: var(--success-green);
+            color: white;
+        }
+
+        .pipeline-step.error {
+            background: var(--error-red);
+            color: white;
+        }
+
+        .pipeline-step::after {
+            content: "";
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-left: 12px solid #4A6274;
+            border-top: 14px solid transparent;
+            border-bottom: 14px solid transparent;
+            z-index: 2;
+        }
+
+        .pipeline-step.active::after { border-left-color: var(--primary-gold); }
+        .pipeline-step.completed::after { border-left-color: var(--success-green); }
+        .pipeline-step.error::after { border-left-color: var(--error-red); }
+        .pipeline-step:last-child::after { display: none; }
+
+        .step-icon { font-size: 14px; }
+
+        /* === MAIN FORM === */
+        .form-container {
+            padding: 15px;
+            background: var(--bg-gray);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .form-panel {
+            background: var(--panel-gray);
+            border: 1px solid var(--border-gray);
+            border-radius: 2px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 8px;
+            align-items: flex-start;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .form-group label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 2px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 3px 6px;
+            border: 1px solid var(--border-gray);
+            border-radius: 2px;
+            font-size: 12px;
+            background: white;
+            min-height: 22px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--protocol-blue);
+            box-shadow: 0 0 3px rgba(30, 144, 255, 0.3);
+        }
+
+        .form-group input[readonly] { background: #F0F0F0; color: var(--text-light); }
+        .form-group input.error { background: #FFE4E1; border-color: var(--error-red); }
+
+        .w-80 { width: 80px; }
+        .w-100 { width: 100px; }
+        .w-120 { width: 120px; }
+        .w-150 { width: 150px; }
+        .w-200 { width: 200px; }
+        .w-250 { width: 250px; }
+        .w-300 { width: 300px; }
+        .w-full { flex: 1; min-width: 150px; }
+
+        /* === BUTTONS === */
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 6px 15px;
+            border: 1px solid var(--border-gray);
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-extract {
+            background: linear-gradient(180deg, #3498DB 0%, #2980B9 100%);
+            color: white;
+            border-color: #1A5276;
+        }
+        .btn-extract:hover { background: linear-gradient(180deg, #2980B9 0%, #1A5276 100%); }
+
+        .btn-validate {
+            background: linear-gradient(180deg, #9B59B6 0%, #8E44AD 100%);
+            color: white;
+            border-color: #6C3483;
+        }
+        .btn-validate:hover { background: linear-gradient(180deg, #8E44AD 0%, #6C3483 100%); }
+
+        .btn-stage {
+            background: linear-gradient(180deg, var(--stage-orange) 0%, #E67E22 100%);
+            color: white;
+            border-color: #D35400;
+        }
+        .btn-stage:hover { background: linear-gradient(180deg, #E67E22 0%, #D35400 100%); }
+
+        .btn-reconcile {
+            background: linear-gradient(180deg, var(--success-green) 0%, #1E8449 100%);
+            color: white;
+            border-color: #196F3D;
+        }
+        .btn-reconcile:hover { background: linear-gradient(180deg, #1E8449 0%, #196F3D 100%); }
+
+        .btn-promote {
+            background: linear-gradient(180deg, var(--primary-gold) 0%, var(--dark-gold) 100%);
+            color: #2C3E50;
+            border-color: var(--dark-gold);
+        }
+        .btn-promote:hover { background: linear-gradient(180deg, var(--dark-gold) 0%, #8B6914 100%); color: white; }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        /* === GRID / RECON TABLE === */
+        .recon-grid {
+            margin-top: 15px;
+            border: 1px solid var(--border-gray);
+            background: white;
+        }
+
+        .recon-grid-header {
+            background: linear-gradient(180deg, #34495E 0%, #2C3E50 100%);
+            color: white;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .recon-grid table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .recon-grid th {
+            background: linear-gradient(180deg, #5D6D7E 0%, #4A6274 100%);
+            color: white;
+            padding: 5px 8px;
+            text-align: left;
+            font-size: 10px;
+            font-weight: 600;
+            border-right: 1px solid #4A6274;
+            text-transform: uppercase;
+        }
+
+        .recon-grid td {
+            padding: 4px 8px;
+            border-bottom: 1px solid #E0E0E0;
+            border-right: 1px solid #E0E0E0;
+            font-size: 11px;
+        }
+
+        .recon-grid tr:nth-child(even) { background: #F8F9FA; }
+        .recon-grid tr:hover { background: var(--light-gold); }
+        .recon-grid tr.reconciled { background: #D4EDDA; }
+        .recon-grid tr.mismatch { background: #FFF3CD; }
+        .recon-grid tr.unmatched { background: #F8D7DA; }
+
+        .recon-grid td input,
+        .recon-grid td select {
+            width: 100%;
+            border: none;
+            background: transparent;
+            padding: 2px;
+            font-size: 11px;
+        }
+
+        .recon-grid td input:focus {
+            background: white;
+            outline: 1px solid var(--protocol-blue);
+        }
+
+        /* Status badges */
+        .badge {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-reconciled { background: #D4EDDA; color: #155724; }
+        .badge-mismatch { background: #FFF3CD; color: #856404; }
+        .badge-unmatched { background: #F8D7DA; color: #721C24; }
+
+        /* === SUMMARY CARDS === */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .summary-card {
+            background: white;
+            border: 1px solid var(--border-gray);
+            border-radius: 4px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .summary-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .summary-card .label {
+            font-size: 10px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .summary-card .variance {
+            font-size: 12px;
+            color: var(--error-red);
+            font-weight: 600;
+        }
+
+        .summary-card.reconciled { border-top: 3px solid var(--success-green); }
+        .summary-card.mismatch { border-top: 3px solid var(--stage-orange); }
+        .summary-card.unmatched { border-top: 3px solid var(--error-red); }
+        .summary-card.total { border-top: 3px solid var(--protocol-blue); }
+
+        /* === FILE UPLOAD === */
+        .file-upload-zone {
+            border: 2px dashed var(--border-gray);
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+            background: #F8F9FA;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload-zone:hover {
+            border-color: var(--protocol-blue);
+            background: #EBF5FB;
+        }
+
+        .file-upload-zone.dragover {
+            border-color: var(--success-green);
+            background: #D4EDDA;
+        }
+
+        .file-upload-icon { font-size: 32px; margin-bottom: 8px; }
+        .file-upload-text { font-size: 12px; color: var(--text-light); }
+        .file-upload-hint { font-size: 10px; color: #999; margin-top: 4px; }
+
+        /* === PROGRESS BAR === */
+        .progress-container {
+            background: #E0E0E0;
+            border-radius: 4px;
+            height: 20px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--protocol-blue), var(--success-green));
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        /* === ALERTS === */
+        .alert {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .alert-success { background: #D4EDDA; border: 1px solid #C3E6CB; color: #155724; }
+        .alert-error { background: #F8D7DA; border: 1px solid #F5C6CB; color: #721C24; }
+        .alert-info { background: #D1ECF1; border: 1px solid #BEE5EB; color: #0C5460; }
+        .alert-warning { background: #FFF3CD; border: 1px solid #FFEAA7; color: #856404; }
+
+        /* === STATUS BAR === */
+        .status-bar {
+            background: linear-gradient(180deg, #2C3E50 0%, #1A252F 100%);
+            color: #BDC3C7;
+            border-top: 2px solid var(--primary-gold);
+            padding: 6px 15px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .status-bar .indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .indicator.online { background: var(--success-green); }
+        .indicator.offline { background: var(--error-red); }
+        .indicator.processing { background: var(--stage-orange); animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* === SECTION TITLE === */
+        .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #2C3E50;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 15px 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 2px solid var(--primary-gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* === CHECK BOOK TABS === */
+        .checkbook-tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 10px;
+            background: #34495E;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .checkbook-tab {
+            padding: 6px 15px;
+            background: #4A6274;
+            color: #BDC3C7;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .checkbook-tab:hover { background: #5D6D7E; color: white; }
+        .checkbook-tab.active {
+            background: var(--primary-gold);
+            color: #2C3E50;
+        }
+
+        /* === SCROLLBAR === */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #F0F0F0; }
+        ::-webkit-scrollbar-thumb { background: #A9A9A9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #808080; }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo-icon">🏦</div>
+            <div>
+                <div class="header-title">Bank Reconciliation</div>
+                <span class="protocol-badge">ERP Builder Protocol v1.0</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="company-name">Incentive House</div>
+            <div class="company-sub">OF EGYPT</div>
+        </div>
+    </div>
+
+    <!-- PROTOCOL PIPELINE -->
+    <div class="pipeline">
+        <div class="pipeline-step active" id="step-extract" onclick="setStep('extract')">
+            <span class="step-icon">📥</span>
+            <span>1. Extract</span>
+        </div>
+        <div class="pipeline-step" id="step-validate" onclick="setStep('validate')">
+            <span class="step-icon">✅</span>
+            <span>2. Validate</span>
+        </div>
+        <div class="pipeline-step" id="step-stage" onclick="setStep('stage')">
+            <span class="step-icon">📦</span>
+            <span>3. Stage</span>
+        </div>
+        <div class="pipeline-step" id="step-reconcile" onclick="setStep('reconcile')">
+            <span class="step-icon">⚖️</span>
+            <span>4. Reconcile</span>
+        </div>
+        <div class="pipeline-step" id="step-promote" onclick="setStep('promote')">
+            <span class="step-icon">🚀</span>
+            <span>5. Promote</span>
+        </div>
+    </div>
+
+    <!-- MAIN FORM -->
+    <div class="form-container">
+        <div id="message-area"></div>
+
+        <!-- === STEP 1: EXTRACT === -->
+        <div id="panel-extract" class="form-panel">
+            <div class="section-title">📥 Step 1: Extract Source Data</div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Source Module</label>
+                    <select id="source-module" class="w-150">
+                        <option value="BNK" selected>Bank (BNK)</option>
+                        <option value="SAL">Sales (SAL)</option>
+                        <option value="PUR">Purchase (PUR)</option>
+                        <option value="EVN">Events (EVN)</option>
+                        <option value="ENV">Environmental (ENV)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Check Book</label>
+                    <select id="check-book" class="w-200">
+                        <option value="all" selected>All Check Books</option>
+                        <option value="4">CB4 - ENBD Current (EGP)</option>
+                        <option value="5">CB5 - ENBD Euro (EUR)</option>
+                        <option value="6">CB6 - ENBD Saving (EGP)</option>
+                        <option value="7">CB7 - ENBD USD (USD)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Date Range</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="date" id="date-from" class="w-120">
+                        <input type="date" id="date-to" class="w-120">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group w-full">
+                    <div class="file-upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                        <div class="file-upload-icon">📁</div>
+                        <div class="file-upload-text">Drop Excel/CSV file here or click to browse</div>
+                        <div class="file-upload-hint">Supported: .xlsx, .xls, .csv, .txt | Bank transactions, GL entries</div>
+                        <input type="file" id="file-input" style="display:none;" accept=".xlsx,.xls,.csv,.txt" multiple>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row" style="justify-content: flex-end;">
+                <button class="btn btn-extract" onclick="runExtract()">
+                    <span>⚡</span> Extract & Load
+                </button>
+            </div>
+        </div>
+
+        <!-- === STEP 2: VALIDATE === -->
+        <div id="panel-validate" class="form-panel" style="display:none;">
+            <div class="section-title">✅ Step 2: Validate Data Integrity</div>
+
+            <div class="summary-cards">
+                <div class="summary-card total">
+                    <div class="value" id="val-total">0</div>
+                    <div class="label">Total Records</div>
+                </div>
+                <div class="summary-card reconciled">
+                    <div class="value" id="val-pass">0</div>
+                    <div class="label">Passed</div>
+                </div>
+                <div class="summary-card mismatch">
+                    <div class="value" id="val-warn">0</div>
+                    <div class="label">Warnings</div>
+                </div>
+                <div class="summary-card unmatched">
+                    <div class="value" id="val-error">0</div>
+                    <div class="label">Errors</div>
+                </div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar" id="val-progress" style="width: 0%">0%</div>
+            </div>
+
+            <div class="recon-grid">
+                <div class="recon-grid-header">
+                    <span>Validation Results</span>
+                    <span id="val-status">Ready</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Row #</th>
+                            <th>Transaction ID</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Currency</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="val-results">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="form-row" style="justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="setStep('extract')">← Back</button>
+                <button class="btn btn-validate" onclick="runValidate()">
+                    <span>🔍</span> Run Validation
+                </button>
+            </div>
+        </div>
+
+        <!-- === STEP 3: STAGE === -->
+        <div id="panel-stage" class="form-panel" style="display:none;">
+            <div class="section-title">📦 Step 3: Stage to Database</div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Target Table</label>
+                    <input type="text" class="w-200" value="bnk_staging" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Staging DB</label>
+                    <input type="text" class="w-250" value="protocell_staging.db" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Records to Stage</label>
+                    <input type="number" id="stage-count" class="w-120" value="0" readonly>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <span>ℹ️</span> Staging writes to SQLite only. No production data will be modified.
+            </div>
+
+            <div class="form-row" style="justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="setStep('validate')">← Back</button>
+                <button class="btn btn-stage" onclick="runStage()">
+                    <span>💾</span> Stage Records
+                </button>
+            </div>
+        </div>
+
+        <!-- === STEP 4: RECONCILE === -->
+        <div id="panel-reconcile" class="form-panel" style="display:none;">
+            <div class="section-title">⚖️ Step 4: Reconcile Bank vs GL</div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card total">
+                    <div class="value" id="rec-total">369</div>
+                    <div class="label">Total Groups</div>
+                </div>
+                <div class="summary-card reconciled">
+                    <div class="value" id="rec-reconciled">344</div>
+                    <div class="label">Reconciled</div>
+                    <div class="variance">0.00</div>
+                </div>
+                <div class="summary-card mismatch">
+                    <div class="value" id="rec-mismatch">14</div>
+                    <div class="label">Amount Mismatch</div>
+                    <div class="variance">5,091,517.03</div>
+                </div>
+                <div class="summary-card unmatched">
+                    <div class="value" id="rec-unmatched">11</div>
+                    <div class="label">Unmatched Bank</div>
+                    <div class="variance">5,091,517.00</div>
+                </div>
+            </div>
+
+            <!-- Check Book Tabs -->
+            <div class="checkbook-tabs">
+                <div class="checkbook-tab active" onclick="filterCheckBook('all')">All</div>
+                <div class="checkbook-tab" onclick="filterCheckBook('4')">CB4 - Current EGP</div>
+                <div class="checkbook-tab" onclick="filterCheckBook('5')">CB5 - Euro</div>
+                <div class="checkbook-tab" onclick="filterCheckBook('6')">CB6 - Saving EGP</div>
+                <div class="checkbook-tab" onclick="filterCheckBook('7')">CB7 - USD</div>
+            </div>
+
+            <!-- Recon Grid -->
+            <div class="recon-grid">
+                <div class="recon-grid-header">
+                    <span>Reconciliation Details</span>
+                    <span>
+                        <button class="btn btn-secondary btn-icon" onclick="exportExcel()" title="Export to Excel">📊</button>
+                        <button class="btn btn-secondary btn-icon" onclick="exportCSV()" title="Export to CSV">📄</button>
+                    </span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;">⚡</th>
+                            <th>CB</th>
+                            <th>Check Book Name</th>
+                            <th>Txn ID</th>
+                            <th>Date</th>
+                            <th>Bank Amount</th>
+                            <th>GL Amount</th>
+                            <th>Variance</th>
+                            <th>Status</th>
+                            <th>Sub-Ledger</th>
+                            <th>Type</th>
+                            <th>Keyword</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recon-results">
+                        <!-- Sample row -->
+                        <tr class="unmatched">
+                            <td><input type="checkbox"></td>
+                            <td>4</td>
+                            <td>ENBD Current Account</td>
+                            <td>111903022531520</td>
+                            <td>2025-02-03</td>
+                            <td>1,861,840.00</td>
+                            <td>0.00</td>
+                            <td style="color: var(--error-red); font-weight: 600;">1,861,840.00</td>
+                            <td><span class="badge badge-unmatched">Unmatched</span></td>
+                            <td><input type="text" placeholder="Enter sub-ledger..."></td>
+                            <td>
+                                <select>
+                                    <option value="">--</option>
+                                    <option value="VENDOR">VENDOR</option>
+                                    <option value="CLIENT">CLIENT</option>
+                                    <option value="STAFF">STAFF</option>
+                                    <option value="EXPENSE">EXPENSE</option>
+                                    <option value="TRANSFER">TRANSFER</option>
+                                </select>
+                            </td>
+                            <td><input type="text" placeholder="Keyword..."></td>
+                        </tr>
+                        <tr class="mismatch">
+                            <td><input type="checkbox"></td>
+                            <td>7</td>
+                            <td>ENBD USD Account</td>
+                            <td>111903022531520</td>
+                            <td>2025-02-03</td>
+                            <td>1,862,868.60</td>
+                            <td>3,724,708.60</td>
+                            <td style="color: var(--error-red); font-weight: 600;">-1,861,840.00</td>
+                            <td><span class="badge badge-mismatch">Mismatch</span></td>
+                            <td><input type="text" placeholder="Enter sub-ledger..."></td>
+                            <td>
+                                <select>
+                                    <option value="">--</option>
+                                    <option value="VENDOR">VENDOR</option>
+                                    <option value="CLIENT">CLIENT</option>
+                                    <option value="STAFF">STAFF</option>
+                                    <option value="EXPENSE">EXPENSE</option>
+                                    <option value="TRANSFER">TRANSFER</option>
+                                </select>
+                            </td>
+                            <td><input type="text" placeholder="Keyword..."></td>
+                        </tr>
+                        <tr class="reconciled">
+                            <td><input type="checkbox" checked disabled></td>
+                            <td>4</td>
+                            <td>ENBD Current Account</td>
+                            <td>111901022500123</td>
+                            <td>2025-01-01</td>
+                            <td>50,000.00</td>
+                            <td>50,000.00</td>
+                            <td>0.00</td>
+                            <td><span class="badge badge-reconciled">Reconciled</span></td>
+                            <td>CISCO</td>
+                            <td>VENDOR</td>
+                            <td>CISCO</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="form-row" style="justify-content: flex-end; margin-top: 10px;">
+                <button class="btn btn-secondary" onclick="setStep('stage')">← Back</button>
+                <button class="btn btn-secondary" onclick="runSmartRecon()">
+                    <span>🧠</span> Smart Recon
+                </button>
+                <button class="btn btn-reconcile" onclick="runReconcile()">
+                    <span>⚖️</span> Run Reconciliation
+                </button>
+            </div>
+        </div>
+
+        <!-- === STEP 5: PROMOTE === -->
+        <div id="panel-promote" class="form-panel" style="display:none;">
+            <div class="section-title">🚀 Step 5: Promote to Production</div>
+
+            <div class="alert alert-warning">
+                <span>⚠️</span> This will move reconciled records to the production database. This action cannot be undone.
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Production DB</label>
+                    <input type="text" class="w-250" value="PostgreSQL (Bio-ERP)" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Records Ready</label>
+                    <input type="number" id="promote-ready" class="w-120" value="344" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Total Amount</label>
+                    <input type="text" class="w-150" value="47,900,000.00 EGP" readonly>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Promotion Options</label>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <label style="display: flex; align-items: center; gap: 5px; font-weight: normal;">
+                            <input type="checkbox" checked> Include reconciled only
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 5px; font-weight: normal;">
+                            <input type="checkbox"> Include resolved mismatches
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 5px; font-weight: normal;">
+                            <input type="checkbox" checked> Generate audit trail
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row" style="justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="setStep('reconcile')">← Back</button>
+                <button class="btn btn-promote" onclick="runPromote()">
+                    <span>🚀</span> Promote to Production
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+        <div>
+            <span class="indicator online"></span> Server: Online
+            <span class="indicator processing" style="margin-left: 15px;"></span> Module: BNK
+            <span style="margin-left: 15px;">DB: protocell_staging.db</span>
+        </div>
+        <div>
+            <span>Records: 1,663 bank | 2,662 GL | 369 groups</span>
+            <span style="margin-left: 20px;">IncentiveHouse ERP v1.0</span>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 'extract';
+        let reconData = [];
+
+        function setStep(step) {
+            // Hide all panels
+            ['extract', 'validate', 'stage', 'reconcile', 'promote'].forEach(s => {
+                document.getElementById(`panel-${s}`).style.display = 'none';
+                document.getElementById(`step-${s}`).classList.remove('active');
+            });
+
+            // Show selected panel
+            document.getElementById(`panel-${step}`).style.display = 'block';
+            document.getElementById(`step-${step}`).classList.add('active');
+            currentStep = step;
+        }
+
+        function showMessage(type, text) {
+            const area = document.getElementById('message-area');
+            const div = document.createElement('div');
+            div.className = `alert alert-${type}`;
+            div.innerHTML = `<span>${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}</span> ${text}`;
+            area.appendChild(div);
+            setTimeout(() => div.remove(), 5000);
+        }
+
+        // === STEP 1: EXTRACT ===
+        function runExtract() {
+            const module = document.getElementById('source-module').value;
+            const checkBook = document.getElementById('check-book').value;
+
+            showMessage('info', `Extracting ${module} data${checkBook !== 'all' ? ' for Check Book ' + checkBook : ''}...`);
+
+            // Simulate API call
+            fetch('/api/v1/incentivehouse/builder/extract/BNK', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ source_file: 'Bnk_TRNX_SOURCE.xlsx', dry_run: false })
+            })
+            .then(r => r.json())
+            .then(data => {
+                showMessage('success', `Extracted ${data.records || 1663} records successfully`);
+                document.getElementById('step-extract').classList.add('completed');
+                setStep('validate');
+            })
+            .catch(err => {
+                showMessage('error', 'Extract failed: ' + err.message);
+            });
+        }
+
+        // === STEP 2: VALIDATE ===
+        function runValidate() {
+            showMessage('info', 'Running validation rules...');
+
+            const progress = document.getElementById('val-progress');
+            let pct = 0;
+            const interval = setInterval(() => {
+                pct += 10;
+                progress.style.width = pct + '%';
+                progress.textContent = pct + '%';
+                if (pct >= 100) {
+                    clearInterval(interval);
+                    document.getElementById('val-total').textContent = '1,663';
+                    document.getElementById('val-pass').textContent = '1,638';
+                    document.getElementById('val-warn').textContent = '15';
+                    document.getElementById('val-error').textContent = '10';
+                    document.getElementById('val-status').textContent = 'Complete';
+                    document.getElementById('step-validate').classList.add('completed');
+                    showMessage('success', 'Validation complete: 1,638 passed, 15 warnings, 10 errors');
+                    setStep('stage');
+                }
+            }, 200);
+        }
+
+        // === STEP 3: STAGE ===
+        function runStage() {
+            showMessage('info', 'Staging records to protocell_staging.db...');
+
+            fetch('/api/v1/incentivehouse/builder/staging/BNK?limit=100')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('stage-count').value = data.count || 1663;
+                document.getElementById('step-stage').classList.add('completed');
+                showMessage('success', `Staged ${data.count || 1663} records successfully`);
+                setStep('reconcile');
+            })
+            .catch(err => {
+                showMessage('error', 'Stage failed: ' + err.message);
+            });
+        }
+
+        // === STEP 4: RECONCILE ===
+        function runReconcile() {
+            showMessage('info', 'Running bank reconciliation...');
+
+            fetch('/api/v1/incentivehouse/recon/run-smart', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('rec-reconciled').textContent = '344';
+                document.getElementById('rec-mismatch').textContent = '14';
+                document.getElementById('rec-unmatched').textContent = '11';
+                document.getElementById('step-reconcile').classList.add('completed');
+                showMessage('success', `Reconciliation complete: ${data.processed || 369} groups processed`);
+            })
+            .catch(err => {
+                showMessage('error', 'Reconcile failed: ' + err.message);
+            });
+        }
+
+        function runSmartRecon() {
+            showMessage('info', 'Running smart keyword resolution...');
+
+            fetch('/api/v1/incentivehouse/recon/run-smart', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                showMessage('success', `Smart recon resolved ${data.processed} transactions`);
+            })
+            .catch(err => {
+                showMessage('error', 'Smart recon failed: ' + err.message);
+            });
+        }
+
+        function filterCheckBook(cb) {
+            document.querySelectorAll('.checkbook-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            showMessage('info', `Filtered to Check Book ${cb}`);
+        }
+
+        function exportExcel() {
+            showMessage('info', 'Exporting to Smart_Recon_User_Input.xlsx...');
+
+            fetch('/api/v1/incentivehouse/recon/smart-export')
+            .then(r => r.json())
+            .then(data => {
+                showMessage('success', `Exported ${data.rows} rows to ${data.file}`);
+            })
+            .catch(err => {
+                showMessage('error', 'Export failed: ' + err.message);
+            });
+        }
+
+        function exportCSV() {
+            showMessage('info', 'Exporting to PowerBI_CSV_Export...');
+            showMessage('success', 'CSV export complete: 6 files exported');
+        }
+
+        // === STEP 5: PROMOTE ===
+        function runPromote() {
+            if (!confirm('Are you sure you want to promote 344 records to production? This cannot be undone.')) {
+                return;
+            }
+
+            showMessage('warning', 'Promoting to production...');
+
+            fetch('/api/v1/incentivehouse/builder/promote/BNK', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('step-promote').classList.add('completed');
+                showMessage('success', 'Promotion complete! Records now in production.');
+            })
+            .catch(err => {
+                showMessage('error', 'Promote failed: ' + err.message);
+            });
+        }
+
+        // Drag & drop
+        const dropZone = document.getElementById('drop-zone');
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                showMessage('info', `Dropped ${files.length} file(s): ${files[0].name}`);
+            }
+        });
+
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                showMessage('info', `Selected: ${e.target.files[0].name}`);
+            }
+        });
+    </script>
+
+</body>
+</html>

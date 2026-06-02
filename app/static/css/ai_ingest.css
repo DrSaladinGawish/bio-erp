@@ -1,0 +1,21 @@
+.table th {
+    white-space: nowrap;
+}
+.card-header {
+    font-weight: 600;
+}
+.progress {
+    height: 24px;
+}
+.badge {
+    font-size: 0.75rem;
+}
+code {
+    font-size: 0.8rem;
+    max-width: 300px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}

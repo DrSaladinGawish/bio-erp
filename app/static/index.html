@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incentive House ERP - Dashboard</title>
+    <link rel="stylesheet" href="css/erp-theme.css">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .quick-actions { grid-template-columns: 1fr; }
+        }
+
+        .quick-action-card {
+            padding: 24px;
+            border-radius: 12px;
+            background: var(--white);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .quick-action-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-light);
+        }
+
+        .quick-action-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 16px;
+        }
+
+        .quick-action-card h3 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .quick-action-card p {
+            font-size: 0.85rem;
+            color: var(--gray-500);
+        }
+
+        .activity-list {
+            list-style: none;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--gray-800);
+        }
+
+        .activity-time {
+            font-size: 0.8rem;
+            color: var(--gray-500);
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="erp-header">
+        <div class="header-brand">
+            <div class="company-logo">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="36" height="36" rx="8" fill="#1a3a5c"/>
+                    <path d="M18 8L28 28H8L18 8Z" fill="#c9a227"/>
+                    <circle cx="18" cy="20" r="6" fill="white"/>
+                </svg>
+            </div>
+            <div class="company-info">
+                <h1 class="company-name">Incentive House</h1>
+                <div class="tagline company-tagline">Enterprise Resource Planning</div>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button class="header-btn">
+                <span>🔔</span>
+                Notifications
+                <span class="badge">3</span>
+            </button>
+            <button class="header-btn">
+                <span>⚙</span>
+                Settings
+            </button>
+            <div class="user-menu">
+                <div class="user-avatar">AD</div>
+                <div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">Admin User</div>
+                    <div style="font-size: 0.75rem; opacity: 0.8;">System Administrator</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside class="erp-sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-title">Main Menu</div>
+            <a href="index.html" class="nav-item active">
+                <span class="icon">📊</span>
+                Dashboard
+            </a>
+            <a href="transactions.html" class="nav-item">
+                <span class="icon">📝</span>
+                Transactions
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">📋</span>
+                Journal Entries
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">📈</span>
+                Reports
+            </a>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Modules</div>
+            <a href="#" class="nav-item">
+                <span class="icon">🏭</span>
+                SCM Module
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">🔬</span>
+                OR Module
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">🧬</span>
+                Bio-ERP
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">📚</span>
+                AALS Library
+            </a>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Configuration</div>
+            <a href="#" class="nav-item">
+                <span class="icon">⚙</span>
+                Settings
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">👥</span>
+                Users
+            </a>
+            <a href="#" class="nav-item">
+                <span class="icon">🔒</span>
+                Security
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="erp-main">
+        <div class="page-header">
+            <h2 class="page-title">
+                <span class="icon">📊</span>
+                Dashboard
+            </h2>
+            <div class="current-date" style="color: var(--gray-500); font-size: 0.9rem;"></div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="stat-icon primary">📄</div>
+                <div>
+                    <div class="stat-value">1,247</div>
+                    <div class="stat-label">Total Transactions</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon success">✓</div>
+                <div>
+                    <div class="stat-value">1,180</div>
+                    <div class="stat-label">Posted</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon warning">⏳</div>
+                <div>
+                    <div class="stat-value">42</div>
+                    <div class="stat-label">Draft</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon danger">✕</div>
+                <div>
+                    <div class="stat-value">25</div>
+                    <div class="stat-label">Void</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">⚡ Quick Actions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="quick-actions">
+                        <a href="transactions.html" class="quick-action-card">
+                            <div class="quick-action-icon" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); color: #1565c0;">📝</div>
+                            <h3>New Transaction</h3>
+                            <p>Create journal voucher</p>
+                        </a>
+                        <a href="transactions.html" class="quick-action-card">
+                            <div class="quick-action-icon" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); color: #2e7d32;">📊</div>
+                            <h3>View Reports</h3>
+                            <p>Financial reports</p>
+                        </a>
+                        <a href="#" class="quick-action-card">
+                            <div class="quick-action-icon" style="background: linear-gradient(135deg, #fff3e0, #ffe0b2); color: #ef6c00;">🔍</div>
+                            <h3>Audit Trail</h3>
+                            <p>System audit log</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">🔔 Recent Activity</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="activity-list">
+                        <li class="activity-item">
+                            <div class="activity-icon" style="background: var(--success-light); color: var(--success);">✓</div>
+                            <div class="activity-content">
+                                <div class="activity-title">Transaction JV-2024-156 posted</div>
+                                <div class="activity-time">2 minutes ago by Admin User</div>
+                            </div>
+                        </li>
+                        <li class="activity-item">
+                            <div class="activity-icon" style="background: var(--info-light); color: var(--info);">📝</div>
+                            <div class="activity-content">
+                                <div class="activity-title">New draft created JV-2024-157</div>
+                                <div class="activity-time">15 minutes ago by Admin User</div>
+                            </div>
+                        </li>
+                        <li class="activity-item">
+                            <div class="activity-icon" style="background: var(--warning-light); color: var(--warning);">⚠</div>
+                            <div class="activity-content">
+                                <div class="activity-title">System backup completed</div>
+                                <div class="activity-time">1 hour ago by System</div>
+                            </div>
+                        </li>
+                        <li class="activity-item">
+                            <div class="activity-icon" style="background: var(--danger-light); color: var(--danger);">✕</div>
+                            <div class="activity-content">
+                                <div class="activity-title">Transaction JV-2024-150 voided</div>
+                                <div class="activity-time">3 hours ago by Admin User</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h3 class="card-title">🖥 System Status</h3>
+            </div>
+            <div class="card-body">
+                <div class="grid-4">
+                    <div style="text-align: center; padding: 16px;">
+                        <div style="font-size: 2rem; margin-bottom: 8px;">🟢</div>
+                        <div style="font-weight: 600;">Bio-ERP</div>
+                        <div style="font-size: 0.85rem; color: var(--gray-500);">Port 8000 - Online</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px;">
+                        <div style="font-size: 2rem; margin-bottom: 8px;">🟢</div>
+                        <div style="font-weight: 600;">OR Module</div>
+                        <div style="font-size: 0.85rem; color: var(--gray-500);">Integrated - Online</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px;">
+                        <div style="font-size: 2rem; margin-bottom: 8px;">🟡</div>
+                        <div style="font-weight: 600;">SCM Module</div>
+                        <div style="font-size: 0.85rem; color: var(--gray-500);">Port 8009 - Staging</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px;">
+                        <div style="font-size: 2rem; margin-bottom: 8px;">🟢</div>
+                        <div style="font-weight: 600;">Database</div>
+                        <div style="font-size: 0.85rem; color: var(--gray-500);">PostgreSQL - Online</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="erp-footer">
+        <div class="footer-left">
+            <span>© 2024 <strong>Incentive House</strong>. All rights reserved.</span>
+            <span class="version-number" style="color: var(--gray-400);"></span>
+        </div>
+        <div class="footer-right">
+            <a href="#" class="footer-link">Support</a>
+            <a href="#" class="footer-link">Documentation</a>
+            <a href="#" class="footer-link">Privacy Policy</a>
+            <div class="system-status">
+                <span class="status-dot"></span>
+                <span>System Online</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/erp-core.js"></script>
+    <script src="js/transactions.js"></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 ﻿from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from app.database import async_session_factory
+from app.database import get_async_session_factory
 from app.models.audit import AuditLog
 from datetime import datetime, timezone
 
@@ -31,7 +31,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
             return response
 
         try:
-            async with async_session_factory() as db:
+            async with get_async_session_factory()() as db:
                 actor_id = None
                 actor_name = None
                 if hasattr(request.state, "user"):

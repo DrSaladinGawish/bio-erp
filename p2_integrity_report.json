@@ -1,0 +1,146 @@
+{
+  "results": [
+    {
+      "stage": "FILE: Receiver",
+      "status": "PASS",
+      "detail": "4107 bytes"
+    },
+    {
+      "stage": "FILE: Sender",
+      "status": "PASS",
+      "detail": "4608 bytes"
+    },
+    {
+      "stage": "FILE: EC Prescription Model",
+      "status": "PASS",
+      "detail": "1008 bytes"
+    },
+    {
+      "stage": "FILE: OR Prescription Model",
+      "status": "PASS",
+      "detail": "1057 bytes"
+    },
+    {
+      "stage": "FILE: EC Main",
+      "status": "PASS",
+      "detail": "7596 bytes"
+    },
+    {
+      "stage": "FILE: BIO Sub-App",
+      "status": "PASS",
+      "detail": "19545 bytes"
+    },
+    {
+      "stage": "FILE: EC Models __init__",
+      "status": "PASS",
+      "detail": "1814 bytes"
+    },
+    {
+      "stage": "FILE: BIO Models __init__",
+      "status": "PASS",
+      "detail": "5266 bytes"
+    },
+    {
+      "stage": "SYNTAX: Receiver",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "SYNTAX: Sender",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "SYNTAX: EC Prescription Model",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "SYNTAX: OR Prescription Model",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "SYNTAX: EC Main",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "SYNTAX: BIO Sub-App",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "SYNTAX: EC Models __init__",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "SYNTAX: BIO Models __init__",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "IMPORT: Receiver",
+      "status": "PASS",
+      "detail": "/api/v1/prescriptions"
+    },
+    {
+      "stage": "IMPORT: Sender",
+      "status": "PASS",
+      "detail": "/or/prescriptions"
+    },
+    {
+      "stage": "ROUTE: EC Main",
+      "status": "INFO",
+      "detail": "app.include_router(prescription_receiver.router)"
+    },
+    {
+      "stage": "ROUTE: BIO Sub-App",
+      "status": "INFO",
+      "detail": "from app.or_module.prescription_sender import router as prescription_sender_router"
+    },
+    {
+      "stage": "ROUTE: BIO Sub-App",
+      "status": "INFO",
+      "detail": "or_app.include_router(prescription_sender_router)"
+    },
+    {
+      "stage": "ConfigDict",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "field_validator",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "AsyncSession",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "httpx.AsyncClient",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "X-Bridge-Token",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "Models reg: Prescription",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "stage": "Models reg: OrPrescription",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "passed": 25,
+  "failed": 0
+}
