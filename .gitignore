@@ -91,4 +91,23 @@ ERP_BUILDER_AGENT_TASK.md
 # === Dev scripts ===
 **/scripts/
 verify_erp_builder_protocol.ps1
+
+# === Generated audit / diagnostic artifacts ===
+INCENTIVEHOUSE_ERP_*.md
+PORT_CONFUSION_RESOLVED.md
+SERVER_CONFUSION_MAP.md
+REAL_BUGS_FOUND*.md
+**/FULL_DIAGNOSTIC*.ps1
+**/full_data_loader*.py
+
+# === Stale deployment docs ===
+**/DEPLOY.txt
+**/INTEGRATION.txt
+
+# === Temporary export directory ===
+**/static/exports/
+
+# === Temp helper scripts (must be explicitly committed) ===
+_check_*.py
+_*.ps1
 /

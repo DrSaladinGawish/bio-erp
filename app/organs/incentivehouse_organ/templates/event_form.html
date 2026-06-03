@@ -643,16 +643,6 @@
             .then(r => r.json())
             .then(result => {
                 showMessage(result.status === 'success' ? 'success' : 'error', result.message);
-                if (result.status === 'success') {
-                    // Post to production
-                    return fetch(`/api/v1/incentivehouse/events/post/${result.evn_id}`, { method: 'POST' });
-                }
-            })
-            .then(r => r ? r.json() : null)
-            .then(postResult => {
-                if (postResult) {
-                    showMessage('info', postResult.message);
-                }
             })
             .catch(err => showMessage('error', err.message));
         }

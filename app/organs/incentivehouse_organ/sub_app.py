@@ -354,6 +354,48 @@ async def recon_export():
     }
 
 
+# ── Event form bridge (legacy form POSTs here) ──
+@incentivehouse_app.post("/events/create")
+def legacy_event_create(payload: dict):
+    from sqlalchemy import text
+    from datetime import datetime as dt
+    db_gen = get_db()
+    db = next(db_gen)
+    try:
+        code = payload.get("event_code") or "EVT-" + dt.now().strftime("%Y%m%d%H%M%S")
+        desc = payload.get("event_description", "")
+        sdate = payload.get("start_date")
+        edate = payload.get("end_date")
+        dur = 1
+        if sdate and edate:
+            try: dur = max(1, (dt.strptime(edate, "%Y-%m-%d") - dt.strptime(sdate, "%Y-%m-%d")).days + 1)
+            except: pass
+        now = dt.now().isoformat()
+        db.execute(text("""
+            INSERT INTO events (event_code, client_id, name_en, name_ar, notes, start_date, end_date, venue,
+                status, budget_version, duration_days, total_budget, total_cost, total_revenue, gross_profit,
+                created_at, updated_at, is_active, branch_id, currency_id, conversion_rate)
+            VALUES (:code, :cid, :name, :name, :notes, :sdate, :edate, :venue,
+                'OPEN', 1, :dur, 0, 0, :rev, 0,
+                :now, :now, true, 1, 1, 1.0)
+        """), {
+            "code": code, "cid": payload.get("client_id", 1),
+            "name": desc[:255] if desc else "New Event",
+            "notes": desc, "sdate": sdate, "edate": edate,
+            "venue": payload.get("avenue"), "dur": dur, "rev": float(payload.get("gross_sales", 0) or 0),
+            "now": now,
+        })
+        db.commit()
+        result = db.execute(text("SELECT lastval()"))
+        evn_id = result.scalar()
+        return {"status": "success", "message": "Event created", "evn_id": evn_id}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)[:400]}
+    finally:
+        db.close()
+
+
 # ── Include staging + promote sub-routers ──
 from app.organs.incentivehouse_organ.router import router as incentivehouse_router
 incentivehouse_app.include_router(incentivehouse_router)
