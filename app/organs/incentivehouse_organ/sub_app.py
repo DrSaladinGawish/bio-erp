@@ -361,3 +361,7 @@ incentivehouse_app.include_router(incentivehouse_router)
 
 # --- Reconciliation Module ---
 incentivehouse_app.include_router(recon_router)
+
+# --- Reconciliation Builder (bank recon form endpoints) ---
+from app.organs.incentivehouse_organ.routers.recon_builder_router import router as recon_builder_router
+incentivehouse_app.include_router(recon_builder_router, tags=["Builder"])
