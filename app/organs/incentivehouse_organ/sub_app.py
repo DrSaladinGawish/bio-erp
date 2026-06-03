@@ -321,6 +321,8 @@ def verify_token(token: str) -> dict:
 
 @incentivehouse_app.post("/auth/login", response_model=TokenResponse)
 async def auth_login(credentials: LoginRequest):
+    if credentials.username != "admin":
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     if not bcrypt.checkpw(credentials.password.encode(), _ADMIN_PW_HASH):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     user_info = {"username": "admin", "role": "admin", "permissions": ["*"]}

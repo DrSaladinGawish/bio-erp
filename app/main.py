@@ -34,6 +34,13 @@ from app.organs.scm_organ.sub_app import scm_app
 # IncentiveHouse ERP Legacy Migration Sub-Application
 from app.organs.incentivehouse_organ.sub_app import incentivehouse_app
 
+# IncentiveHouse module routers (BNK, SAL, PUR, EVN, ENV)
+from app.organs.incentivehouse_organ.routers.bnk_router import router as ih_bnk_router
+from app.organs.incentivehouse_organ.routers.sal_router import router as ih_sal_router
+from app.organs.incentivehouse_organ.routers.pur_router import router as ih_pur_router
+from app.organs.incentivehouse_organ.routers.evn_router import router as ih_evn_router
+from app.organs.incentivehouse_organ.routers.env_router import router as ih_env_router
+
 from app.routers import (
     accounting,
     admin,
@@ -235,7 +242,13 @@ app.mount("/api/v1/or", or_app)
 # SCM Costing & Performance Module (mounted at /api/v1/scm)
 app.mount("/api/v1/scm", scm_app)
 
-# IncentiveHouse ERP Legacy Migration Module (mounted at /api/v1/incentivehouse)
+# IncentiveHouse ERP module routers (BNK, SAL, PUR, EVN, ENV — provide own /api/v1/* prefixes)
+app.include_router(ih_bnk_router)
+app.include_router(ih_sal_router)
+app.include_router(ih_pur_router)
+app.include_router(ih_evn_router)
+app.include_router(ih_env_router)
+# In-house sub-app (auth, events/create, dashboard, recon)
 app.mount("/api/v1/incentivehouse", incentivehouse_app)
 
 # P2 Reverse Flow — Doctor (BIO-ERP) -> Patient (EventCore)
