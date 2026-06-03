@@ -8,6 +8,7 @@ endpoints (extraction -> validation -> staging -> reconcile -> approve
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime
 from typing import Optional
 
@@ -16,13 +17,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.organs.incentivehouse_organ.main import get_db
+from app.organs.incentivehouse_organ.db import get_db
 
 logger = logging.getLogger("incentivehouse_organ.legacy")
 
 # Legacy dev users for /v2/* routes (separate from JWT auth in sub_app.py)
 AUTH_USERS = {
-    "admin": {"password": "admin123", "role": "Admin"},
+    "admin": {"password": os.getenv("IH_LEGACY_ADMIN_PASSWORD", "change-me-in-production"), "role": "Admin"},
     "accountant": {"password": "acc123", "role": "Accountant"},
     "event_mgr": {"password": "evn123", "role": "EventManager"},
     "viewer": {"password": "view123", "role": "Viewer"},

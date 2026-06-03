@@ -237,7 +237,6 @@ def create_app() -> FastAPI:
         app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
     templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
     # Routers
-    _mount_legacy_v2(app)
     _mount_extraction(app)
     _mount_jinja_pages(app, templates)
     _mount_api_routers(app)
@@ -245,17 +244,6 @@ def create_app() -> FastAPI:
     _register_exception_handlers(app)
     _register_health(app)
     return app
-
-
-# ============================================================================
-# Legacy /v2/* routes (imported from legacy_routes.py)
-# ============================================================================
-
-def _mount_legacy_v2(app: FastAPI) -> None:
-    from app.organs.incentivehouse_organ.legacy_routes import (
-        mount_legacy_v2_routes,
-    )
-    mount_legacy_v2_routes(app)
 
 
 # ============================================================================
