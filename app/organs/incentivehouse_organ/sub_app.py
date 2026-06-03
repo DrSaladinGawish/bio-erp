@@ -19,8 +19,8 @@ from typing import Optional
 import bcrypt
 from jose import JWTError, jwt
 
-from fastapi import FastAPI, HTTPException, Query, Depends, Header
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Query, Depends, Header, Request
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -48,7 +48,7 @@ incentivehouse_app = FastAPI(
 
 incentivehouse_app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("IH_CORS_ORIGINS", "http://localhost:8002,http://127.0.0.1:8002").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -256,9 +256,17 @@ DASHBOARD_HTML = Path(__file__).parent / "incentivehouse_dashboard_branded.html"
 LOGIN_HTML = Path(__file__).parent / "login.html"
 
 
-@incentivehouse_app.get("/dashboard", response_class=FileResponse)
-async def branded_dashboard():
-    return FileResponse(str(DASHBOARD_HTML))
+@incentivehouse_app.get("/dashboard")
+async def branded_dashboard(request: Request):
+    auth_header = request.headers.get("authorization", "")
+    token = auth_header.removeprefix("Bearer ")
+    if token:
+        try:
+            verify_token(token)
+            return FileResponse(str(DASHBOARD_HTML))
+        except HTTPException:
+            pass
+    return RedirectResponse(url="/api/v1/incentivehouse/login")
 
 
 # ── Login Page ──
@@ -280,8 +288,9 @@ SECRET_KEY = os.getenv("IH_JWT_SECRET", "incentivehouse-dev-secret-change-in-pro
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-# Pre-hashed admin password (bcrypt of "admin")
-_ADMIN_PW_HASH = bcrypt.hashpw(b"admin", bcrypt.gensalt())
+# Admin password from env (default: change-me-in-production)
+_ADMIN_PASSWORD = os.getenv("IH_ADMIN_PASSWORD", "change-me-in-production")
+_ADMIN_PW_HASH = bcrypt.hashpw(_ADMIN_PASSWORD.encode(), bcrypt.gensalt())
 
 
 class LoginRequest(BaseModel):

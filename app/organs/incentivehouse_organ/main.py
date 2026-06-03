@@ -84,13 +84,7 @@ ALLOW_AUTO_CREATE: bool = os.getenv("ALLOW_AUTO_CREATE", "true").lower() == "tru
 TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
-# Legacy dev users
-AUTH_USERS = {
-    "admin": {"password": "admin123", "role": "Admin"},
-    "accountant": {"password": "acc123", "role": "Accountant"},
-    "event_mgr": {"password": "evn123", "role": "EventManager"},
-    "viewer": {"password": "view123", "role": "Viewer"},
-}
+
 
 
 # ============================================================================
@@ -235,7 +229,7 @@ def create_app() -> FastAPI:
     app.add_middleware(DBSessionMiddleware)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=os.getenv("CORS_ALLOW_ORIGINS", "*").split(","),
+        allow_origins=os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:8002,http://127.0.0.1:8002").split(","),
         allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
     )
     # Static + templates

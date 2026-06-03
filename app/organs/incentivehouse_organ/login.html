@@ -126,7 +126,6 @@
         </form>
 
         <div class="footer-links">
-            <p class="mb-1"><a href="/api/v1/incentivehouse/dashboard">Skip Login (Dev Mode)</a></p>
             <p class="mb-0">Meeting | Incentives | Conferences | Exhibitions</p>
         </div>
 
@@ -166,15 +165,9 @@
                     throw new Error('Auth failed');
                 }
             } catch(err) {
-                if(user === 'admin' && pass === 'admin') {
-                    localStorage.setItem('token', 'demo-token');
-                    localStorage.setItem('user', JSON.stringify({username: 'admin', role: 'admin'}));
-                    window.location.href = '/api/v1/incentivehouse/dashboard';
-                } else {
-                    alert('Invalid credentials. Try admin/admin for demo mode.');
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> SIGN IN';
-                }
+                alert('Login failed. Check your credentials.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> SIGN IN';
             }
         }
     </script>

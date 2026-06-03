@@ -16,9 +16,17 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.organs.incentivehouse_organ.main import AUTH_USERS, get_db
+from app.organs.incentivehouse_organ.main import get_db
 
 logger = logging.getLogger("incentivehouse_organ.legacy")
+
+# Legacy dev users for /v2/* routes (separate from JWT auth in sub_app.py)
+AUTH_USERS = {
+    "admin": {"password": "admin123", "role": "Admin"},
+    "accountant": {"password": "acc123", "role": "Accountant"},
+    "event_mgr": {"password": "evn123", "role": "EventManager"},
+    "viewer": {"password": "view123", "role": "Viewer"},
+}
 
 
 # ============================================================================

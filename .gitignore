@@ -79,4 +79,16 @@ bio_erp_all_phases/
 .aider*
 .aider.chat.history.md
 .aider.input.history
-.aider.tags.cache.v4/
+.aider.tags.cache.v4
+
+# === Dev / Protocol docs ===
+PROTOCOL.md
+BIO_ERP_*.md
+AGENT_TRANSFER_CARD.md
+FINAL_GAP_ANALYSIS.md
+ERP_BUILDER_AGENT_TASK.md
+
+# === Dev scripts ===
+**/scripts/
+verify_erp_builder_protocol.ps1
+/
