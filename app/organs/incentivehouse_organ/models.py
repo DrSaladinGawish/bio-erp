@@ -147,6 +147,29 @@ class EnvStaging(IncentiveBase):
     staged_at = Column(String(30), default=lambda: datetime.now().isoformat())
 
 
+class BNKTransaction(IncentiveBase):
+    """Bank transaction record — used by the BNK router."""
+    __tablename__ = "bnk_transactions"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    account_code = Column(String(20), index=True)
+    currency_code = Column(String(3), default="EGP")
+    txn_date = Column(DateTime)
+    txn_type = Column(String(50))
+    description = Column(String(500))
+    reference_no = Column(String(50), index=True)
+    debit_amount = Column(Float, default=0.0)
+    credit_amount = Column(Float, default=0.0)
+    amount = Column(Float, default=0.0)
+    sub_ledger_code = Column(String(20))
+    pnr_id = Column(Integer)
+    counterparty = Column(String(200))
+    is_reconciled = Column(Integer, default=0)
+    is_flagged = Column(Integer, default=0)
+    source = Column(String(50), default="excel_import")
+    row_hash = Column(String(64), unique=True)
+    imported_at = Column(DateTime)
+
+
 # ── Module-to-model mapping ──
 STAGING_MODELS = {
     "Bnk": BnkStaging,

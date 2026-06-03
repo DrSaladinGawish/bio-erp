@@ -1,9 +1,73 @@
-__pycache__
-*.pyc
-.env
-.git
-.gitignore
-tests/
-*.md
-.venv/
+# =============================================================================
+#  .dockerignore — keep the build context lean
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
 .pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Test / sample data
+tests/
+snapshots/
+uploads/
+*.xlsx
+*.xls
+~$*.xlsx
+~$*.xls
+*.db
+*.sqlite
+*.sqlite3
+protocell_staging.db
+*.log
+*.pid
+
+# Docker self-references
+Dockerfile
+docker-compose.yml
+.dockerignore
+nginx.conf
+deploy_all.py
+
+# Docs / scripts that are not needed in the image
+*.md
+docs/
+.github/
+templates/
+static/
+certs/
+
+# Node / front-end (not used)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

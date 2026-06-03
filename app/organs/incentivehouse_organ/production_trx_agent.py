@@ -1,6 +1,6 @@
-"""
-Production Transaction Agent — Incentive House ERP
-Wraps the Protocell extraction → mapping → validation → staging pipeline
+﻿"""
+Production Transaction Agent â€” Incentive House ERP
+Wraps the Protocell extraction â†’ mapping â†’ validation â†’ staging pipeline
 as a callable agent for batch Excel transaction processing.
 """
 import json
@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
-# ── Agent Domain Types ──
+# â”€â”€ Agent Domain Types â”€â”€
 
 @dataclass
 class ExtractionContext:
@@ -45,8 +45,8 @@ class AgentManifest:
 class ProductionTrxAgent:
     """
     Production Transaction Agent for bulk Excel extraction.
-    Reads source Excel → auto-detects columns → maps (Sub_Led_Code, PNR_ID,
-    Client_ID, FX) → validates (7 protocell rules) → stages to *__staging tables.
+    Reads source Excel â†’ auto-detects columns â†’ maps (Sub_Led_Code, PNR_ID,
+    Client_ID, FX) â†’ validates (7 protocell rules) â†’ stages to *__staging tables.
     """
 
     def __init__(self, db: Session, config_dir: str | Path = None):
@@ -94,7 +94,7 @@ class ProductionTrxAgent:
             manifest.total_rows = len(df)
 
             # Step 2: Map
-            mapped = extractor.apply_mapping(ctx.module)
+            mapped = extractor.apply_mapping()
 
             # Step 3: Validate
             validator = self._get_validator()

@@ -1,68 +1,69 @@
 # config/source_paths.yaml
-# Auto-discovered F:\ source files for IncentiveHouse ERP Protocell
+# Source file registry for the IncentiveHouse ERP Protocell pipeline.
+# Paths are relative to the BIO_ERP project root (d:\ERP System\BIO_ERP).
+# On other machines (e.g. when the F: drive is mounted), override via env var
+# IH_SOURCES_OVERRIDE=<abs_path> — handled by the loader endpoint.
 sources:
   Bnk:
-    path: "F:\\JUN@25 Actual\\Bnk_LED.xlsx"
-    sheet: null
-    description: "Bank ledger transactions"
-    file_size_bytes: 162382
+    path: "app/organs/incentivehouse_organ/Bnk_TRNX SOURCE.xlsx"
+    sheet: "Bnk_Stat_Trnx_Reg"
+    description: "Bank statement transaction register (2,501 rows, 2026 fiscal year)"
+    header_row: 0
+  BnkGL:
+    path: "app/organs/incentivehouse_organ/Bnk_TRNX SOURCE.xlsx"
+    sheet: "Bnk_Stat_Trnx_GL"
+    description: "Bank statement GL leg (5,002 rows, dual-entry Dr/Cr)"
+    header_row: 0
   Sal:
-    path: "F:\\JUN@25 Actual\\SAL_LEDGER.xlsx"
+    path: "app/organs/incentivehouse_organ/EINV_SAL_TRNX SOURCE.xlsx"
     sheet: null
-    description: "Sales ledger (1.1 MB, standalone)"
-    file_size_bytes: 1107723
+    description: "E-invoice sales transactions"
+    header_row: 0
   Pur:
-    path: "F:\\JUN@25 Actual\\SAL&PUR LEDGER.xlsx"
+    path: "app/organs/incentivehouse_organ/EINV_PUR_TRNX SOURCE.xlsx"
     sheet: null
-    description: "Combined SAL&PUR ledger (1.15 MB, primary)"
-    file_size_bytes: 1154405
-  SalPortal:
-    path: "F:\\Source Data\\Sales Portal Invoices Up to 16 Jul 2025.xlsx"
-    sheet: null
-    description: "E-Invoice portal sales export"
-    file_size_bytes: 61380
-  PurPortal:
-    path: "F:\\Source Data\\Purchase Portal Invoices Up to 16 Jul 2025.xlsx"
-    sheet: null
-    description: "E-Invoice portal purchases export"
-    file_size_bytes: 152294
+    description: "E-invoice purchase transactions"
+    header_row: 0
   GL:
-    path: "F:\\JUN@25 Actual\\Gen_LED.xlsx"
+    path: "app/organs/incentivehouse_organ/GL_TRNX SOURCE.xlsx"
     sheet: null
-    description: "General ledger (681 KB)"
-    file_size_bytes: 681139
-    split_to: [Evn, Env]
-  GLJuly:
-    path: "F:\\JUN@25 Actual\\Gen_LED JULY25.xlsx"
+    description: "General ledger transactions (split to Evn/Env)"
+    header_row: 0
+  ChqBook:
+    path: "app/organs/incentivehouse_organ/Chq_Book_Mtb.xlsx"
     sheet: null
-    description: "General ledger July 2025 (464 KB)"
-    file_size_bytes: 464730
-    split_to: [Evn, Env]
-  Manual:
-    path: "F:\\JUN@25 Actual\\Manual Transaction.xlsx"
+    description: "Cheque book master table"
+    header_row: 0
+  Clients:
+    path: "app/organs/incentivehouse_organ/Clients_Mtbl.xlsx"
     sheet: null
-    description: "Manual journal entries"
-    file_size_bytes: 84447
+    description: "Clients master table"
+    header_row: 0
+  SubLedKey:
+    path: "app/organs/incentivehouse_organ/Sub_Led_Data_Base.xlsx"
+    sheet: null
+    description: "Sub-ledger data base (master for sub-ledger keys)"
+    header_row: 0
+  DataBaseM:
+    path: "app/organs/incentivehouse_organ/Data_Base_Mtbls.xlsx"
+    sheet: null
+    description: "Master tables: clients, sub-ledger, cost-centre, trnx-id, cheque-book"
+    header_row: 0
 
-# Mapping from module key to filesystem paths
+# Mapping from module key to source keys (a module can pull from many files)
 module_groups:
   Bnk:
     - Bnk
+    - BnkGL
   Sal:
     - Sal
-    - SalPortal
   Pur:
     - Pur
-    - PurPortal
   GL:
     - GL
-    - GLJuly
-  Manual:
-    - Manual
 
-# Default module when --module all is used
+# Order in which modules are processed by /extract/all
 all_modules:
   - Bnk
   - Sal
   - Pur
-  - Manual

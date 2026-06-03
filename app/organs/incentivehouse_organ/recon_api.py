@@ -1,71 +1,125 @@
-﻿import sqlite3
-from pathlib import Path
-from fastapi import APIRouter
-from pydantic import BaseModel
-from typing import List, Optional
+﻿"""
+Bank Reconciliation API — FastAPI router using proper dependency injection.
 
-router = APIRouter(prefix="/recon", tags=["Reconciliation"])
+Reads reconciliation data from the project-managed SQLite DB (same engine
+as the rest of the IncentiveHouse organ), so paths and connection pooling
+stay consistent.
 
-STAGING_DB = Path("D:/ERP_Ecosystem/46_Protocell_Migration/protocell_staging.db")
+Endpoints (under /recon):
+  GET /recon/status          - per-status counts + variance totals
+  GET /recon/variances       - largest unreconciled variances
+  GET /recon/check-books     - per-check-book rollup
+"""
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-def get_staging_conn():
-    return sqlite3.connect(str(STAGING_DB))
+from app.organs.incentivehouse_organ.db import get_sync_session_factory
 
-class ReconStatus(BaseModel):
-    recon_status: str
-    count: int
-    total_variance: float
+router = APIRouter(prefix="/recon", tags=["reconciliation"])
 
-class VarianceItem(BaseModel):
-    check_book_id: int
-    check_book_name: str
-    transaction_id: str
-    variance: float
-    recon_status: str
 
-@router.get("/status", response_model=List[ReconStatus])
-def recon_status():
-    conn = get_staging_conn()
-    c = conn.cursor()
-    c.execute("""
-        SELECT recon_status, COUNT(*), SUM(ABS(variance))
+def get_recon_db() -> Session:
+    """Yield a sync SQLAlchemy session pointed at the IncentiveHouse DB."""
+    factory = get_sync_session_factory()
+    session = factory()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+def _table_exists(db: Session, name: str) -> bool:
+    try:
+        row = db.execute(
+            text("SELECT name FROM sqlite_master WHERE type='table' AND name=:n"),
+            {"n": name},
+        ).fetchone()
+        return row is not None
+    except Exception:
+        return False
+
+
+@router.get("/status")
+def recon_status(db: Session = Depends(get_recon_db)):
+    """Per-status counts and total variance."""
+    if not _table_exists(db, "bnk_reconciliation"):
+        return {"rows": [], "note": "bnk_reconciliation table not yet created"}
+    rows = db.execute(text("""
+        SELECT recon_status, COUNT(*) AS cnt, COALESCE(SUM(ABS(variance)), 0) AS total_variance
         FROM bnk_reconciliation
         GROUP BY recon_status
-    """)
-    rows = c.fetchall()
-    conn.close()
-    return [{"recon_status": r[0], "count": r[1], "total_variance": r[2] or 0} for r in rows]
+        ORDER BY cnt DESC
+    """)).fetchall()
+    return {
+        "rows": [
+            {
+                "recon_status": r.recon_status or "UNKNOWN",
+                "count": int(r.cnt or 0),
+                "total_variance": float(r.total_variance or 0),
+            }
+            for r in rows
+        ]
+    }
 
-@router.get("/variances", response_model=List[VarianceItem])
-def recon_variances(limit: int = 20):
-    conn = get_staging_conn()
-    c = conn.cursor()
-    c.execute("""
-        SELECT check_book_id, check_book_name, transaction_id, variance, recon_status
+
+@router.get("/variances")
+def recon_variances(
+    limit: int = Query(default=20, ge=1, le=500),
+    db: Session = Depends(get_recon_db),
+):
+    """Top unreconciled variances by absolute size."""
+    if not _table_exists(db, "bnk_reconciliation"):
+        return {"rows": [], "note": "bnk_reconciliation table not yet created"}
+    rows = db.execute(text("""
+        SELECT id, check_book_id, check_book_name, transaction_id,
+               variance, bank_amount, gl_amount, recon_status
         FROM bnk_reconciliation
-        WHERE recon_status != 'RECONCILED'
-        ORDER BY ABS(variance) DESC
-        LIMIT ?
-    """, (limit,))
-    rows = c.fetchall()
-    conn.close()
-    return [{
-        "check_book_id": r[0], "check_book_name": r[1],
-        "transaction_id": r[2], "variance": r[3], "recon_status": r[4]
-    } for r in rows]
+        WHERE COALESCE(recon_status, '') != 'RECONCILED'
+        ORDER BY ABS(COALESCE(variance, 0)) DESC
+        LIMIT :limit
+    """), {"limit": limit}).fetchall()
+    return {
+        "rows": [
+            {
+                "id": int(r.id),
+                "check_book_id": r.check_book_id,
+                "check_book_name": r.check_book_name,
+                "transaction_id": r.transaction_id,
+                "variance": float(r.variance or 0),
+                "bank_amount": float(r.bank_amount or 0),
+                "gl_amount": float(r.gl_amount or 0),
+                "recon_status": r.recon_status,
+            }
+            for r in rows
+        ]
+    }
+
 
 @router.get("/check-books")
-def check_books():
-    conn = get_staging_conn()
-    c = conn.cursor()
-    c.execute("""
-        SELECT check_book_id, check_book_name, COUNT(*) as total,
-               SUM(CASE WHEN recon_status='RECONCILED' THEN 1 ELSE 0 END) as ok,
-               SUM(CASE WHEN recon_status!='RECONCILED' THEN 1 ELSE 0 END) as bad
+def check_books(db: Session = Depends(get_recon_db)):
+    """Per-check-book rollup."""
+    if not _table_exists(db, "bnk_reconciliation"):
+        return {"rows": [], "note": "bnk_reconciliation table not yet created"}
+    rows = db.execute(text("""
+        SELECT check_book_id, check_book_name, COUNT(*) AS total,
+               SUM(CASE WHEN COALESCE(recon_status,'') = 'RECONCILED' THEN 1 ELSE 0 END) AS ok,
+               SUM(CASE WHEN COALESCE(recon_status,'') != 'RECONCILED' THEN 1 ELSE 0 END) AS bad,
+               COALESCE(SUM(ABS(variance)), 0) AS total_variance
         FROM bnk_reconciliation
         GROUP BY check_book_id, check_book_name
         ORDER BY check_book_id
-    """)
-    rows = c.fetchall()
-    conn.close()
-    return [{"cb_id": r[0], "name": r[1], "total": r[2], "ok": r[3], "bad": r[4]} for r in rows]
+    """)).fetchall()
+    return {
+        "rows": [
+            {
+                "cb_id": r.check_book_id,
+                "name": r.check_book_name,
+                "total": int(r.total or 0),
+                "ok": int(r.ok or 0),
+                "bad": int(r.bad or 0),
+                "total_variance": float(r.total_variance or 0),
+            }
+            for r in rows
+        ]
+    }

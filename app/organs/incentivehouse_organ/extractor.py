@@ -216,6 +216,23 @@ class TransactionExtractor:
             else:
                 df["AMOUNT_EGP"] = 0.0
 
+        # --- ADDED 2026-06-02: BNK-style files have dedicated Debit/Credit columns
+        #     alongside the net EGP amount column. Populate DEBIT_AMOUNT / CREDIT_AMOUNT
+        #     from the raw columns so the staging table gets dual-entry amounts
+        #     (validator rule 4 needs them, and downstream recon needs them too).
+        if "DEBIT_AMOUNT" not in df.columns or df["DEBIT_AMOUNT"].isna().all() or (df["DEBIT_AMOUNT"] == 0).all():
+            dr_col = self._find_column(df, ["DEBIT"], contains=True)
+            cr_col = self._find_column(df, ["CREDIT"], contains=True)
+            if dr_col:
+                df["DEBIT_AMOUNT"] = pd.to_numeric(df[dr_col], errors="coerce").fillna(0)
+            if cr_col:
+                df["CREDIT_AMOUNT"] = pd.to_numeric(df[cr_col], errors="coerce").fillna(0)
+            if (dr_col or cr_col) and "AMOUNT_EGP" in df.columns:
+                # If net amount was already populated from a net column, leave it.
+                # Otherwise derive net from DR-CR.
+                if df["AMOUNT_EGP"].isna().all() or (df["AMOUNT_EGP"] == 0).all():
+                    df["AMOUNT_EGP"] = (df.get("DEBIT_AMOUNT", 0) - df.get("CREDIT_AMOUNT", 0)) * df.get("FX_RATE", 1.0)
+
         # --- Transaction / Reference ID ---
         tid_col = self._find_column(df, [
             "TRANSACTION_ID", "TRANSACTION_REFERENCE", "REFERENCE", "TNX_NUM",

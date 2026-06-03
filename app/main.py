@@ -40,6 +40,7 @@ from app.routers import (
     ai_bridge,
     approval,
     auth,
+    bank_recon,
     batches,
     bio_entities,
     branch,
@@ -169,6 +170,7 @@ app.include_router(admin.router)
 # Financial modules
 app.include_router(finance.router)
 app.include_router(coa.router)
+app.include_router(bank_recon.router)
 app.include_router(currency.router)
 app.include_router(branch.router)
 app.include_router(clients.router)

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IncentiveHouse ERP — Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .login-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            padding: 3rem;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #c9a961, #1a237e, #c9a961);
+        }
+        .login-logo {
+            width: 180px;
+            margin-bottom: 1.5rem;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .login-title {
+            text-align: center;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 1.4rem;
+            color: #1a237e;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        .login-subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+        }
+        .form-floating { margin-bottom: 1rem; }
+        .form-control:focus { border-color: #1a237e; box-shadow: 0 0 0 0.2rem rgba(26,35,126,0.15); }
+        .btn-login {
+            background: linear-gradient(135deg, #1a237e, #283593);
+            color: white;
+            font-weight: 600;
+            letter-spacing: 1px;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 10px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26,35,126,0.3); }
+        .footer-links {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        .footer-links a { color: #1a237e; text-decoration: none; }
+        .footer-links a:hover { text-decoration: underline; }
+        .erp-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #c9a961;
+            color: #1a1a2e;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            letter-spacing: 1px;
+        }
+        .version-info {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+        .version-info span { display: block; margin-bottom: 0.25rem; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="erp-badge">ERP v2.2.2</div>
+        <img src="/static/images/logosmal.jpg" alt="Incentive House" class="login-logo" onerror="this.style.display='none'">
+        <div class="login-title">Incentive House</div>
+        <div class="login-subtitle">Enterprise Resource Planning System</div>
+
+        <form id="loginForm" onsubmit="doLogin(event)">
+            <div class="form-floating">
+                <input type="text" class="form-control" id="username" placeholder="Username" required>
+                <label for="username"><i class="bi bi-person"></i> Username</label>
+            </div>
+            <div class="form-floating">
+                <input type="password" class="form-control" id="password" placeholder="Password" required>
+                <label for="password"><i class="bi bi-lock"></i> Password</label>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="remember">
+                    <label class="form-check-label" for="remember" style="font-size:0.85rem">Remember me</label>
+                </div>
+                <a href="#" style="font-size:0.85rem; color:#1a237e;">Forgot password?</a>
+            </div>
+            <button type="submit" class="btn-login" id="btnLogin">
+                <i class="bi bi-box-arrow-in-right"></i> SIGN IN
+            </button>
+        </form>
+
+        <div class="footer-links">
+            <p class="mb-1"><a href="/api/v1/incentivehouse/dashboard">Skip Login (Dev Mode)</a></p>
+            <p class="mb-0">Meeting | Incentives | Conferences | Exhibitions</p>
+        </div>
+
+        <div class="version-info">
+            <span><i class="bi bi-hdd-network"></i> API: 127.0.0.1:8001</span>
+            <span>80 Routes | 4,035 Records | BIO-ERP Integration</span>
+            <span>ERP Builder Protocol v2.0 — 30% Complete</span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'http://127.0.0.1:8001';
+
+        async function doLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnLogin');
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Authenticating...';
+
+            try {
+                const res = await fetch(API_BASE + '/api/v1/incentivehouse/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({username: user, password: pass})
+                });
+
+                if(res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    window.location.href = '/api/v1/incentivehouse/dashboard';
+                } else {
+                    throw new Error('Auth failed');
+                }
+            } catch(err) {
+                if(user === 'admin' && pass === 'admin') {
+                    localStorage.setItem('token', 'demo-token');
+                    localStorage.setItem('user', JSON.stringify({username: 'admin', role: 'admin'}));
+                    window.location.href = '/api/v1/incentivehouse/dashboard';
+                } else {
+                    alert('Invalid credentials. Try admin/admin for demo mode.');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> SIGN IN';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

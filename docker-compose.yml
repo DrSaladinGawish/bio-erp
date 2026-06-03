@@ -1,94 +1,109 @@
+# =============================================================================
+#  IncentiveHouse ERP — full stack: FastAPI + PostgreSQL + Nginx
+# =============================================================================
+#  Usage:
+#    docker-compose up -d            # start everything
+#    docker-compose logs -f api      # tail API logs
+#    docker-compose down -v          # stop + delete volumes
+#
+#  Override DATABASE_URL via .env or:
+#    DATABASE_URL=postgresql+psycopg://... docker-compose up
+# =============================================================================
+
 version: "3.9"
 
 services:
-  db:
-    image: postgres:15
+
+  # ────────────────────────────────────────────────────────────────────────
+  #  PostgreSQL 15 — primary data store
+  # ────────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: ih_postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-bio_erp}
-      POSTGRES_USER: ${POSTGRES_USER:-bio_erp}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bio_erp_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-incentivehouse}
+      POSTGRES_USER: ${POSTGRES_USER:-ih_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ih_changeme}
+    volumes:
+      - ih_pgdata:/var/lib/postgresql/data
+      - ./scripts/db_backup.sh:/docker-entrypoint-initdb.d/10-backup.sh:ro
     ports:
       - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bio_erp"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ih_admin} -d ${POSTGRES_DB:-incentivehouse}"]
+      interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ihnet
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
+  # ────────────────────────────────────────────────────────────────────────
+  #  FastAPI — IncentiveHouse organ (the main app)
+  # ────────────────────────────────────────────────────────────────────────
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ih_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-ih_admin}:${POSTGRES_PASSWORD:-ih_changeme}@postgres:5432/${POSTGRES_DB:-incentivehouse}
+      SYNC_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ih_admin}:${POSTGRES_PASSWORD:-ih_changeme}@postgres:5432/${POSTGRES_DB:-incentivehouse}
+      CORS_ALLOW_ORIGINS: "*"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ALLOW_AUTO_CREATE: "true"
+      HOST: 0.0.0.0
+      PORT: 8001
     ports:
-      - "8000:8000"
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-bio_erp}:${POSTGRES_PASSWORD:-bio_erp_secret}@db:5432/${POSTGRES_DB:-bio_erp}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@bio-erp.local}
-      ADMIN_FULL_NAME: ${ADMIN_FULL_NAME:-System Admin}
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      - "8001:8001"
     volumes:
-      - report_data:/tmp/bio_erp_reports
+      - ih_data:/app/data
+      - ih_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - ihnet
 
-  celery-worker:
-    build: .
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-bio_erp}:${POSTGRES_PASSWORD:-bio_erp_secret}@db:5432/${POSTGRES_DB:-bio_erp}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
-    depends_on:
-      redis:
-        condition: service_started
-      db:
-        condition: service_healthy
-    volumes:
-      - report_data:/tmp/bio_erp_reports
-    command: celery -A app.celery_app worker -l info -Q default,reports,or_engines
-
-  celery-beat:
-    build: .
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-bio_erp}:${POSTGRES_PASSWORD:-bio_erp_secret}@db:5432/${POSTGRES_DB:-bio_erp}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-    depends_on:
-      redis:
-        condition: service_started
-      db:
-        condition: service_healthy
-    command: celery -A app.celery_app beat -l info
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "80:80"
-    environment:
-      VITE_API_URL: http://localhost:8000
+  # ────────────────────────────────────────────────────────────────────────
+  #  Nginx — reverse proxy (production-grade)
+  # ────────────────────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: ih_nginx
+    restart: unless-stopped
     depends_on:
       - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      - ihnet
 
+# ────────────────────────────────────────────────────────────────────────
+#  Volumes — persistent data
+# ────────────────────────────────────────────────────────────────────────
 volumes:
-  pgdata:
-  report_data:
+  ih_pgdata:
+    driver: local
+  ih_data:
+    driver: local
+  ih_logs:
+    driver: local
+
+# ────────────────────────────────────────────────────────────────────────
+#  Network
+# ────────────────────────────────────────────────────────────────────────
+networks:
+  ihnet:
+    driver: bridge
