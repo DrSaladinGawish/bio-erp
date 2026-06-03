@@ -23,7 +23,7 @@ logger = logging.getLogger("incentivehouse_organ.legacy")
 
 # Legacy dev users for /v2/* routes (separate from JWT auth in sub_app.py)
 AUTH_USERS = {
-    "admin": {"password": os.getenv("IH_LEGACY_ADMIN_PASSWORD", "change-me-in-production"), "role": "Admin"},
+    "admin": {"password": os.getenv("IH_LEGACY_ADMIN_PASSWORD", "pemCzLvBpBHYEYoRCpIq"), "role": "Admin"},
     "accountant": {"password": "acc123", "role": "Accountant"},
     "event_mgr": {"password": "evn123", "role": "EventManager"},
     "viewer": {"password": "view123", "role": "Viewer"},

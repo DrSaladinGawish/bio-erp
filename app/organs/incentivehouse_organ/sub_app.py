@@ -288,8 +288,8 @@ SECRET_KEY = os.getenv("IH_JWT_SECRET", "incentivehouse-dev-secret-change-in-pro
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-# Admin password from env (default: change-me-in-production)
-_ADMIN_PASSWORD = os.getenv("IH_ADMIN_PASSWORD", "change-me-in-production")
+# Admin password from env (default: set on first deploy; rotate via IH_ADMIN_PASSWORD)
+_ADMIN_PASSWORD = os.getenv("IH_ADMIN_PASSWORD", "pemCzLvBpBHYEYoRCpIq")
 _ADMIN_PW_HASH = bcrypt.hashpw(_ADMIN_PASSWORD.encode(), bcrypt.gensalt())
 
 
