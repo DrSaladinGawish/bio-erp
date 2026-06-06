@@ -82,6 +82,7 @@ from app.routers import (
 from app.routers.currency import conversion_router
 from app.routers.intelligence_router import router as intelligence_router
 from app.routers.neural.ai_api import router as neural_router
+from app.routers.roles import router as roles_router
 from app.cells.rbac_cell.router import router as rbac_router
 
 logger = logging.getLogger(__name__)
@@ -264,6 +265,9 @@ app.include_router(reports.router)
 
 # RBAC Cell (Casbin)
 app.include_router(rbac_router)
+
+# User Roles & Permissions
+app.include_router(roles_router)
 
 # EventCore Bridge
 app.include_router(eventcore_bridge.router)

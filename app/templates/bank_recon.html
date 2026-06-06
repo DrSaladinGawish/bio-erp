@@ -261,9 +261,33 @@ function toggleSelectAll() {
     });
 }
 
-function reconcileItem(id) { showToast('Reconcile item ' + id + ' — coming in v2.3', 'warning'); }
+async function reconcileItem(id) {
+    try {
+        const res = await fetch(`/api/v1/bank-reconciliation/sessions/0/match/${id}`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + authToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+        });
+        if (res.ok) showToast('Item ' + id + ' reconciled', 'success');
+        else { const e = await res.json(); showToast('Error: ' + (e.detail || res.status), 'error'); }
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
 function flagException(id) { showToast('Flag exception ' + id + ' — coming in v2.3', 'warning'); }
-function runSmartRecon() { showToast('Smart reconciliation — coming in v2.3', 'warning'); }
+async function runSmartRecon() {
+    const sid = prompt('Enter Import Session ID to auto-reconcile:');
+    if (!sid) return;
+    try {
+        const res = await fetch(`/api/v1/bank-reconciliation/auto-reconcile/${sid}`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + authToken },
+        });
+        if (res.ok) {
+            const d = await res.json();
+            showToast(`Auto-reconciled ${d.auto_matched} of ${d.total_unmatched} transactions`, 'success');
+            loadReconData();
+        } else { const e = await res.json(); showToast('Error: ' + (e.detail || res.status), 'error'); }
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
 function exportRecon() { showToast('Export — coming in v2.3', 'warning'); }
 function prevPage() { if (currentPage > 1) { currentPage--; loadReconData(); } }
 function nextPage() { if (currentPage < totalPages) { currentPage++; loadReconData(); } }

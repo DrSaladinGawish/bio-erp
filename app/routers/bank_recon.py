@@ -12,6 +12,7 @@ from app.models import (
     BankUnmatched,
     BankAccount,
 )
+from app.services.bank_recon_service import BankReconService
 
 router = APIRouter(prefix="/api/v1/bank-reconciliation", tags=["Bank Reconciliation"])
 
@@ -308,3 +309,32 @@ async def get_bank_recon_stats(
         "approved_reconciliations": approved_recons or 0,
         "total_difference_egp": round(total_diff or 0, 2),
     }
+
+
+@router.post("/auto-reconcile/{session_id}")
+async def auto_reconcile(
+    session_id: int,
+    date_window_days: int = Query(3, description="Max days difference for date proximity match"),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("bank_reconciliation.match")),
+):
+    sess = await db.get(BankImportSession, session_id)
+    if not sess:
+        raise HTTPException(404, detail="Import session not found")
+    result = await BankReconService.auto_reconcile(
+        db, session_id, date_window_days=date_window_days
+    )
+    return result
+
+
+@router.get("/reconciliation-status/{session_id}")
+async def reconciliation_status(
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(RequirePermission("bank_reconciliation.read")),
+):
+    sess = await db.get(BankImportSession, session_id)
+    if not sess:
+        raise HTTPException(404, detail="Import session not found")
+    result = await BankReconService.get_reconciliation_status(db, session_id)
+    return result
