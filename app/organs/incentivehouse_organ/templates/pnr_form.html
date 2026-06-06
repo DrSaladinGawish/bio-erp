@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}New PNR - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; <a href="/evn">Events (PNR)</a> &raquo; New</div>
+<div class="page-header">
+    <h1>New PNR (Event)</h1>
+    <div class="actions">
+        <a href="/evn" class="btn btn-ghost">Cancel</a>
+    </div>
+</div>
+<form id="pnrForm" method="POST" action="/api/evn/pnrs" class="content-card">
+    <div class="alert" id="formAlert" style="display:none"></div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="pnr_number">PNR Number *</label>
+            <input type="text" id="pnr_number" name="pnr_number" required placeholder="PNR-2024-001" pattern="[A-Z0-9-]+" title="Uppercase letters, numbers, dashes">
+        </div>
+        <div class="form-group">
+            <label for="client_id">Client *</label>
+            <input type="number" id="client_id" name="client_id" required min="1" placeholder="1">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="event_description">Event Description *</label>
+        <textarea id="event_description" name="event_description" required rows="3" placeholder="Annual sales conference 2024..."></textarea>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="start_date">Start Date *</label>
+            <input type="date" id="start_date" name="start_date" required>
+        </div>
+        <div class="form-group">
+            <label for="end_date">End Date *</label>
+            <input type="date" id="end_date" name="end_date" required>
+        </div>
+        <div class="form-group">
+            <label for="venue">Venue</label>
+            <input type="text" id="venue" name="venue" placeholder="Grand Hyatt, Cairo">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="gross_sales">Gross Sales (EGP)</label>
+            <input type="number" id="gross_sales" name="gross_sales" min="0" step="0.01" value="0" placeholder="0.00">
+        </div>
+        <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="OPEN">OPEN</option>
+                <option value="CONFIRMED">CONFIRMED</option>
+                <option value="IN_PROGRESS">IN PROGRESS</option>
+                <option value="CLOSED">CLOSED</option>
+                <option value="CANCELLED">CANCELLED</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn btn-ghost" onclick="window.location='/evn'">Cancel</button>
+        <button type="submit" class="btn btn-success">Save PNR</button>
+    </div>
+</form>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+document.getElementById('pnrForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var alert = document.getElementById('formAlert');
+    alert.style.display = 'none';
+    var data = {
+        pnr_number: document.getElementById('pnr_number').value,
+        client_id: parseInt(document.getElementById('client_id').value),
+        event_description: document.getElementById('event_description').value,
+        start_date: document.getElementById('start_date').value,
+        end_date: document.getElementById('end_date').value,
+        venue: document.getElementById('venue').value,
+        gross_sales: parseFloat(document.getElementById('gross_sales').value) || 0,
+        status: document.getElementById('status').value,
+    };
+    try {
+        var r = await fetch('/api/v1/evn/events', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        if (r.ok) {
+            alert.className = 'alert alert-success';
+            alert.textContent = 'PNR created successfully!';
+            alert.style.display = 'block';
+            setTimeout(function(){ window.location = '/evn'; }, 1000);
+        } else {
+            var err = await r.json().catch(function(){return {detail:'Error'};});
+            alert.className = 'alert alert-error';
+            alert.textContent = 'Error: ' + (err.detail || r.status);
+            alert.style.display = 'block';
+        }
+    } catch (e) {
+        alert.className = 'alert alert-error';
+        alert.textContent = 'Network error: ' + e.message;
+        alert.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

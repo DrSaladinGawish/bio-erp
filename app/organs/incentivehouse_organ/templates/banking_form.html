@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}New Bank Transaction - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; <a href="/bnk">Banking</a> &raquo; New Transaction</div>
+<div class="page-header">
+    <h1>New Bank Transaction</h1>
+    <div class="actions">
+        <a href="/bnk" class="btn btn-ghost">Cancel</a>
+    </div>
+</div>
+<form id="bnkForm" class="content-card">
+    <div class="alert" id="formAlert" style="display:none"></div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="transaction_date">Transaction Date *</label>
+            <input type="date" id="transaction_date" name="transaction_date" required>
+        </div>
+        <div class="form-group">
+            <label for="transaction_type">Type *</label>
+            <select id="transaction_type" name="transaction_type" required>
+                <option value="DEPOSIT">Deposit (Credit)</option>
+                <option value="WITHDRAWAL">Withdrawal (Debit)</option>
+                <option value="TRANSFER">Transfer</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="amount">Amount (EGP) *</label>
+            <input type="number" id="amount" name="amount" required step="0.01" min="0.01" placeholder="0.00">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="description">Description *</label>
+        <input type="text" id="description" name="description" required placeholder="Wire transfer from...">
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="bank_account">Bank Account</label>
+            <input type="text" id="bank_account" name="bank_account" placeholder="CIB - Main">
+        </div>
+        <div class="form-group">
+            <label for="reference_number">Reference Number</label>
+            <input type="text" id="reference_number" name="reference_number" placeholder="REF-001">
+        </div>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn btn-ghost" onclick="window.location='/bnk'">Cancel</button>
+        <button type="submit" class="btn btn-success">Save Transaction</button>
+    </div>
+</form>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+document.getElementById('bnkForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var alert = document.getElementById('formAlert');
+    alert.style.display = 'none';
+    var ttype = document.getElementById('transaction_type').value;
+    var amount = parseFloat(document.getElementById('amount').value) || 0;
+    if (ttype === 'WITHDRAWAL') amount = -amount;
+    var data = {
+        transaction_date: document.getElementById('transaction_date').value,
+        transaction_type: ttype,
+        amount: amount,
+        description: document.getElementById('description').value,
+        bank_account: document.getElementById('bank_account').value,
+        reference_number: document.getElementById('reference_number').value,
+    };
+    try {
+        var r = await fetch('/api/v1/bnk/transactions', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        if (r.ok) {
+            alert.className = 'alert alert-success';
+            alert.textContent = 'Transaction created!';
+            alert.style.display = 'block';
+            setTimeout(function(){ window.location = '/bnk'; }, 1000);
+        } else {
+            var err = await r.json().catch(function(){return {detail:'Error'};});
+            alert.className = 'alert alert-error';
+            alert.textContent = 'Error: ' + (err.detail || r.status);
+            alert.style.display = 'block';
+        }
+    } catch (e) {
+        alert.className = 'alert alert-error';
+        alert.textContent = 'Network error: ' + e.message;
+        alert.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

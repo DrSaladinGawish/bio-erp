@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}New Journal Voucher - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; <a href="/gl">General Ledger</a> &raquo; New Voucher</div>
+<div class="page-header">
+    <h1>New Journal Voucher</h1>
+    <div class="actions">
+        <a href="/gl" class="btn btn-ghost">Cancel</a>
+    </div>
+</div>
+<form id="glForm" class="content-card">
+    <div class="alert" id="formAlert" style="display:none"></div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="voucher_date">Voucher Date *</label>
+            <input type="date" id="voucher_date" name="voucher_date" required>
+        </div>
+        <div class="form-group">
+            <label for="voucher_number">Voucher Number *</label>
+            <input type="text" id="voucher_number" name="voucher_number" required placeholder="JV-2024-001">
+        </div>
+        <div class="form-group">
+            <label for="reference">Reference</label>
+            <input type="text" id="reference" name="reference" placeholder="Optional ref">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="narration">Narration *</label>
+        <textarea id="narration" name="narration" required rows="2" placeholder="Description of this journal entry..."></textarea>
+    </div>
+    <h4 style="margin-top:20px;color:#1a3a5c">Journal Lines (Debits must equal Credits)</h4>
+    <table class="data-table" id="linesTable">
+        <thead><tr>
+            <th>#</th><th>Account Code</th><th>Description</th><th>Debit (EGP)</th><th>Credit (EGP)</th>
+        </tr></thead>
+        <tbody>
+            <tr><td>1</td><td><input type="text" name="acc_1" placeholder="1100" style="width:100px"></td>
+                <td><input type="text" name="desc_1" placeholder="Line description"></td>
+                <td><input type="number" name="dr_1" step="0.01" min="0" value="0" oninput="recalc()" style="width:120px"></td>
+                <td><input type="number" name="cr_1" step="0.01" min="0" value="0" oninput="recalc()" style="width:120px"></td>
+            </tr>
+            <tr><td>2</td><td><input type="text" name="acc_2" placeholder="2100" style="width:100px"></td>
+                <td><input type="text" name="desc_2" placeholder="Line description"></td>
+                <td><input type="number" name="dr_2" step="0.01" min="0" value="0" oninput="recalc()" style="width:120px"></td>
+                <td><input type="number" name="cr_2" step="0.01" min="0" value="0" oninput="recalc()" style="width:120px"></td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr style="font-weight:700">
+                <td colspan="2">Totals</td>
+                <td id="totDr">0.00</td>
+                <td id="totCr">0.00</td>
+            </tr>
+        </tfoot>
+    </table>
+    <div class="form-actions">
+        <button type="button" class="btn btn-ghost" onclick="window.location='/gl'">Cancel</button>
+        <button type="submit" class="btn btn-success">Save Voucher</button>
+    </div>
+</form>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function recalc() {
+    var dr = 0, cr = 0;
+    for (var i = 1; i <= 5; i++) {
+        var d = parseFloat(document.getElementsByName('dr_' + i)[0]?.value) || 0;
+        var c = parseFloat(document.getElementsByName('cr_' + i)[0]?.value) || 0;
+        dr += d; cr += c;
+    }
+    document.getElementById('totDr').textContent = dr.toFixed(2);
+    document.getElementById('totCr').textContent = cr.toFixed(2);
+}
+document.getElementById('glForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var alert = document.getElementById('formAlert');
+    alert.style.display = 'none';
+    var dr = 0, cr = 0, lines = [];
+    for (var i = 1; i <= 5; i++) {
+        var acc = document.getElementsByName('acc_' + i)[0]?.value;
+        var desc = document.getElementsByName('desc_' + i)[0]?.value;
+        var d = parseFloat(document.getElementsByName('dr_' + i)[0]?.value) || 0;
+        var c = parseFloat(document.getElementsByName('cr_' + i)[0]?.value) || 0;
+        if (acc && (d > 0 || c > 0)) {
+            dr += d; cr += c;
+            lines.push({account_code: acc, description: desc, debit: d, credit: c});
+        }
+    }
+    if (Math.abs(dr - cr) > 0.01) {
+        alert.className = 'alert alert-error';
+        alert.textContent = 'Voucher not balanced: Debits=' + dr.toFixed(2) + ', Credits=' + cr.toFixed(2);
+        alert.style.display = 'block';
+        return;
+    }
+    var data = {
+        voucher_date: document.getElementById('voucher_date').value,
+        voucher_number: document.getElementById('voucher_number').value,
+        reference: document.getElementById('reference').value,
+        narration: document.getElementById('narration').value,
+        total_debit: dr,
+        total_credit: cr,
+        lines: lines,
+    };
+    try {
+        var r = await fetch('/api/v1/gl/vouchers', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        if (r.ok) {
+            alert.className = 'alert alert-success';
+            alert.textContent = 'Voucher created!';
+            alert.style.display = 'block';
+            setTimeout(function(){ window.location = '/gl'; }, 1000);
+        } else {
+            var err = await r.json().catch(function(){return {detail:'Error'};});
+            alert.className = 'alert alert-error';
+            alert.textContent = 'Error: ' + (err.detail || r.status);
+            alert.style.display = 'block';
+        }
+    } catch (e) {
+        alert.className = 'alert alert-error';
+        alert.textContent = 'Network error: ' + e.message;
+        alert.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

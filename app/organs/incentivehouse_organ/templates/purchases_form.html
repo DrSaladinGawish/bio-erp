@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}New Purchase Voucher - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; <a href="/pur">Purchases</a> &raquo; New Voucher</div>
+<div class="page-header">
+    <h1>New Purchase Voucher</h1>
+    <div class="actions">
+        <a href="/pur" class="btn btn-ghost">Cancel</a>
+    </div>
+</div>
+<form id="purForm" class="content-card">
+    <div class="alert" id="formAlert" style="display:none"></div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="voucher_number">Voucher Number *</label>
+            <input type="text" id="voucher_number" name="voucher_number" required placeholder="PUR-2024-001">
+        </div>
+        <div class="form-group">
+            <label for="vendor_id">Vendor *</label>
+            <input type="number" id="vendor_id" name="vendor_id" required min="1" placeholder="1">
+        </div>
+        <div class="form-group">
+            <label for="voucher_date">Voucher Date *</label>
+            <input type="date" id="voucher_date" name="voucher_date" required>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="subtotal">Subtotal (EGP) *</label>
+            <input type="number" id="subtotal" name="subtotal" required min="0" step="0.01" value="0" oninput="recalc()">
+        </div>
+        <div class="form-group">
+            <label for="tax_amount">Tax (EGP)</label>
+            <input type="number" id="tax_amount" name="tax_amount" min="0" step="0.01" value="0" oninput="recalc()">
+        </div>
+        <div class="form-group">
+            <label for="total_amount">Total (EGP)</label>
+            <input type="number" id="total_amount" name="total_amount" readonly value="0" style="background:#f0f2f5">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="2" placeholder="What was purchased..."></textarea>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn btn-ghost" onclick="window.location='/pur'">Cancel</button>
+        <button type="submit" class="btn btn-success">Save Voucher</button>
+    </div>
+</form>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function recalc() {
+    var sub = parseFloat(document.getElementById('subtotal').value) || 0;
+    var tax = parseFloat(document.getElementById('tax_amount').value) || 0;
+    document.getElementById('total_amount').value = (sub + tax).toFixed(2);
+}
+document.getElementById('purForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var alert = document.getElementById('formAlert');
+    alert.style.display = 'none';
+    var data = {
+        voucher_number: document.getElementById('voucher_number').value,
+        vendor_id: parseInt(document.getElementById('vendor_id').value),
+        voucher_date: document.getElementById('voucher_date').value,
+        subtotal: parseFloat(document.getElementById('subtotal').value) || 0,
+        tax_amount: parseFloat(document.getElementById('tax_amount').value) || 0,
+        total_amount: parseFloat(document.getElementById('total_amount').value) || 0,
+        description: document.getElementById('description').value,
+    };
+    try {
+        var r = await fetch('/api/v1/pur/vouchers', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        if (r.ok) {
+            alert.className = 'alert alert-success';
+            alert.textContent = 'Voucher created!';
+            alert.style.display = 'block';
+            setTimeout(function(){ window.location = '/pur'; }, 1000);
+        } else {
+            var err = await r.json().catch(function(){return {detail:'Error'};});
+            alert.className = 'alert alert-error';
+            alert.textContent = 'Error: ' + (err.detail || r.status);
+            alert.style.display = 'block';
+        }
+    } catch (e) {
+        alert.className = 'alert alert-error';
+        alert.textContent = 'Network error: ' + e.message;
+        alert.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

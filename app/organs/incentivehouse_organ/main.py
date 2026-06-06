@@ -464,6 +464,37 @@ def _mount_jinja_pages(app: FastAPI, templates: Jinja2Templates) -> None:
                               "<input name='username'><input name='password' type='password'>"
                               "<button>Login</button></form>")
 
+    # --- IHE-ERP v2.3: New-form routes (Path A UI remediation) ---
+    @app.get("/evn/new", response_class=HTMLResponse)
+    def evn_new_page(request: Request):
+        return templates.TemplateResponse("pnr_form.html", {"request": request}) \
+            if (TEMPLATES_DIR / "pnr_form.html").exists() \
+            else HTMLResponse("<h1>New PNR</h1><p>Form template not yet built.</p>")
+
+    @app.get("/sal/new", response_class=HTMLResponse)
+    def sal_new_page(request: Request):
+        return templates.TemplateResponse("sales_form.html", {"request": request}) \
+            if (TEMPLATES_DIR / "sales_form.html").exists() \
+            else HTMLResponse("<h1>New Invoice</h1><p>Form template not yet built.</p>")
+
+    @app.get("/pur/new", response_class=HTMLResponse)
+    def pur_new_page(request: Request):
+        return templates.TemplateResponse("purchases_form.html", {"request": request}) \
+            if (TEMPLATES_DIR / "purchases_form.html").exists() \
+            else HTMLResponse("<h1>New Voucher</h1><p>Form template not yet built.</p>")
+
+    @app.get("/bnk/new", response_class=HTMLResponse)
+    def bnk_new_page(request: Request):
+        return templates.TemplateResponse("banking_form.html", {"request": request}) \
+            if (TEMPLATES_DIR / "banking_form.html").exists() \
+            else HTMLResponse("<h1>New Transaction</h1><p>Form template not yet built.</p>")
+
+    @app.get("/gl/new", response_class=HTMLResponse)
+    def gl_new_page(request: Request):
+        return templates.TemplateResponse("gl_form.html", {"request": request}) \
+            if (TEMPLATES_DIR / "gl_form.html").exists() \
+            else HTMLResponse("<h1>New GL Voucher</h1><p>Form template not yet built.</p>")
+
 
 # ============================================================================
 # API routers (staging + promote + audit + recon)
