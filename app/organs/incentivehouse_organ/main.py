@@ -164,6 +164,15 @@ AUX_TABLES_SQL = [
         check_book_id INTEGER, check_book_name TEXT, bank_amount REAL,
         gl_amount REAL, variance REAL, recon_status TEXT,
         user_sub_led TEXT, user_type TEXT, user_keyword TEXT, user_notes TEXT)""",
+    # IHE-ERP v2.3 intelligence layer
+    """CREATE TABLE IF NOT EXISTS audit_trail (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, table_name TEXT NOT NULL,
+        record_id TEXT, action TEXT NOT NULL, old_value TEXT, new_value TEXT,
+        user_id TEXT, ip_address TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        extra TEXT)""",
+    """CREATE INDEX IF NOT EXISTS ix_audit_table_name ON audit_trail(table_name)""",
+    """CREATE INDEX IF NOT EXISTS ix_audit_record_id ON audit_trail(record_id)""",
+    """CREATE INDEX IF NOT EXISTS ix_audit_timestamp ON audit_trail(timestamp)""",
 ]
 
 
@@ -440,6 +449,13 @@ def _mount_jinja_pages(app: FastAPI, templates: Jinja2Templates) -> None:
             if (TEMPLATES_DIR / "neural.html").exists() \
             else templates.TemplateResponse("main_dashboard.html", {"request": request, "page": "neural"})
 
+    @app.get("/intelligence", response_class=HTMLResponse)
+    def intelligence_page(request: Request):
+        return templates.TemplateResponse(
+            "intelligence/dashboard.html", {"request": request}
+        ) if (TEMPLATES_DIR / "intelligence" / "dashboard.html").exists() \
+          else templates.TemplateResponse("main_dashboard.html", {"request": request, "page": "intelligence"})
+
     @app.get("/login", response_class=HTMLResponse)
     def login_page(request: Request):
         return templates.TemplateResponse("login.html", {"request": request}) \
@@ -464,6 +480,13 @@ def _mount_api_routers(app: FastAPI) -> None:
     app.include_router(evn_router)
     app.include_router(env_router)
     app.include_router(recon_router)
+    # IHE-ERP v2.3: Intelligence layer (audit, health, gap, neural, OR, SCM)
+    try:
+        from app.organs.incentivehouse_organ.intelligence.router import router as intelligence_router
+        app.include_router(intelligence_router)
+        logger.info("Intelligence layer router mounted at /api/v1/intelligence")
+    except Exception as exc:
+        logger.warning("Intelligence layer router not mounted: %s", exc)
     # Mount the existing sub-application under /api/v1/incentivehouse
     # (the sub-app defines event_form, etc. as separate routes)
     app.mount("/api/v1/incentivehouse", incentivehouse_app)

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Intelligence Layer - IHE-ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Intelligence</div>
+<div class="page-header">
+    <h1>Intelligence Layer</h1>
+    <div class="actions">
+        <button class="btn btn-ghost" onclick="location.reload()">Refresh</button>
+    </div>
+</div>
+
+<!-- Health -->
+<div class="content-card">
+    <h3 style="color:#1a3a5c;margin-bottom:12px">System Health</h3>
+    <div id="healthPanel" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div style="text-align:center;padding:14px;background:#f0f2f5;border-radius:6px">
+            <div style="font-size:11px;color:#666">DB Status</div>
+            <div style="font-size:20px;font-weight:700" id="dbStatus">-</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:#f0f2f5;border-radius:6px">
+            <div style="font-size:11px;color:#666">Data Quality</div>
+            <div style="font-size:20px;font-weight:700" id="qualityScore">-</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:#f0f2f5;border-radius:6px">
+            <div style="font-size:11px;color:#666">Total Records</div>
+            <div style="font-size:20px;font-weight:700" id="totalRecords">-</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:#f0f2f5;border-radius:6px">
+            <div style="font-size:11px;color:#666">Last Backup</div>
+            <div style="font-size:13px;font-weight:700" id="lastBackup">never</div>
+        </div>
+    </div>
+    <div id="healthWarnings" style="margin-top:10px"></div>
+</div>
+
+<!-- Gap Analysis -->
+<div class="content-card">
+    <h3 style="color:#1a3a5c;margin-bottom:12px">ERP Builder Protocol Gap Analysis</h3>
+    <div id="gapSummary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
+        <div style="text-align:center;padding:14px;background:#d4edda;border-radius:6px">
+            <div style="font-size:11px;color:#155724">Passed</div>
+            <div style="font-size:22px;font-weight:700;color:#155724" id="gapPassed">-</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:#f8d7da;border-radius:6px">
+            <div style="font-size:11px;color:#721c24">Failed</div>
+            <div style="font-size:22px;font-weight:700;color:#721c24" id="gapFailed">-</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:#cce5ff;border-radius:6px">
+            <div style="font-size:11px;color:#004085">Score</div>
+            <div style="font-size:22px;font-weight:700;color:#004085" id="gapScore">-</div>
+        </div>
+    </div>
+    <div id="gapDetails"></div>
+</div>
+
+<!-- Neural Predictions -->
+<div class="content-card">
+    <h3 style="color:#1a3a5c;margin-bottom:12px">Neural Predictions</h3>
+    <div class="kpi-grid">
+        <div class="kpi-card kpi-revenue">
+            <div class="kpi-label">7-Day Cashflow Forecast</div>
+            <div class="kpi-value" id="cashflowForecast">-</div>
+            <div class="kpi-sub" id="cashflowTrend">trend: -</div>
+        </div>
+        <div class="kpi-card kpi-active">
+            <div class="kpi-label">Revenue Forecast</div>
+            <div class="kpi-value" id="revenueForecast">-</div>
+        </div>
+        <div class="kpi-card kpi-expense">
+            <div class="kpi-label">Anomalies Detected</div>
+            <div class="kpi-value" id="anomalyCount">-</div>
+            <div class="kpi-sub">of <span id="anomalyScanned">-</span> scanned</div>
+        </div>
+    </div>
+</div>
+
+<!-- OR + SCM combined -->
+<div class="content-card">
+    <h3 style="color:#1a3a5c;margin-bottom:12px">Optimization Workbench</h3>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Run OR Engine</label>
+            <select id="orEngine">
+                <option value="all">All engines</option>
+                <option value="lp">Linear Programming</option>
+                <option value="eoq">Economic Order Quantity</option>
+                <option value="pert">PERT</option>
+                <option value="profit">Profit</option>
+                <option value="breakeven">Break-even</option>
+                <option value="forecast">Forecast</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Run SCM Cell</label>
+            <select id="scmCell">
+                <option value="all">All cells</option>
+                <option value="value_chain">Value Chain</option>
+                <option value="strategic_cost">Strategic Cost</option>
+                <option value="sustainability">Sustainability</option>
+            </select>
+        </div>
+    </div>
+    <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="runOR()">Run OR</button>
+        <button class="btn btn-success" onclick="runSCM()">Run SCM</button>
+    </div>
+    <div id="orResult" style="margin-top:14px"></div>
+    <div id="scmResult" style="margin-top:14px"></div>
+</div>
+
+<!-- Audit -->
+<div class="content-card">
+    <h3 style="color:#1a3a5c;margin-bottom:12px">Audit Trail</h3>
+    <div id="auditList">Loading...</div>
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function loadAll(){
+    try {
+        var r = await fetch('/api/v1/intelligence/health');
+        var h = await r.json();
+        document.getElementById('dbStatus').textContent = h.db_status || '-';
+        document.getElementById('qualityScore').textContent = (h.data_quality_score || 0) + '%';
+        document.getElementById('totalRecords').textContent = (h.total_records || 0).toLocaleString();
+        document.getElementById('lastBackup').textContent = h.last_backup || 'never';
+        if (h.warnings && h.warnings.length) {
+            document.getElementById('healthWarnings').innerHTML =
+                '<div class="alert alert-info"><strong>Warnings:</strong><br>' +
+                h.warnings.map(w => '&bull; ' + w).join('<br>') + '</div>';
+        }
+    } catch(e) { console.error(e); }
+    try {
+        var r = await fetch('/api/v1/intelligence/gap');
+        var g = await r.json();
+        document.getElementById('gapPassed').textContent = g.passed;
+        document.getElementById('gapFailed').textContent = g.failed;
+        document.getElementById('gapScore').textContent = g.score + '%';
+        var details = (g.details || []).map(function(d){
+            var color = d.status === 'PASS' ? '#28a745' : '#dc3545';
+            return '<tr><td>' + d.id + '</td><td>' + d.name + '</td>' +
+                   '<td><span class="badge" style="background:' + color + ';color:#fff">' + d.status + '</span></td>' +
+                   '<td>' + d.severity + '</td><td style="font-size:11px;color:#666">' + d.hint + '</td></tr>';
+        }).join('');
+        document.getElementById('gapDetails').innerHTML =
+            '<table class="data-table"><thead><tr><th>#</th><th>Check</th><th>Status</th><th>Sev</th><th>Hint</th></tr></thead><tbody>' +
+            details + '</tbody></table>';
+    } catch(e) { console.error(e); }
+    try {
+        var r = await fetch('/api/v1/intelligence/neural/predict');
+        var n = await r.json();
+        if (n.cashflow) {
+            document.getElementById('cashflowForecast').textContent =
+                (n.cashflow.total_forecast || 0).toLocaleString('en-US', {maximumFractionDigits: 0});
+            document.getElementById('cashflowTrend').textContent = 'trend: ' + (n.cashflow.trend || '-');
+        }
+        if (n.revenue) {
+            document.getElementById('revenueForecast').textContent =
+                (n.revenue.total_forecast || 0).toLocaleString('en-US', {maximumFractionDigits: 0});
+        }
+        if (n.anomaly) {
+            document.getElementById('anomalyCount').textContent = (n.anomaly.anomalies || []).length;
+            document.getElementById('anomalyScanned').textContent = n.anomaly.scanned || 0;
+        }
+    } catch(e) { console.error(e); }
+    try {
+        var r = await fetch('/api/v1/intelligence/audit?limit=10');
+        var a = await r.json();
+        if (a.items && a.items.length) {
+            var rows = a.items.map(function(i){
+                return '<tr><td>' + i.id + '</td><td>' + i.table_name + '</td><td>' + (i.record_id||'-') +
+                       '</td><td>' + i.action + '</td><td>' + (i.user_id||'-') + '</td><td>' + i.timestamp + '</td></tr>';
+            }).join('');
+            document.getElementById('auditList').innerHTML =
+                '<p style="color:#888;font-size:12px">' + a.total_audit_records + ' total audit records</p>' +
+                '<table class="data-table"><thead><tr><th>ID</th><th>Table</th><th>Record</th><th>Action</th><th>User</th><th>Time</th></tr></thead><tbody>' +
+                rows + '</tbody></table>';
+        } else {
+            document.getElementById('auditList').innerHTML = '<p>No audit records yet. Activity will be logged here.</p>';
+        }
+    } catch(e) { console.error(e); }
+}
+async function runOR(){
+    var eng = document.getElementById('orEngine').value;
+    var el = document.getElementById('orResult');
+    el.innerHTML = '<p>Running OR engine ' + eng + '...</p>';
+    try {
+        var r = await fetch('/api/v1/intelligence/or/solve?engine=' + eng);
+        var d = await r.json();
+        var html = '<pre style="background:#f0f2f5;padding:14px;border-radius:6px;overflow:auto;max-height:400px">' +
+                   JSON.stringify(d, null, 2) + '</pre>';
+        el.innerHTML = html;
+    } catch(e) { el.innerHTML = '<p style="color:#c00">Error: ' + e.message + '</p>'; }
+}
+async function runSCM(){
+    var cell = document.getElementById('scmCell').value;
+    var el = document.getElementById('scmResult');
+    el.innerHTML = '<p>Running SCM cell ' + cell + '...</p>';
+    try {
+        var r = await fetch('/api/v1/intelligence/scm/analyze?cell=' + cell);
+        var d = await r.json();
+        var html = '<pre style="background:#f0f2f5;padding:14px;border-radius:6px;overflow:auto;max-height:400px">' +
+                   JSON.stringify(d, null, 2) + '</pre>';
+        el.innerHTML = html;
+    } catch(e) { el.innerHTML = '<p style="color:#c00">Error: ' + e.message + '</p>'; }
+}
+loadAll();
+</script>
+{% endblock %}
