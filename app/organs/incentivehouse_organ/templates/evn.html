@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Events (PNR) - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Events (PNR)</div>
+<div class="page-header">
+    <h1>Events (PNR)</h1>
+    <div class="actions">
+        <a href="/api/v1/incentivehouse/events/new" class="btn btn-success">+ New PNR</a>
+        <button class="btn btn-ghost" onclick="refreshList()">Refresh</button>
+    </div>
+</div>
+<div class="kpi-grid">
+    <div class="kpi-card kpi-active"><div class="kpi-label">Active PNRs</div><div class="kpi-value" id="kpiActive">-</div></div>
+    <div class="kpi-card kpi-revenue"><div class="kpi-label">Total Revenue</div><div class="kpi-value" id="kpiRevenue">-</div></div>
+    <div class="kpi-card kpi-expense"><div class="kpi-label">Total Cost</div><div class="kpi-value" id="kpiCost">-</div></div>
+    <div class="kpi-card kpi-profit"><div class="kpi-label">Gross Profit</div><div class="kpi-value" id="kpiProfit">-</div></div>
+</div>
+<div class="content-card">
+    <div id="pnrList" style="text-align:center;padding:40px;color:#888">Loading...</div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function refreshList(){
+    var el = document.getElementById('pnrList');
+    try {
+        var r = await fetch('/api/v1/evn/events?page=1&page_size=50');
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        var data = await r.json();
+        var items = data.items || data.results || data || [];
+        if (!items.length) { el.innerHTML = '<p>No events found. Click "+ New PNR" to create one.</p>'; return; }
+        var html = '<table class="data-table"><thead><tr><th>Code</th><th>Name</th><th>Client</th><th>Start</th><th>End</th><th>Status</th><th>Budget</th><th></th></tr></thead><tbody>';
+        var totRev=0, totCost=0, active=0;
+        items.forEach(function(it){
+            var rev = parseFloat(it.gross_sales || it.budget || 0) || 0;
+            var cost = parseFloat(it.total_cost || 0) || 0;
+            totRev += rev; totCost += cost;
+            if ((it.status||'OPEN') === 'OPEN') active++;
+            html += '<tr><td><code>' + (it.event_code||'-') + '</code></td>'
+                  + '<td>' + (it.event_name||it.name_en||'-') + '</td>'
+                  + '<td>' + (it.client_id||'-') + '</td>'
+                  + '<td>' + (it.event_date||it.start_date||'-') + '</td>'
+                  + '<td>' + (it.end_date||'-') + '</td>'
+                  + '<td><span class="badge">' + (it.status||'OPEN') + '</span></td>'
+                  + '<td>' + rev.toFixed(2) + '</td>'
+                  + '<td><a href="/api/v1/incentivehouse/events/new?event_id=' + (it.event_id||it.id||'') + '" class="btn btn-ghost">Edit</a></td></tr>';
+        });
+        html += '</tbody></table>';
+        el.innerHTML = html;
+        document.getElementById('kpiActive').textContent = active;
+        document.getElementById('kpiRevenue').textContent = totRev.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        document.getElementById('kpiCost').textContent = totCost.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        document.getElementById('kpiProfit').textContent = (totRev-totCost).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    } catch(e) {
+        el.innerHTML = '<p style="color:#c00">Could not load events: ' + e.message + '</p>';
+    }
+}
+refreshList();
+</script>
+{% endblock %}

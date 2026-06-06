@@ -1,0 +1,688 @@
+{# ============================================================================
+   IncentiveHouse ERP - Master Layout Template
+   All pages should {% extends "base.html" %} this template.
+
+   Provides:
+   - Real header image (hader.jpg)
+   - Real footer image (fotter.jpg)
+   - Consistent sidebar navigation
+   - Real logo (logos.jpg / logosmal.jpg favicon)
+   - AI Smart Window widget (floating, expandable)
+   - Live status bar (DB status, PNR count, server time)
+   - Mobile responsive (hamburger menu under 768px)
+   ============================================================================ #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width-width, initial-scale=1.0">
+<title>{% block title %}IncentiveHouse ERP{% endblock %}</title>
+<link rel="icon" type="image/jpeg" href="/static/img/logosmal.jpg">
+<style>
+:root {
+    --primary: #1a3a5c;
+    --primary-light: #2d5a8c;
+    --teal: #2d8a8a;
+    --gold: #c9a227;
+    --bg: #f0f2f5;
+    --sidebar-bg: #1a3a5c;
+    --sidebar-text: #e0e0e0;
+    --sidebar-hover: #2d5a8c;
+    --sidebar-active: #c9a227;
+    --header-height: 100px;
+    --footer-height: 70px;
+    --sidebar-width: 240px;
+    --card-bg: #ffffff;
+    --text: #333333;
+    --text-light: #666666;
+    --border: #dee2e6;
+    --success: #28a745;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --radius: 6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---- Header (real image) ---- */
+.header {
+    background: #ffffff;
+    height: var(--header-height);
+    border-bottom: 3px solid var(--gold);
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    text-decoration: none;
+    color: var(--primary);
+}
+.header-brand img {
+    height: 70px;
+    width: auto;
+}
+.header-brand-text {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--primary);
+}
+.header-brand-text small {
+    display: block;
+    font-size: 12px;
+    color: var(--teal);
+    letter-spacing: 3px;
+    font-weight: 400;
+}
+.header-image {
+    height: var(--header-height);
+    margin-left: auto;
+    border-radius: var(--radius);
+}
+.header-search {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.header-search input {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    width: 260px;
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    transition: all 0.2s;
+}
+.header-search input:focus {
+    outline: none;
+    border-color: var(--teal);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(45,138,138,0.15);
+}
+.header-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 15px;
+    padding-left: 15px;
+    border-left: 1px solid var(--border);
+}
+.header-user-name {
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 13px;
+}
+.header-user .logout-btn {
+    background: var(--danger);
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.header-user .logout-btn:hover { background: #c82333; }
+
+/* Hamburger menu (mobile) */
+.hamburger {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--primary);
+    padding: 5px 10px;
+}
+
+/* ---- Body wrapper (sidebar + content) ---- */
+.body-wrap {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s;
+}
+.sidebar-nav { flex: 1; padding: 15px 0; overflow-y: auto; }
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+    gap: 12px;
+}
+.nav-item:hover {
+    background: var(--sidebar-hover);
+    color: #fff;
+    border-left-color: var(--teal);
+}
+.nav-item.active {
+    background: var(--primary-light);
+    color: #fff;
+    border-left-color: var(--gold);
+    font-weight: 600;
+}
+.nav-item .icon {
+    font-size: 18px;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.nav-item .badge {
+    margin-left: auto;
+    background: var(--gold);
+    color: #1a3a5c;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+.sidebar-footer {
+    padding: 12px 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+}
+
+/* ---- Main content area ---- */
+.main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 25px;
+    min-width: 0;
+}
+.content-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* ---- Footer (real image + status bar) ---- */
+.footer {
+    background: #fff;
+    border-top: 1px solid var(--border);
+    position: relative;
+}
+.footer-image {
+    width: 100%;
+    height: var(--footer-height);
+    object-fit: cover;
+    object-position: center;
+    display: block;
+}
+.status-bar {
+    background: var(--primary);
+    color: #fff;
+    padding: 8px 20px;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.status-items {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.status-items span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.dot-green { background: #28a745; box-shadow: 0 0 6px #28a745; }
+.dot-red { background: #dc3545; box-shadow: 0 0 6px #dc3545; }
+.dot-yellow { background: #ffc107; }
+.dot-blue { background: #17a2b8; }
+#statusTime { font-family: 'Courier New', monospace; font-weight: 600; }
+
+/* ---- KPI cards ---- */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.kpi-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    border-left: 4px solid var(--teal);
+}
+.kpi-card.kpi-revenue { border-left-color: var(--success); }
+.kpi-card.kpi-expense { border-left-color: var(--danger); }
+.kpi-card.kpi-profit { border-left-color: var(--gold); }
+.kpi-card.kpi-active { border-left-color: var(--primary-light); }
+.kpi-card.kpi-pending { border-left-color: var(--warning); }
+.kpi-label { color: var(--text-light); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+.kpi-value { color: var(--primary); font-size: 28px; font-weight: 700; margin-top: 4px; }
+.kpi-sub { color: var(--text-light); font-size: 11px; margin-top: 4px; }
+
+/* ---- Buttons ---- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-light); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #218838; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #c82333; }
+.btn-warning { background: var(--gold); color: var(--primary); }
+.btn-warning:hover { background: #b08a1c; color: #fff; }
+.btn-ghost { background: transparent; color: var(--primary); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--bg); }
+
+/* ---- Tables ---- */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+.data-table th {
+    background: var(--primary);
+    color: #fff;
+    text-align: left;
+    padding: 12px 14px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    user-select: none;
+}
+.data-table th:hover { background: var(--primary-light); }
+.data-table th.sorted-asc::after { content: " \25B2"; }
+.data-table th.sorted-desc::after { content: " \25BC"; }
+.data-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+}
+.data-table tr:hover td { background: rgba(45,138,138,0.05); }
+.data-table tr:last-child td { border-bottom: none; }
+
+/* ---- AI Smart Window Widget ---- */
+.ai-fab {
+    position: fixed;
+    bottom: 100px;
+    right: 25px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), var(--primary));
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 16px rgba(26,58,92,0.4);
+    cursor: pointer;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: transform 0.2s;
+}
+.ai-fab:hover { transform: scale(1.08); }
+.ai-fab .pulse {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--teal);
+    opacity: 0.4;
+    animation: ai-pulse 2s infinite;
+}
+@keyframes ai-pulse {
+    0% { transform: scale(1); opacity: 0.4; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+.ai-panel {
+    position: fixed;
+    bottom: 100px;
+    right: 25px;
+    width: 340px;
+    height: 460px;
+    background: #1a3a5c;
+    color: #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--teal);
+}
+.ai-panel.open { display: flex; }
+.ai-panel-header {
+    background: linear-gradient(135deg, var(--primary), var(--teal));
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #fff;
+    font-weight: 600;
+}
+.ai-panel-header .ai-title { display: flex; align-items: center; gap: 8px; }
+.ai-panel-header .ai-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+}
+.ai-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #14283f;
+}
+.ai-msg {
+    max-width: 85%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+.ai-msg.user {
+    align-self: flex-end;
+    background: var(--teal);
+    color: #fff;
+    border-bottom-right-radius: 3px;
+}
+.ai-msg.assistant {
+    align-self: flex-start;
+    background: #2d5a8c;
+    color: #fff;
+    border-bottom-left-radius: 3px;
+}
+.ai-msg.system { align-self: center; background: rgba(255,255,255,0.05); color: #aaa; font-size: 11px; font-style: italic; }
+.ai-msg.error { align-self: flex-start; background: var(--danger); color: #fff; }
+.ai-typing { display: flex; gap: 4px; padding: 8px 12px; align-self: flex-start; }
+.ai-typing span { width: 6px; height: 6px; background: var(--teal); border-radius: 50%; animation: ai-typing 1.4s infinite; }
+.ai-typing span:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ai-typing { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
+.ai-input-row { display: flex; border-top: 1px solid #2d5a8c; }
+.ai-input-row input {
+    flex: 1; border: none; background: #14283f; color: #fff;
+    padding: 10px 14px; font-size: 13px; font-family: inherit;
+}
+.ai-input-row input:focus { outline: none; }
+.ai-input-row button {
+    background: var(--teal); color: #fff; border: none;
+    padding: 0 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.ai-input-row button:hover { background: #1f6e6e; }
+
+/* ---- Mobile responsive ---- */
+@media (max-width: 900px) {
+    :root { --sidebar-width: 200px; }
+    .header-brand-text { font-size: 16px; }
+    .header-search input { width: 180px; }
+}
+@media (max-width: 768px) {
+    .hamburger { display: block; }
+    .sidebar { position: fixed; left: 0; top: var(--header-height); bottom: 0; z-index: 200; transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { padding: 15px; }
+    .header-search { display: none; }
+    .header-user-name { display: none; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .ai-panel { width: 90vw; right: 5vw; }
+    .ai-fab { right: 15px; bottom: 90px; }
+}
+@media (max-width: 480px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+    .header { padding: 0 10px; height: 70px; }
+    :root { --header-height: 70px; }
+    .header-brand img { height: 50px; }
+}
+
+/* ---- Form helpers ---- */
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: 4px; font-size: 14px; font-family: inherit; background: #fff;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(45,138,138,0.15);
+}
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
+.form-actions { margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; }
+.alert { padding: 12px 16px; border-radius: 4px; margin-bottom: 15px; font-size: 13px; }
+.alert-success { background: #d4edda; color: #155724; border-left: 4px solid var(--success); }
+.alert-error { background: #f8d7da; color: #721c24; border-left: 4px solid var(--danger); }
+.alert-info { background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8; }
+
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+.page-header h1 { font-size: 22px; color: var(--primary); font-weight: 600; }
+.page-header .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.breadcrumb { color: var(--text-light); font-size: 12px; margin-bottom: 8px; }
+.breadcrumb a { color: var(--teal); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<header class="header">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Menu">&#9776;</button>
+    <a class="header-brand" href="/">
+        <img src="/static/img/logos.jpg" alt="IncentiveHouse" onerror="this.style.display='none'">
+        <div class="header-brand-text">INCENTIVE HOUSE<small>OF EGYPT</small></div>
+    </a>
+    <div class="header-search">
+        <input type="search" id="globalSearch" placeholder="Search PNR, client, vendor, invoice...">
+    </div>
+    <div class="header-user">
+        <span class="header-user-name" id="userDisplay">{{ user_name or 'Admin' }}</span>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+</header>
+<div class="body-wrap">
+    <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+            <a class="nav-item" href="/"><span class="icon">&#9632;</span> Dashboard</a>
+            <a class="nav-item" href="/evn"><span class="icon">&#9733;</span> Events (PNR)</a>
+            <a class="nav-item" href="/sal"><span class="icon">&#9737;</span> Sales</a>
+            <a class="nav-item" href="/pur"><span class="icon">&#9733;</span> Purchases</a>
+            <a class="nav-item" href="/bnk"><span class="icon">&#9737;</span> Banking</a>
+            <a class="nav-item" href="/gl"><span class="icon">&#9733;</span> General Ledger</a>
+            <a class="nav-item" href="/documents"><span class="icon">&#9776;</span> Documents</a>
+            <a class="nav-item" href="/reports"><span class="icon">&#9744;</span> Reports</a>
+            <a class="nav-item" href="/neural"><span class="icon">&#9889;</span> Neural Network</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/recon/form"><span class="icon">&#9874;</span> Bank Recon</a>
+        </nav>
+        <div class="sidebar-footer">v2.3.0 &middot; Bio-ERP</div>
+    </aside>
+    <main class="main">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+<footer class="footer">
+    <img class="footer-image" src="/static/img/fotter.jpg" alt="IncentiveHouse footer" onerror="this.style.display='none'">
+    <div class="status-bar">
+        <div class="status-items">
+            <span><span class="status-dot dot-green" id="dbDot"></span> DB: <strong id="dbStatus">checking...</strong></span>
+            <span><span class="status-dot dot-green" id="srvDot"></span> Server: <strong>Online</strong></span>
+            <span><span class="status-dot dot-yellow"></span> PNRs: <strong id="pnrCount">-</strong></span>
+            <span><span class="status-dot dot-blue"></span> User: <strong id="userName">{{ user_name or 'Admin' }}</strong></span>
+        </div>
+        <span id="statusTime">--:--:--</span>
+    </div>
+</footer>
+
+<button class="ai-fab" id="aiFab" title="AI Assist">
+    <span class="pulse"></span>&#9733;
+</button>
+<div class="ai-panel" id="aiPanel">
+    <div class="ai-panel-header">
+        <div class="ai-title">&#9733; AI Assistant</div>
+        <button class="ai-close" id="aiClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="ai-messages" id="aiMessages">
+        <div class="ai-msg system">Hello! I can help you with this page. Ask me anything.</div>
+    </div>
+    <div class="ai-input-row">
+        <input type="text" id="aiInput" placeholder="Ask a question..." autocomplete="off">
+        <button id="aiSend">Send</button>
+    </div>
+</div>
+
+<script>
+(function(){
+    // Active nav item
+    var path = window.location.pathname;
+    document.querySelectorAll('.nav-item').forEach(function(el){
+        var href = el.getAttribute('href');
+        if (href && path === href) el.classList.add('active');
+        else if (href && href !== '/' && path.indexOf(href) === 0) el.classList.add('active');
+    });
+
+    // Mobile menu
+    var hb = document.getElementById('hamburgerBtn');
+    var sb = document.getElementById('sidebar');
+    if (hb && sb) hb.addEventListener('click', function(){ sb.classList.toggle('open'); });
+
+    // Logout
+    var lb = document.getElementById('logoutBtn');
+    if (lb) lb.addEventListener('click', function(){
+        try { localStorage.removeItem('ihe_token'); } catch(e) {}
+        window.location.href = '/login';
+    });
+
+    // Global search
+    var gs = document.getElementById('globalSearch');
+    if (gs) gs.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') {
+            var q = encodeURIComponent(gs.value.trim());
+            if (q) window.location.href = '/api/v1/incentivehouse/search?q=' + q;
+        }
+    });
+
+    // AI widget
+    var fab = document.getElementById('aiFab');
+    var panel = document.getElementById('aiPanel');
+    var closeBtn = document.getElementById('aiClose');
+    var sendBtn = document.getElementById('aiSend');
+    var input = document.getElementById('aiInput');
+    var msgs = document.getElementById('aiMessages');
+    function openAi(){ panel.classList.add('open'); fab.style.display='none'; setTimeout(function(){input && input.focus();}, 100); }
+    function closeAi(){ panel.classList.remove('open'); fab.style.display='flex'; }
+    if (fab) fab.addEventListener('click', openAi);
+    if (closeBtn) closeBtn.addEventListener('click', closeAi);
+    function sendMsg(){
+        if (!input || !msgs) return;
+        var text = input.value.trim();
+        if (!text) return;
+        var u = document.createElement('div'); u.className='ai-msg user'; u.textContent=text; msgs.appendChild(u);
+        input.value='';
+        var t = document.createElement('div'); t.className='ai-typing'; t.innerHTML='<span></span><span></span><span></span>'; msgs.appendChild(t); msgs.scrollTop = msgs.scrollHeight;
+        fetch('/api/ai/assist', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({message: text, page_context: path, current_form_data: {}})
+        }).then(function(r){ return r.json(); }).then(function(data){
+            if (t && t.parentNode) t.parentNode.removeChild(t);
+            var a = document.createElement('div'); a.className='ai-msg assistant';
+            a.textContent = (data && data.reply) ? data.reply : 'No response from AI service.';
+            msgs.appendChild(a); msgs.scrollTop = msgs.scrollHeight;
+        }).catch(function(err){
+            if (t && t.parentNode) t.parentNode.removeChild(t);
+            var a = document.createElement('div'); a.className='ai-msg error';
+            a.textContent = 'AI service unavailable. Please try again later.';
+            msgs.appendChild(a); msgs.scrollTop = msgs.scrollHeight;
+        });
+    }
+    if (sendBtn) sendBtn.addEventListener('click', sendMsg);
+    if (input) input.addEventListener('keydown', function(e){ if (e.key==='Enter') sendMsg(); });
+
+    // Live status
+    function updateTime(){
+        var d = new Date();
+        var pad = function(n){ return n<10 ? '0'+n : ''+n; };
+        var s = pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+        var el = document.getElementById('statusTime');
+        if (el) el.textContent = s;
+    }
+    updateTime(); setInterval(updateTime, 1000);
+    function refreshStatus(){
+        fetch('/api/health').then(function(r){return r.json();}).then(function(d){
+            var db = document.getElementById('dbStatus');
+            var dot = document.getElementById('dbDot');
+            if (db) db.textContent = (d.database || 'unknown');
+            if (dot) { dot.className = 'status-dot ' + ((d.database === 'ok') ? 'dot-green' : 'dot-red'); }
+            var p = document.getElementById('pnrCount');
+            if (p && d.pnr_count != null) p.textContent = d.pnr_count;
+        }).catch(function(){
+            var db = document.getElementById('dbStatus'); if (db) db.textContent = 'offline';
+            var dot = document.getElementById('dbDot'); if (dot) dot.className = 'status-dot dot-red';
+        });
+    }
+    refreshStatus(); setInterval(refreshStatus, 30000);
+})();
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

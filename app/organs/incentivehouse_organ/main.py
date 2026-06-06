@@ -386,6 +386,68 @@ def _mount_jinja_pages(app: FastAPI, templates: Jinja2Templates) -> None:
     def api_docs_redirect():
         return RedirectResponse(url="/docs")
 
+    # --- IHE-ERP v2.3: Module pages served at root paths ---
+    # Each module page reuses main_dashboard.html (the base layout container)
+    # via {% extends %} and overrides the content block.  The base.html layout
+    # is intentionally not yet wired into the running container, so we serve
+    # the existing per-module HTML files for backward compatibility.
+
+    @app.get("/evn", response_class=HTMLResponse)
+    def evn_page(request: Request):
+        return templates.TemplateResponse("evn.html", {"request": request}) \
+            if (TEMPLATES_DIR / "evn.html").exists() \
+            else templates.TemplateResponse("main_dashboard.html", {"request": request, "page": "evn"})
+
+    @app.get("/sal", response_class=HTMLResponse)
+    def sal_page(request: Request):
+        return templates.TemplateResponse("sal.html", {"request": request}) \
+            if (TEMPLATES_DIR / "sal.html").exists() \
+            else templates.TemplateResponse("main_dashboard.html", {"request": request, "page": "sal"})
+
+    @app.get("/pur", response_class=HTMLResponse)
+    def pur_page(request: Request):
+        return templates.TemplateResponse("pur.html", {"request": request}) \
+            if (TEMPLATES_DIR / "pur.html").exists() \
+            else templates.TemplateResponse("purchasing.html", {"request": request})
+
+    @app.get("/bnk", response_class=HTMLResponse)
+    def bnk_page(request: Request):
+        return templates.TemplateResponse("bnk.html", {"request": request}) \
+            if (TEMPLATES_DIR / "bnk.html").exists() \
+            else templates.TemplateResponse("main_dashboard.html", {"request": request, "page": "bnk"})
+
+    @app.get("/gl", response_class=HTMLResponse)
+    def gl_page(request: Request):
+        return templates.TemplateResponse("gl.html", {"request": request}) \
+            if (TEMPLATES_DIR / "gl.html").exists() \
+            else templates.TemplateResponse("main_dashboard.html", {"request": request, "page": "gl"})
+
+    @app.get("/documents", response_class=HTMLResponse)
+    def documents_page(request: Request):
+        return templates.TemplateResponse("documents.html", {"request": request}) \
+            if (TEMPLATES_DIR / "documents.html").exists() \
+            else templates.TemplateResponse("main_dashboard.html", {"request": request, "page": "documents"})
+
+    @app.get("/reports", response_class=HTMLResponse)
+    def reports_page(request: Request):
+        return templates.TemplateResponse("reports.html", {"request": request}) \
+            if (TEMPLATES_DIR / "reports.html").exists() \
+            else templates.TemplateResponse("main_dashboard.html", {"request": request, "page": "reports"})
+
+    @app.get("/neural", response_class=HTMLResponse)
+    def neural_page(request: Request):
+        return templates.TemplateResponse("neural.html", {"request": request}) \
+            if (TEMPLATES_DIR / "neural.html").exists() \
+            else templates.TemplateResponse("main_dashboard.html", {"request": request, "page": "neural"})
+
+    @app.get("/login", response_class=HTMLResponse)
+    def login_page(request: Request):
+        return templates.TemplateResponse("login.html", {"request": request}) \
+            if (TEMPLATES_DIR / "login.html").exists() \
+            else HTMLResponse("<h1>Login</h1><form method='post' action='/api/v1/incentivehouse/auth/login'>"
+                              "<input name='username'><input name='password' type='password'>"
+                              "<button>Login</button></form>")
+
 
 # ============================================================================
 # API routers (staging + promote + audit + recon)
@@ -414,24 +476,106 @@ def _mount_api_routers(app: FastAPI) -> None:
 def _register_health(app: FastAPI) -> None:
 
     @app.get("/health")
+    @app.get("/api/health")
     def health_check():
+        """Health check at both /health and /api/health (IHE-ERP v2.3 spec)."""
         db_status = "unknown"
+        pnr_count = None
         try:
             eng = get_sync_engine()
             with eng.connect() as conn:
                 conn.execute(text("SELECT 1"))
             db_status = "ok"
+            # Best-effort PNR count (graceful when table missing)
+            try:
+                pnr_count = conn.execute(
+                    text("SELECT COUNT(*) FROM pnr_master")
+                ).scalar()
+            except Exception:
+                try:
+                    pnr_count = conn.execute(
+                        text("SELECT COUNT(*) FROM events")
+                    ).scalar()
+                except Exception:
+                    pnr_count = None
         except Exception as exc:
             logger.warning("Health check DB failure: %s", exc)
             db_status = "error"
         return {
             "status": "ok" if db_status == "ok" else "degraded",
-            "version": "1.0.0",
+            "version": "2.3.0",
             "database": db_status,
+            "pnr_count": pnr_count,
             "modules": ["Bnk", "Sal", "Pur", "Evn", "Env"],
             "staging_tables": list(STAGING_TABLE_NAMES.keys()),
             "production_tables": list(PRODUCTION_TABLE_NAMES.keys()),
         }
+
+    @app.get("/api/ai/assist", include_in_schema=False)
+    @app.post("/api/ai/assist", include_in_schema=False)
+    async def ai_assist(request: Request):
+        """
+        Lightweight AI assist endpoint used by the floating AI widget in
+        base.html.  Accepts either GET (returns service status) or POST
+        with JSON body {message, page_context, current_form_data}.
+
+        For v2.3 the endpoint is a stateless rule-based responder that
+        looks at the page context and returns a contextual hint.  Swap
+        the body of ``_ai_reply()`` for an LLM call in v2.4.
+        """
+        if request.method == "GET":
+            return {
+                "status": "ok",
+                "service": "ai-assist",
+                "version": "2.3.0",
+                "hint": "POST {message, page_context, current_form_data} to get a reply.",
+            }
+        try:
+            payload = await request.json()
+        except Exception:
+            payload = {}
+        message = (payload.get("message") or "").strip()
+        page = payload.get("page_context") or "unknown"
+        reply = _ai_reply(message, page)
+        return {
+            "status": "ok",
+            "reply": reply,
+            "page_context": page,
+            "echoed": message,
+        }
+
+
+def _ai_reply(message: str, page: str) -> str:
+    """Stateless rule-based reply for the AI widget.  No LLM dependency."""
+    msg = (message or "").lower()
+    page_lc = (page or "").lower()
+
+    # Greetings
+    if any(g in msg for g in ("hello", "hi", "hey", "salam", "salaam", "ahlan")):
+        return "Hello! I'm the IncentiveHouse AI assistant. I can help with forms, data lookups, and navigation. What do you need?"
+
+    # Page-aware hints
+    if "/evn" in page_lc or "event" in page_lc or "pnr" in msg:
+        return "For Events (PNR): the PNR number is auto-generated. Fill client, dates, and budget lines, then click Save. Use the search bar to find existing PNRs."
+    if "/sal" in page_lc or "invoice" in page_lc or "sale" in msg:
+        return "For Sales invoices: select a client, add line items with quantity and unit price, the system calculates totals and tax. Click Save to post."
+    if "/pur" in page_lc or "purchase" in page_lc or "vendor" in msg:
+        return "For Purchase vouchers: pick a vendor, add lines, attach the original invoice in Documents. Save posts the voucher to the GL."
+    if "/bnk" in page_lc or "bank" in page_lc or "reconcile" in msg:
+        return "For Bank transactions: import via the loader or add manually. Use the Reconciliation page to match against GL entries. Open variances show in red."
+    if "/gl" in page_lc or "journal" in page_lc or "voucher" in msg:
+        return "For Journal vouchers: must have balanced debits = credits. Add multiple lines, save, then post to general ledger."
+    if "/documents" in page_lc or "document" in page_lc or "upload" in msg:
+        return "Documents: drag-and-drop a file (PDF, image, Excel), pick a category, and link it to a PNR/Sales/Purchase record. Use the search bar to find by name."
+    if "/reports" in page_lc or "report" in page_lc or "export" in msg:
+        return "Reports: pick a date range and module, click Generate. Export to Excel or PDF using the buttons above each report."
+
+    # General
+    if "?" in message or "how" in msg or "what" in msg or "where" in msg:
+        return "Try the search bar at the top to find a PNR, client, vendor, or invoice. The sidebar lists all modules. For help with a specific page, navigate there first then ask me."
+    if not message:
+        return "Please type a question. I'm here to help with this page."
+    return f"I heard: '{message}'. I'm a v2.3 rule-based assistant - I can answer questions about this page, forms, and navigation. Try asking 'How do I create a PNR?' or 'What is the budget?'."
 
 
 def _register_exception_handlers(app: FastAPI) -> None:

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Banking - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Banking</div>
+<div class="page-header">
+    <h1>Bank Transactions</h1>
+    <div class="actions">
+        <button class="btn btn-success" onclick="alert('Use the Bank Reconciliation page to import transactions')">+ Import</button>
+        <a href="/api/v1/incentivehouse/recon/form" class="btn btn-primary">Reconcile</a>
+        <button class="btn btn-ghost" onclick="refreshList()">Refresh</button>
+    </div>
+</div>
+<div class="kpi-grid">
+    <div class="kpi-card kpi-revenue"><div class="kpi-label">Credits (Inflows)</div><div class="kpi-value" id="kpiCredits">-</div></div>
+    <div class="kpi-card kpi-expense"><div class="kpi-label">Debits (Outflows)</div><div class="kpi-value" id="kpiDebits">-</div></div>
+    <div class="kpi-card kpi-profit"><div class="kpi-label">Net Cash Flow</div><div class="kpi-value" id="kpiNet">-</div></div>
+</div>
+<div class="content-card">
+    <div id="bnkList" style="text-align:center;padding:40px;color:#888">Loading...</div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function refreshList(){
+    var el = document.getElementById('bnkList');
+    try {
+        var r = await fetch('/api/bnk/transactions?page=1&page_size=50');
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        var data = await r.json();
+        var items = data.items || data.results || data || [];
+        if (!items.length) { el.innerHTML = '<p>No transactions.</p>'; return; }
+        var html = '<table class="data-table"><thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Amount</th><th>Balance</th><th>Recon</th></tr></thead><tbody>';
+        var cred=0, deb=0;
+        items.forEach(function(it){
+            var amt = parseFloat(it.amount || 0) || 0;
+            if (amt > 0) cred += amt; else deb += Math.abs(amt);
+            html += '<tr><td>' + (it.transaction_date||it.date||'-') + '</td>'
+                  + '<td>' + (it.description||it.narrative||'-') + '</td>'
+                  + '<td>' + (it.transaction_type||(amt>0?'CR':'DR')) + '</td>'
+                  + '<td style="color:' + (amt>=0?'#28a745':'#dc3545') + '">' + amt.toFixed(2) + '</td>'
+                  + '<td>' + (parseFloat(it.balance||0)).toFixed(2) + '</td>'
+                  + '<td>' + (it.recon_status||'OPEN') + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        el.innerHTML = html;
+        document.getElementById('kpiCredits').textContent = cred.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        document.getElementById('kpiDebits').textContent = deb.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        document.getElementById('kpiNet').textContent = (cred-deb).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    } catch(e) {
+        el.innerHTML = '<p style="color:#c00">Could not load transactions: ' + e.message + '</p>';
+    }
+}
+refreshList();
+</script>
+{% endblock %}

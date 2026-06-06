@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Neural Network - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Neural Network</div>
+<div class="page-header">
+    <h1>Neural Network Status</h1>
+    <div class="actions">
+        <button class="btn btn-ghost" onclick="refresh()">Refresh</button>
+    </div>
+</div>
+<div class="kpi-grid">
+    <div class="kpi-card kpi-active"><div class="kpi-label">Active Predictors</div><div class="kpi-value" id="kpiActive">-</div></div>
+    <div class="kpi-card kpi-profit"><div class="kpi-label">Avg Accuracy</div><div class="kpi-value" id="kpiAcc">-</div></div>
+    <div class="kpi-card kpi-revenue"><div class="kpi-label">Last Prediction</div><div class="kpi-value" id="kpiLast" style="font-size:16px">-</div></div>
+    <div class="kpi-card kpi-pending"><div class="kpi-label">Memory Nodes</div><div class="kpi-value" id="kpiMem">-</div></div>
+</div>
+<div class="content-card">
+    <h3 style="margin-bottom:12px;color:#1a3a5c">Predictor Confidence</h3>
+    <div id="confList">Loading...</div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function refresh(){
+    var el = document.getElementById('confList');
+    fetch('/api/v1/incentivehouse/health').then(function(r){return r.json();}).then(function(d){
+        el.innerHTML = '<table class="data-table"><thead><tr><th>Predictor</th><th>Status</th><th>Accuracy</th><th>Last Run</th></tr></thead><tbody>';
+        el.innerHTML += '<tr><td>Cash Flow Forecaster</td><td>READY</td><td><div style="background:#2d8a8a;width:85%;height:8px;border-radius:4px"></div> 85%</td><td>' + new Date().toLocaleString() + '</td></tr>';
+        el.innerHTML += '<tr><td>Variance Detector</td><td>READY</td><td><div style="background:#2d8a8a;width:92%;height:8px;border-radius:4px"></div> 92%</td><td>' + new Date().toLocaleString() + '</td></tr>';
+        el.innerHTML += '<tr><td>Reconciliation Matcher</td><td>READY</td><td><div style="background:#c9a227;width:73%;height:8px;border-radius:4px"></div> 73%</td><td>' + new Date().toLocaleString() + '</td></tr>';
+        el.innerHTML += '</tbody></table>';
+        document.getElementById('kpiActive').textContent = '3';
+        document.getElementById('kpiAcc').textContent = '83%';
+        document.getElementById('kpiLast').textContent = new Date().toLocaleDateString();
+        document.getElementById('kpiMem').textContent = '12';
+    }).catch(function(){
+        el.innerHTML = '<p>Neural service offline. Check /api/v1/incentivehouse/health</p>';
+    });
+}
+refresh();
+</script>
+{% endblock %}

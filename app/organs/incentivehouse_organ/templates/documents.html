@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Documents - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Documents</div>
+<div class="page-header">
+    <h1>Document Management</h1>
+    <div class="actions">
+        <label class="btn btn-success" style="cursor:pointer">+ Upload<input type="file" id="uploadInput" style="display:none" multiple></label>
+        <button class="btn btn-ghost" onclick="refreshList()">Refresh</button>
+    </div>
+</div>
+<div id="uploadStatus"></div>
+<div class="content-card">
+    <h3 style="margin-bottom:12px;color:#1a3a5c">Upload Documents</h3>
+    <div id="dropZone" style="border:2px dashed #ccc;padding:40px;text-align:center;border-radius:6px;color:#888;cursor:pointer">
+        Drag and drop files here, or click to select. Supported: PDF, images, Excel.
+    </div>
+</div>
+<div class="content-card">
+    <h3 style="margin-bottom:12px;color:#1a3a5c">All Documents</h3>
+    <div id="docList" style="text-align:center;padding:30px;color:#888">Loading...</div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function refreshList(){
+    var el = document.getElementById('docList');
+    el.innerHTML = '<p>Document service: see /api/v1/incentivehouse/documents (when available).</p>';
+}
+refreshList();
+var dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('click', function(){ document.getElementById('uploadInput').click(); });
+['dragenter','dragover'].forEach(function(e){
+    dropZone.addEventListener(e, function(ev){ ev.preventDefault(); dropZone.style.background='#f0f8ff'; });
+});
+['dragleave','drop'].forEach(function(e){
+    dropZone.addEventListener(e, function(ev){ ev.preventDefault(); dropZone.style.background=''; });
+});
+dropZone.addEventListener('drop', function(ev){
+    var files = ev.dataTransfer.files;
+    handleFiles(files);
+});
+document.getElementById('uploadInput').addEventListener('change', function(ev){
+    handleFiles(ev.target.files);
+});
+function handleFiles(files){
+    var status = document.getElementById('uploadStatus');
+    if (!files.length) return;
+    status.innerHTML = '<div class="alert alert-info">Uploading ' + files.length + ' file(s)...</div>';
+    // In v2.3 the upload endpoint is a placeholder; in v2.4 it will POST to /api/v1/incentivehouse/documents/upload
+    setTimeout(function(){
+        status.innerHTML = '<div class="alert alert-success">Upload queue ready. Server endpoint pending deployment.</div>';
+    }, 600);
+}
+</script>
+{% endblock %}
