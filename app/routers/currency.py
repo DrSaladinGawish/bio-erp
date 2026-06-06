@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends
+﻿from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
@@ -7,9 +7,11 @@ from app.middleware.auth import RequirePermission
 from app.models.auth import User
 from app.models.currency import Currency
 from app.services.currency_sync import CurrencySyncService
+from app.services.currency_service import currency_service
 from app.services.audit_logger import AuditLogger
 
 router = APIRouter(prefix="/api/v1/currencies", tags=["Currencies"])
+conversion_router = APIRouter(prefix="/api/v1/currency", tags=["Currency Conversion"])
 
 
 class CurrencyUpdate(BaseModel):
@@ -63,3 +65,24 @@ async def update_rate(
         "UPDATE", "Currency", currency_id, new_value=req.model_dump(), actor_id=user.id
     )
     return currency
+
+
+@conversion_router.get("/convert")
+async def convert_currency(
+    amount: float = Query(..., gt=0, description="Amount to convert"),
+    from_currency: str = Query(..., min_length=3, max_length=3, description="Source currency code (e.g. USD)"),
+    to_currency: str = Query(..., min_length=3, max_length=3, description="Target currency code (e.g. EGP)"),
+):
+    result = await currency_service.convert(amount, from_currency, to_currency)
+    return result
+
+
+@conversion_router.get("/rates")
+async def list_exchange_rates():
+    if not currency_service.rates:
+        await currency_service._refresh_rates()
+    return {
+        "base": "USD",
+        "rates": currency_service.rates,
+        "last_updated": currency_service.last_update.isoformat() if currency_service.last_update else None,
+    }

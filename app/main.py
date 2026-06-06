@@ -24,6 +24,7 @@ from app.config import settings
 from app.database import get_async_engine, get_db, init_db
 import app.models.manufacturing  # noqa: F401  — register tables with Base
 import app.ai_ingest.models  # noqa: F401  — register AI ingestion tables with Base
+import app.models.neural.prediction  # noqa: F401  — register neural tables with Base
 
 # OR-ERP Sub-Application
 from app.organs.or_organ.sub_app import or_app
@@ -43,6 +44,7 @@ from app.organs.incentivehouse_organ.routers.env_router import router as ih_env_
 
 from app.routers import (
     accounting,
+    documents,
     admin,
     ai_bridge,
     approval,
@@ -77,6 +79,9 @@ from app.routers import (
     system,
     websocket_alerts,
 )
+from app.routers.currency import conversion_router
+from app.routers.intelligence_router import router as intelligence_router
+from app.routers.neural.ai_api import router as neural_router
 from app.cells.rbac_cell.router import router as rbac_router
 
 logger = logging.getLogger(__name__)
@@ -120,7 +125,24 @@ async def lifespan(app: FastAPI):
         finally:
             await db.close()
         break
+
+    # Start APScheduler for Time-of-Day tasks
+    from apscheduler.triggers.cron import CronTrigger
+    from app.services.cbe_sync import start_cbe_scheduler
+    from app.services.document_service import run_nightly_verify
+    _scheduler = start_cbe_scheduler()
+    _scheduler.add_job(
+        run_nightly_verify,
+        CronTrigger(hour=2, minute=0, timezone="Africa/Cairo"),
+        id="nightly_doc_verify",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    logger.info("CBE scheduler started — daily at 06:00 Cairo")
+    logger.info("Nightly document verify scheduled — 02:00 Cairo")
+
     yield
+    _scheduler.shutdown(wait=False)
     logger.info("Shutting down BIO_ERP v5.2...")
 
 
@@ -179,6 +201,7 @@ app.include_router(finance.router)
 app.include_router(coa.router)
 app.include_router(bank_recon.router)
 app.include_router(currency.router)
+app.include_router(conversion_router)
 app.include_router(branch.router)
 app.include_router(clients.router)
 app.include_router(suppliers.router)
@@ -217,12 +240,21 @@ app.include_router(grdslab.router)
 # System utilities
 app.include_router(system.router)
 
+# Documents
+app.include_router(documents.router)
+
 # AI bridge
 app.include_router(ai_bridge.router)
+
+# Neural AI Module
+app.include_router(neural_router)
 
 # AI Ingestion Module
 from app.ai_ingest.router import router as ai_ingest_router
 app.include_router(ai_ingest_router)
+
+# Intelligence (AI, email, etc.)
+app.include_router(intelligence_router)
 
 # WebSocket alerts
 app.include_router(websocket_alerts.router)
