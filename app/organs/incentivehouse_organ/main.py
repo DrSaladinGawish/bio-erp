@@ -373,6 +373,9 @@ def _mount_jinja_pages(app: FastAPI, templates: Jinja2Templates) -> None:
 
     @app.get("/", response_class=HTMLResponse)
     def main_dashboard(request: Request):
+        # IHE-ERP v2.4: serve the new Chart.js-powered dashboard if it exists
+        if (TEMPLATES_DIR / "dashboard.html").exists():
+            return templates.TemplateResponse("dashboard.html", {"request": request})
         return templates.TemplateResponse("main_dashboard.html", {"request": request})
 
     @app.get("/api/v1/incentivehouse/events/new", response_class=HTMLResponse)

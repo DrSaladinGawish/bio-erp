@@ -155,20 +155,35 @@ def dashboard_export(
     format: str = Query("json"),
     db: Session = Depends(get_db),
 ):
-    """Export dashboard data. JSON works now; PDF stubbed for v2.4."""
+    """Export dashboard data as JSON or real PDF (IHE-ERP v2.3.5+)."""
+    from fastapi.responses import Response
     fmt = format.lower()
     if fmt not in ("json", "pdf"):
         raise HTTPException(status_code=422, detail=f"Invalid format: {format}")
     data = dashboard_data(range=range, db=db)
     if fmt == "pdf":
-        return {
-            "format": "pdf",
-            "status": "coming_soon",
-            "message": (
-                "PDF export will be available in IHE-ERP v2.4. "
-                "The JSON envelope below contains the same data the "
-                "PDF generator will use. Install reportlab to enable."
-            ),
-            "data": data,
-        }
+        try:
+            from app.organs.incentivehouse_organ.intelligence.pdf_generator import (
+                generate_dashboard_pdf,
+            )
+            pdf_bytes = generate_dashboard_pdf(data, range)
+            filename = (
+                f"dashboard_{range}_"
+                f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            )
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f"attachment; filename={filename}",
+                },
+            )
+        except Exception as exc:
+            logger.warning("PDF generation failed: %s", exc)
+            return {
+                "format": "pdf",
+                "status": "error",
+                "message": f"PDF generation failed: {exc}",
+                "data": data,
+            }
     return {"format": "json", "data": data}

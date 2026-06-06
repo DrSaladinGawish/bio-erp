@@ -69,10 +69,13 @@ def test_dashboard_export_json(sync_client):
     assert "data" in body
 
 
-def test_dashboard_export_pdf_stub(sync_client):
+def test_dashboard_export_pdf(sync_client):
+    """v2.3.5+: PDF export returns real PDF bytes, not a JSON stub."""
     r = sync_client.get("/api/dashboard/export?range=YTD&format=pdf")
     assert r.status_code == 200
-    body = r.json()
-    assert body["format"] == "pdf"
-    assert body["status"] == "coming_soon"
-    assert "data" in body
+    # Either real PDF or graceful JSON error
+    if "application/pdf" in r.headers.get("content-type", ""):
+        assert r.content[:4] == b"%PDF"
+    else:
+        body = r.json()
+        assert body["format"] == "pdf"

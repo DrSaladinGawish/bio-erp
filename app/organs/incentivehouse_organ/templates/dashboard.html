@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a></div>
+<div class="page-header">
+    <h1>Executive Dashboard</h1>
+    <div class="actions">
+        <button class="range-btn" data-range="7D">7D</button>
+        <button class="range-btn" data-range="30D">30D</button>
+        <button class="range-btn" data-range="90D">90D</button>
+        <button class="range-btn active" data-range="YTD">YTD</button>
+        <a href="/api/dashboard/export?range=YTD&format=pdf" class="btn btn-warning">Export PDF</a>
+        <a href="/api/dashboard/export?range=YTD&format=json" class="btn btn-ghost">Export JSON</a>
+    </div>
+</div>
+
+<style>
+.range-btn {
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--primary);
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+}
+.range-btn.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+.chart-container { position: relative; height: 280px; width: 100%; margin-bottom: 20px; }
+</style>
+
+<div class="kpi-grid">
+    <div class="kpi-card kpi-revenue">
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value" id="kpi-revenue">Loading...</div>
+    </div>
+    <div class="kpi-card kpi-expense">
+        <div class="kpi-label">Total Expenses</div>
+        <div class="kpi-value" id="kpi-expenses">Loading...</div>
+    </div>
+    <div class="kpi-card kpi-profit">
+        <div class="kpi-label">Net Profit</div>
+        <div class="kpi-value" id="kpi-profit">Loading...</div>
+    </div>
+    <div class="kpi-card kpi-active">
+        <div class="kpi-label">Active PNRs</div>
+        <div class="kpi-value" id="kpi-pnrs">-</div>
+    </div>
+    <div class="kpi-card kpi-profit">
+        <div class="kpi-label">Bank Balance</div>
+        <div class="kpi-value" id="kpi-bank">-</div>
+    </div>
+    <div class="kpi-card kpi-pending">
+        <div class="kpi-label">Pending Invoices</div>
+        <div class="kpi-value" id="kpi-pending">-</div>
+    </div>
+</div>
+
+<div class="content-card">
+    <h3 style="color:#1a3a5c;margin-bottom:12px">Revenue Trend</h3>
+    <div class="chart-container"><canvas id="revenueChart"></canvas></div>
+</div>
+
+<div class="content-card">
+    <h3 style="color:#1a3a5c;margin-bottom:12px">Expenses by Month</h3>
+    <div class="chart-container"><canvas id="expenseChart"></canvas></div>
+</div>
+
+<div class="content-card">
+    <h3 style="color:#1a3a5c;margin-bottom:12px">Net Cashflow</h3>
+    <div class="chart-container"><canvas id="cashflowChart"></canvas></div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}
