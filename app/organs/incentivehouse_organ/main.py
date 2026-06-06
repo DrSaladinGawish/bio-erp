@@ -248,7 +248,7 @@ def create_app() -> FastAPI:
     # Routers
     _mount_extraction(app)
     _mount_jinja_pages(app, templates)
-    _mount_api_routers(app)
+    _mount_api_routers(app, templates)
     # Health + errors
     _register_exception_handlers(app)
     _register_health(app)
@@ -500,7 +500,7 @@ def _mount_jinja_pages(app: FastAPI, templates: Jinja2Templates) -> None:
 # API routers (staging + promote + audit + recon)
 # ============================================================================
 
-def _mount_api_routers(app: FastAPI) -> None:
+def _mount_api_routers(app: FastAPI, templates: Jinja2Templates) -> None:
     # New-style incentivehouse router (staging query, summary, promote, audit)
     app.include_router(incentivehouse_router)
     # BNK-specific router (transactions, summary, load, reload)
@@ -518,6 +518,20 @@ def _mount_api_routers(app: FastAPI) -> None:
         logger.info("Intelligence layer router mounted at /api/v1/intelligence")
     except Exception as exc:
         logger.warning("Intelligence layer router not mounted: %s", exc)
+    # IHE-ERP v2.3.2: Dashboard data API (real SQL queries + date filters)
+    try:
+        from app.organs.incentivehouse_organ.dashboard import router as dashboard_router
+        app.include_router(dashboard_router)
+        logger.info("Dashboard router mounted at /api/dashboard")
+    except Exception as exc:
+        logger.warning("Dashboard router not mounted: %s", exc)
+    # EGP currency formatter for Jinja2 templates
+    def _format_egp(value):
+        try:
+            return "EGP " + ("{:,.2f}".format(float(value or 0)))
+        except (TypeError, ValueError):
+            return "EGP 0.00"
+    templates.env.filters["format_egp"] = _format_egp
     # Mount the existing sub-application under /api/v1/incentivehouse
     # (the sub-app defines event_form, etc. as separate routes)
     app.mount("/api/v1/incentivehouse", incentivehouse_app)
