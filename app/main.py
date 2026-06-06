@@ -83,6 +83,7 @@ from app.routers.currency import conversion_router
 from app.routers.intelligence_router import router as intelligence_router
 from app.routers.neural.ai_api import router as neural_router
 from app.routers.roles import router as roles_router
+from app.routers.event_ops import router as event_ops_router
 from app.cells.rbac_cell.router import router as rbac_router
 
 logger = logging.getLogger(__name__)
@@ -210,6 +211,7 @@ app.include_router(items.router)
 
 # Events & budget
 app.include_router(events.router)
+app.include_router(event_ops_router)
 app.include_router(budget.router)
 app.include_router(budget_lifecycle.router)
 

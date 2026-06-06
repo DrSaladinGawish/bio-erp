@@ -1,8 +1,20 @@
-﻿from datetime import datetime
-from sqlalchemy import Integer, String, Float, ForeignKey, DateTime, Text
+﻿import enum
+from datetime import datetime
+from sqlalchemy import Boolean, Integer, String, Float, ForeignKey, DateTime, Text, Enum as SAEnum, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 from app.models.base import BaseMixin, BranchAwareMixin, CurrencyAwareMixin
+
+
+class LifecycleStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    QUOTED = "QUOTED"
+    CONFIRMED = "CONFIRMED"
+    PLANNING = "PLANNING"
+    IN_PROGRESS = "IN_PROGRESS"
+    EXECUTED = "EXECUTED"
+    INVOICED = "INVOICED"
+    CLOSED = "CLOSED"
 
 
 class PNR(Base, BaseMixin, BranchAwareMixin):
@@ -65,11 +77,24 @@ class Event(Base, BaseMixin, BranchAwareMixin, CurrencyAwareMixin):
     notes: Mapped[str] = mapped_column(Text, nullable=True)
     design_attachment: Mapped[str] = mapped_column(String(500), nullable=True)
 
+    lifecycle_status: Mapped[str] = mapped_column(
+        String(20), default=LifecycleStatus.DRAFT.value,
+        comment="DRAFT/QUOTED/CONFIRMED/PLANNING/IN_PROGRESS/EXECUTED/INVOICED/CLOSED"
+    )
+    ops_team_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("staff.id"), nullable=True
+    )
+    execution_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    actual_pax: Mapped[int] = mapped_column(Integer, nullable=True)
+    actual_cost: Mapped[float] = mapped_column(Float, nullable=True)
+
     client = relationship("Client")
-    project_manager = relationship("Staff")
+    project_manager = relationship("Staff", foreign_keys=[project_manager_id])
+    ops_team = relationship("Staff", foreign_keys=[ops_team_id])
     pnrs = relationship("PNR", back_populates="event")
     budget_lines = relationship("EventBudgetLine", back_populates="event")
     line_items = relationship("EventLineItem", back_populates="event")
+    operations = relationship("EventOperation", back_populates="event")
 
 
 class EventBudgetLine(Base, BaseMixin, CurrencyAwareMixin):
@@ -129,6 +154,48 @@ class EventLineItem(Base, BaseMixin):
 
     event = relationship("Event", back_populates="line_items")
     item = relationship("EventMasterNode", foreign_keys=[master_node_id])
+
+
+class EventOperation(Base, BaseMixin):
+    __tablename__ = "event_operations"
+
+    event_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("events.id"), nullable=False
+    )
+    ops_manager_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("staff.id"), nullable=True
+    )
+    briefing_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    load_in_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    sound_check_done: Mapped[bool] = mapped_column(Boolean, default=False)
+    catering_final_count: Mapped[int] = mapped_column(Integer, nullable=True)
+    run_sheet: Mapped[dict] = mapped_column(JSON, nullable=True)
+    post_event_notes: Mapped[str] = mapped_column(Text, nullable=True)
+    client_signatory_name: Mapped[str] = mapped_column(String(100), nullable=True)
+    client_signature_path: Mapped[str] = mapped_column(String(255), nullable=True)
+
+    event = relationship("Event", back_populates="operations")
+    ops_manager = relationship("Staff", foreign_keys=[ops_manager_id])
+
+
+class ServiceUOM(Base, BaseMixin):
+    __tablename__ = "service_uom"
+
+    category_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("item_categories.id"), nullable=True
+    )
+    sub_category_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("item_sub_categories.id"), nullable=True
+    )
+    uom_code: Mapped[str] = mapped_column(String(10), nullable=False)
+    uom_name: Mapped[str] = mapped_column(String(50), nullable=True)
+    default_unit_price: Mapped[float] = mapped_column(Float, default=0.0)
+    min_qty: Mapped[float] = mapped_column(Float, default=1.0)
+    max_qty: Mapped[float] = mapped_column(Float, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    category = relationship("ItemCategory")
+    sub_category = relationship("ItemSubCategory")
 
 
 class EventDoc(Base, BaseMixin):

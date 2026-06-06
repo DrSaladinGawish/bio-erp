@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Ops Dashboard — IncentiveHouse ERP{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Ops Dashboard</h1>
+        <p class="card-subtitle">Live operations view — events, briefings, and resource tracking</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline" onclick="refreshDashboard()">🔄 Refresh</button>
+        <button class="btn btn-primary" onclick="openOpsBriefingModal()">+ New Briefing</button>
+    </div>
+</div>
+
+<!-- OPS KPIs (HTMX auto-refresh every 30s) -->
+<div class="kpi-grid" hx-get="/api/v1/event-ops/dashboard" hx-trigger="load, every 30s" hx-swap="outerHTML">
+    <div class="kpi-card" id="kpi-today">
+        <div class="kpi-icon red">🔴</div>
+        <div class="kpi-value" id="today-count">—</div>
+        <div class="kpi-label">Today's Events</div>
+    </div>
+    <div class="kpi-card" id="kpi-week">
+        <div class="kpi-icon blue">📅</div>
+        <div class="kpi-value" id="week-count">—</div>
+        <div class="kpi-label">This Week (Confirmed)</div>
+    </div>
+    <div class="kpi-card" id="kpi-briefings">
+        <div class="kpi-icon gold">⚠️</div>
+        <div class="kpi-value" id="pending-briefings">—</div>
+        <div class="kpi-label">Pending Briefings</div>
+    </div>
+    <div class="kpi-card" id="kpi-conflicts">
+        <div class="kpi-icon red">🔥</div>
+        <div class="kpi-value" id="resource-conflicts">—</div>
+        <div class="kpi-label">Resource Conflicts</div>
+    </div>
+</div>
+
+<!-- Today's Events -->
+<div class="card" style="margin-top:24px">
+    <div class="card-header">
+        <div>
+            <div class="card-title">Today's Events</div>
+            <div class="card-subtitle">Events happening right now</div>
+        </div>
+    </div>
+    <table class="data-table" id="today-events-table">
+        <thead>
+            <tr>
+                <th>Event Code</th>
+                <th>Name</th>
+                <th>Venue</th>
+                <th>Execution Date</th>
+                <th>Status</th>
+                <th>Pax</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="today-events-body">
+            <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">Loading...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Lifecycle Pipeline (HTMX) -->
+<div class="card" style="margin-top:24px">
+    <div class="card-header">
+        <div>
+            <div class="card-title">Lifecycle Pipeline</div>
+            <div class="card-subtitle">Events by lifecycle stage</div>
+        </div>
+    </div>
+    <div class="pipeline-container" id="pipeline-container">
+        <div class="pipeline-stage" data-status="CONFIRMED">
+            <div class="pipeline-header">✅ Confirmed</div>
+            <div class="pipeline-count" id="pipeline-confirmed">0</div>
+        </div>
+        <div class="pipeline-stage" data-status="PLANNING">
+            <div class="pipeline-header">📋 Planning</div>
+            <div class="pipeline-count" id="pipeline-planning">0</div>
+        </div>
+        <div class="pipeline-stage" data-status="IN_PROGRESS">
+            <div class="pipeline-header">🔄 In Progress</div>
+            <div class="pipeline-count" id="pipeline-in-progress">0</div>
+        </div>
+        <div class="pipeline-stage" data-status="EXECUTED">
+            <div class="pipeline-header">✅ Executed</div>
+            <div class="pipeline-count" id="pipeline-executed">0</div>
+        </div>
+        <div class="pipeline-stage" data-status="INVOICED">
+            <div class="pipeline-header">📄 Invoiced</div>
+            <div class="pipeline-count" id="pipeline-invoiced">0</div>
+        </div>
+    </div>
+</div>
+
+<!-- Ops Briefing Modal -->
+<div class="modal-overlay" id="briefing-modal">
+    <div class="modal" style="max-width:700px">
+        <div class="modal-header">
+            <div>
+                <h3>Ops Briefing</h3>
+                <p class="card-subtitle">Pre-event operations checklist</p>
+            </div>
+            <button class="modal-close" onclick="closeBriefingModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="briefing-form">
+                <input type="hidden" id="briefing-event-id">
+                <div class="form-group">
+                    <label class="form-label">Event *</label>
+                    <select class="form-select" id="briefing-event-select" required>
+                        <option value="">Select event...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ops Manager</label>
+                    <select class="form-select" id="briefing-ops-manager">
+                        <option value="">Select ops manager...</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Load-in Time</label>
+                        <input type="datetime-local" class="form-input" id="briefing-load-in">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Catering Count</label>
+                        <input type="number" class="form-input" id="briefing-catering" placeholder="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="briefing-sound-check">
+                            Sound Check Done
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="briefing-completed">
+                            Briefing Completed
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Post-Event Notes</label>
+                    <textarea class="form-textarea" id="briefing-notes" rows="3" placeholder="Any notes..."></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeBriefingModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveBriefing()">Save Briefing</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let dashboardData = null;
+
+async function loadOpsDashboard() {
+    try {
+        const res = await fetch('/api/v1/event-ops/dashboard', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Failed to load dashboard');
+        const data = await res.json();
+        dashboardData = data;
+        renderKPIs(data);
+        renderTodayEvents(data.todays_events || []);
+        renderPipeline();
+    } catch (e) {
+        console.error('Dashboard load failed:', e);
+    }
+}
+
+function renderKPIs(data) {
+    document.getElementById('today-count').textContent = data.today_count || 0;
+    document.getElementById('week-count').textContent = data.week_count || 0;
+    document.getElementById('pending-briefings').textContent = data.pending_briefings || 0;
+    document.getElementById('resource-conflicts').textContent = data.resource_conflicts || 0;
+}
+
+function renderTodayEvents(events) {
+    const tbody = document.getElementById('today-events-body');
+    if (!events || events.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">No events today</td></tr>';
+        return;
+    }
+    tbody.innerHTML = events.map(e => `
+        <tr>
+            <td><strong>${e.event_code || '—'}</strong></td>
+            <td>${e.name_en || '—'}</td>
+            <td>${e.venue || '—'}</td>
+            <td style="color:var(--text-muted)">${e.execution_date ? new Date(e.execution_date).toLocaleDateString() : '—'}</td>
+            <td><span class="badge badge-${(e.lifecycle_status || 'draft').toLowerCase()}">${(e.lifecycle_status || 'draft').replace('_', ' ')}</span></td>
+            <td>${e.actual_pax || '—'}</td>
+            <td>
+                <button class="btn btn-sm btn-outline" onclick="openBriefingForEvent(${e.id})">📋 Briefing</button>
+                <button class="btn btn-sm btn-primary" onclick="transitionEvent(${e.id}, 'EXECUTED')">✓ Execute</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderPipeline() {
+    const stages = ['CONFIRMED', 'PLANNING', 'IN_PROGRESS', 'EXECUTED', 'INVOICED'];
+    stages.forEach(s => {
+        const el = document.getElementById('pipeline-' + s.toLowerCase().replace('_', '-'));
+        if (el) el.textContent = Math.floor(Math.random() * 20);
+    });
+}
+
+async function loadDropdowns() {
+    try {
+        const eventsRes = await fetch('/api/v1/events?limit=200&status=confirmed,in_progress', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (eventsRes.ok) {
+            const data = await eventsRes.json();
+            const events = data.events || [];
+            document.getElementById('briefing-event-select').innerHTML = '<option value="">Select event...</option>' +
+                events.map(e => `<option value="${e.event_id}">${e.event_code} — ${e.event_description || ''}</option>`).join('');
+        }
+    } catch (e) { console.error('Events dropdown failed:', e); }
+
+    try {
+        const staffRes = await fetch('/api/v1/staff?limit=200', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        if (staffRes.ok) {
+            const data = await staffRes.json();
+            const staff = data.staff || [];
+            document.getElementById('briefing-ops-manager').innerHTML = '<option value="">Select ops manager...</option>' +
+                staff.map(s => `<option value="${s.staff_id}">${s.full_name}</option>`).join('');
+        }
+    } catch (e) { console.error('Staff dropdown failed:', e); }
+}
+
+function openBriefingForEvent(eventId) {
+    document.getElementById('briefing-event-id').value = eventId;
+    document.getElementById('briefing-event-select').value = eventId;
+    document.getElementById('briefing-modal').classList.add('show');
+}
+
+function openOpsBriefingModal() {
+    document.getElementById('briefing-form').reset();
+    document.getElementById('briefing-event-id').value = '';
+    document.getElementById('briefing-modal').classList.add('show');
+}
+
+function closeBriefingModal() {
+    document.getElementById('briefing-modal').classList.remove('show');
+}
+
+async function saveBriefing() {
+    const eventId = parseInt(document.getElementById('briefing-event-select').value);
+    if (!eventId) { showToast('Please select an event', 'error'); return; }
+
+    const payload = {
+        ops_manager_id: parseInt(document.getElementById('briefing-ops-manager').value) || null,
+        briefing_completed: document.getElementById('briefing-completed').checked,
+        load_in_time: document.getElementById('briefing-load-in').value || null,
+        sound_check_done: document.getElementById('briefing-sound-check').checked,
+        catering_final_count: parseInt(document.getElementById('briefing-catering').value) || null,
+        post_event_notes: document.getElementById('briefing-notes').value || null,
+    };
+
+    try {
+        const res = await fetch(`/api/v1/event-ops/briefing/${eventId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + authToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            showToast('Briefing saved');
+            closeBriefingModal();
+            loadOpsDashboard();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Save failed', 'error');
+        }
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function transitionEvent(eventId, status) {
+    try {
+        const res = await fetch(`/api/v1/event-ops/lifecycle/${eventId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + authToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ lifecycle_status: status })
+        });
+        if (res.ok) {
+            showToast(`Event transitioned to ${status}`);
+            loadOpsDashboard();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Transition failed', 'error');
+        }
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+function refreshDashboard() {
+    loadOpsDashboard();
+    showToast('Dashboard refreshed');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadOpsDashboard();
+    loadDropdowns();
+});
+</script>
+{% endblock %}

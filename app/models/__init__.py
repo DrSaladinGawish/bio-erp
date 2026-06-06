@@ -15,7 +15,7 @@ from app.models.supplier import Supplier, RFQ, SupplierQuote, PurchaseOrder
 from app.models.item import ItemCategory, ItemSubCategory, EventMasterNode
 from app.models.owner import Owner
 from app.models.staff import Staff, FieldTask
-from app.models.event import Event, PNR, EventBudgetLine, EventLineItem, EventDoc
+from app.models.event import Event, PNR, EventBudgetLine, EventLineItem, EventDoc, EventOperation, ServiceUOM, LifecycleStatus
 from app.models.transaction import (
     BankReconciliation,
     BankImportSession,
@@ -144,6 +144,9 @@ __all__ = [
     "EventBudgetLine",
     "EventLineItem",
     "EventDoc",
+    "EventOperation",
+    "ServiceUOM",
+    "LifecycleStatus",
     "BankReconciliation",
     "BankImportSession",
     "BankStaging",

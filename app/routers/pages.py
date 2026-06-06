@@ -187,6 +187,15 @@ async def operations_page(request: Request, user: dict = Depends(require_auth)):
     })
     return templates.TemplateResponse("operations.html", ctx)
 
+@router.get("/ops-dashboard", response_class=HTMLResponse)
+async def ops_dashboard_page(request: Request, user: dict = Depends(require_auth)):
+    """Operations dashboard: today's events, pending briefings, resource conflicts."""
+    ctx = build_context(request, {
+        "page_title": "Ops Dashboard",
+        "page_id": "ops-dashboard",
+    })
+    return templates.TemplateResponse("ops_dashboard.html", ctx)
+
 @router.get("/bank-reconciliation", response_class=HTMLResponse)
 async def bank_recon_page(request: Request, user: dict = Depends(require_auth)):
     """Dedicated bank reconciliation page."""
@@ -252,6 +261,15 @@ async def search_page(request: Request, user: dict = Depends(require_auth)):
         "page_id": "search",
     })
     return templates.TemplateResponse("search.html", ctx)
+
+@router.get("/documents", response_class=HTMLResponse)
+async def documents_page(request: Request, user: dict = Depends(require_auth)):
+    """Module-native document browser."""
+    ctx = build_context(request, {
+        "page_title": "Documents",
+        "page_id": "documents",
+    })
+    return templates.TemplateResponse("documents.html", ctx)
 
 # ------------------------------------------------------------------
 # HTMX partials (for dynamic content loading)
