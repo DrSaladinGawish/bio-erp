@@ -545,18 +545,27 @@ body {
     <aside class="sidebar" id="sidebar">
         <nav class="sidebar-nav">
             <a class="nav-item" href="/"><span class="icon">&#9632;</span> Dashboard</a>
-            <a class="nav-item" href="/evn"><span class="icon">&#9733;</span> Events (PNR)</a>
-            <a class="nav-item" href="/evn/new"><span class="icon">&#9733;</span> + New PNR</a>
-            <a class="nav-item" href="/sal"><span class="icon">&#9737;</span> Sales</a>
-            <a class="nav-item" href="/sal/new"><span class="icon">&#9737;</span> + New Invoice</a>
-            <a class="nav-item" href="/pur"><span class="icon">&#9733;</span> Purchases</a>
-            <a class="nav-item" href="/pur/new"><span class="icon">&#9733;</span> + New Voucher</a>
-            <a class="nav-item" href="/bnk"><span class="icon">&#9737;</span> Banking</a>
-            <a class="nav-item" href="/bnk/new"><span class="icon">&#9737;</span> + New Transaction</a>
-            <a class="nav-item" href="/gl"><span class="icon">&#9733;</span> General Ledger</a>
-            <a class="nav-item" href="/gl/new"><span class="icon">&#9733;</span> + New Voucher</a>
-            <a class="nav-item" href="/documents"><span class="icon">&#9776;</span> Documents</a>
-            <a class="nav-item" href="/reports"><span class="icon">&#9744;</span> Reports</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/evn"><span class="icon">&#9733;</span> Events (PNR)</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/evn/new"><span class="icon">&#9733;</span> + New PNR</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/sal"><span class="icon">&#9737;</span> Sales</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/sal/new"><span class="icon">&#9737;</span> + New Invoice</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/pur"><span class="icon">&#9733;</span> Purchases</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/pur/new"><span class="icon">&#9733;</span> + New Voucher</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/bnk"><span class="icon">&#9737;</span> Banking</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/bnk/new"><span class="icon">&#9737;</span> + New Transaction</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/gl"><span class="icon">&#9733;</span> General Ledger</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/gl/new"><span class="icon">&#9733;</span> + New Voucher</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/documents"><span class="icon">&#9776;</span> Documents</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/reports"><span class="icon">&#9744;</span> Reports</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/grn"><span class="icon">&#9744;</span> Goods Receipt (GRN)</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/cost"><span class="icon">&#9745;</span> Cost Management</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/budget"><span class="icon">&#9745;</span> Budgeting</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/bsc"><span class="icon">&#9744;</span> BSC</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/bi"><span class="icon">&#9889;</span> BI</a>
+            <a class="nav-item" href="/api/v1/incentivehouse/approval"><span class="icon">&#9878;</span> Approval</a>
+            <a class="nav-item" href="/reports/financial"><span class="icon">&#9881;</span> Financial Reports</a>
+            <a class="nav-item" href="/einvoice"><span class="icon">&#9881;</span> E-Invoice</a>
+            <a class="nav-item" href="/workflow"><span class="icon">&#9878;</span> Workflow</a>
             <a class="nav-item" href="/neural"><span class="icon">&#9889;</span> Neural Network</a>
             <a class="nav-item" href="/intelligence"><span class="icon">&#9733;</span> Intelligence</a>
             <a class="nav-item" href="/api/v1/incentivehouse/recon/form"><span class="icon">&#9874;</span> Bank Recon</a>
@@ -689,6 +698,46 @@ body {
     refreshStatus(); setInterval(refreshStatus, 30000);
 })();
 </script>
+<script src="/static/js/auto_save.js"></script>
+<script src="/static/js/sortable_table.js"></script>
 {% block extra_scripts %}{% endblock %}
+
+<!-- AUTO-INJECTED by audit fix 7.1 - AI smart window -->
+<div id="ai-smart-window" class="ai-smart-window" data-audit-fix="7.1"
+     style="position:fixed;bottom:90px;right:20px;width:360px;max-height:480px;
+            background:#fff;border:2px solid #D4A017;border-radius:12px;
+            box-shadow:0 8px 32px rgba(0,0,0,0.2);display:none;flex-direction:column;z-index:9999;">
+  <div style="background:#D4A017;color:#fff;padding:12px;border-radius:10px 10px 0 0;font-weight:600;display:flex;justify-content:space-between;">
+    <span>AI Smart Assistant</span>
+    <button onclick="document.getElementById('ai-smart-window').style.display='none'"
+            style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;">&times;</button>
+  </div>
+  <div id="ai-chat-messages" style="flex:1;overflow-y:auto;padding:12px;font-size:13px;"></div>
+  <div style="display:flex;border-top:1px solid #eee;padding:8px;">
+    <input id="ai-chat-input" type="text" placeholder="Ask AI..."
+           style="flex:1;border:1px solid #ddd;border-radius:6px;padding:6px 10px;font-size:13px;">
+    <button onclick="window.__aiSend&&window.__aiSend()"
+            style="background:#D4A017;color:#fff;border:none;border-radius:6px;padding:6px 12px;margin-left:6px;cursor:pointer;">Send</button>
+  </div>
+</div>
+<button id="ai-smart-toggle" data-audit-fix="7.1"
+        onclick="var w=document.getElementById('ai-smart-window');w.style.display=w.style.display==='none'?'flex':'none'"
+        style="position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;
+               background:#D4A017;color:#fff;border:none;font-size:20px;cursor:pointer;z-index:9998;
+               box-shadow:0 4px 16px rgba(0,0,0,0.3);">AI</button>
+<script>
+document.addEventListener('focusin',function(e){
+  if(e.target&&(e.target.name||e.target.id))window.__aiLastField=e.target.name||e.target.id;
+});
+window.__aiSend=function(){
+  var i=document.getElementById('ai-chat-input'),b=document.getElementById('ai-chat-messages');
+  if(!i.value.trim())return;
+  b.innerHTML+='<div style="text-align:right;margin:6px 0;color:#1E90FF;">'+i.value+'</div>';
+  var c=window.__aiLastField||'general';
+  b.innerHTML+='<div style="text-align:left;margin:6px 0;color:#333;">AI: working on <b>'+c+'</b></div>';
+  i.value='';b.scrollTop=b.scrollHeight;
+};
+</script>
+<!-- END AI smart window -->
 </body>
 </html>

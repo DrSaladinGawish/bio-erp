@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}E-Invoice XML - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; E-Invoice XML</div>
+<div class="page-header">
+    <h1>E-Invoice XML Generator</h1>
+    <div class="actions">
+        <button class="btn btn-primary" onclick="refreshList()">Refresh</button>
+    </div>
+</div>
+<div class="content-card">
+    <div class="form-row">
+        <div class="form-group"><label>From</label><input type="date" id="fFrom"></div>
+        <div class="form-group"><label>To</label><input type="date" id="fTo"></div>
+        <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary" onclick="loadInvoices()">Filter</button></div>
+        <div class="form-group"><label>&nbsp;</label><button class="btn btn-ghost" onclick="bulkGenerate()">Generate XML All</button></div>
+    </div>
+</div>
+<div class="table-container">
+    <table class="data-table">
+        <thead><tr><th>Invoice #</th><th>Date</th><th>Total (EGP)</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="invBody"></tbody>
+    </table>
+</div>
+<div class="content-card" id="xmlPreview" style="display:none">
+    <h3>XML Preview</h3>
+    <div class="form-row"><div class="form-group"><button class="btn btn-primary" onclick="downloadXml()">Download XML</button></div></div>
+    <pre id="xmlContent" style="background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;overflow:auto;max-height:500px;font-size:12px"></pre>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+let currentInvoiceId = null;
+async function loadInvoices(){
+    const from = document.getElementById('fFrom').value;
+    const to = document.getElementById('fTo').value;
+    const params = new URLSearchParams();
+    if(from) params.set('date_from', from);
+    if(to) params.set('date_to', to);
+    const res = await fetch('/api/v1/einvoice/invoices?' + params.toString());
+    const data = await res.json();
+    document.getElementById('invBody').innerHTML = data.data.map(inv =>
+        `<tr><td>${inv.invoice_no || inv.id}</td><td>${inv.invoice_date}</td><td style="text-align:right">${inv.total.toFixed(2)}</td><td>${inv.status}</td>
+        <td><button class="btn btn-sm btn-primary" onclick="generateXml(${inv.id})">Generate XML</button></td></tr>`
+    ).join('');
+}
+async function generateXml(id){
+    currentInvoiceId = id;
+    const res = await fetch('/api/v1/einvoice/generate/' + id);
+    const data = await res.json();
+    if(data.error){ alert(data.error); return; }
+    document.getElementById('xmlPreview').style.display = 'block';
+    document.getElementById('xmlContent').textContent = data.xml;
+}
+function downloadXml(){
+    if(!currentInvoiceId) return;
+    window.open('/api/v1/einvoice/generate/' + currentInvoiceId + '/download', '_blank');
+}
+async function bulkGenerate(){
+    const from = document.getElementById('fFrom').value;
+    const to = document.getElementById('fTo').value;
+    const params = new URLSearchParams();
+    if(from) params.set('date_from', from);
+    if(to) params.set('date_to', to);
+    const res = await fetch('/api/v1/einvoice/generate-bulk?' + params.toString());
+    const data = await res.json();
+    alert('Generated XML for ' + data.count + ' invoices');
+}
+document.addEventListener('DOMContentLoaded', loadInvoices);
+</script>
+{% endblock %}

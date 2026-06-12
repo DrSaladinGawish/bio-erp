@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+{% block title %}Documents — IncentiveHouse ERP{% endblock %}
+{% block extra_head %}
+<style>
+:root {
+  --badge-linked: #3b82f6;
+  --badge-verified: #10b981;
+  --badge-missing: #ef4444;
+  --badge-modified: #f59e0b;
+  --badge-orphaned: #64748b;
+}
+.doc-container { padding: 24px; max-width: 1400px; margin: 0 auto; }
+.doc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.doc-header h1 { font-size: 1.5rem; font-weight: 600; margin: 0; }
+.doc-actions { display: flex; gap: 8px; }
+.module-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+.module-tab {
+  padding: 8px 16px; border-radius: 8px; cursor: pointer;
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  font-size: 0.85rem; transition: all 0.15s; color: var(--text-primary);
+}
+.module-tab:hover { border-color: var(--accent-primary); }
+.module-tab.active { background: var(--accent-primary); color: #fff; border-color: var(--accent-primary); }
+.module-tab .count { margin-left: 6px; font-size: 0.75rem; opacity: 0.7; }
+.func-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+.func-tab {
+  padding: 4px 12px; border-radius: 6px; cursor: pointer;
+  background: transparent; border: 1px solid transparent;
+  font-size: 0.8rem; transition: all 0.15s; color: var(--text-secondary);
+}
+.func-tab:hover { border-color: var(--border-color); }
+.func-tab.active { background: rgba(59,130,246,0.1); border-color: var(--accent-primary); color: var(--accent-primary); }
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: center; }
+.stat-card .value { font-size: 1.25rem; font-weight: 600; }
+.stat-card .label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
+.stat-card.total .value { color: var(--text-primary); }
+.stat-card.linked .value { color: var(--badge-linked); }
+.stat-card.verified .value { color: var(--badge-verified); }
+.stat-card.missing .value { color: var(--badge-missing); }
+.stat-card.orphaned .value { color: var(--badge-orphaned); }
+.toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.toolbar input, .toolbar select {
+  padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color);
+  background: var(--bg-card); color: var(--text-primary); font-size: 0.85rem;
+}
+.toolbar input { flex: 1; min-width: 200px; }
+.doc-grid { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; }
+.doc-grid table { width: 100%; border-collapse: collapse; }
+.doc-grid th { padding: 10px 12px; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.02); white-space: nowrap; }
+.doc-grid td { padding: 8px 12px; font-size: 0.85rem; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+.doc-grid tr:hover { background: rgba(255,255,255,0.02); }
+.doc-grid tr.loading td { text-align: center; padding: 40px; color: var(--text-secondary); }
+.status-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 0.7rem; font-weight: 500; text-transform: uppercase;
+}
+.status-badge.linked { background: rgba(59,130,246,0.15); color: var(--badge-linked); }
+.status-badge.verified { background: rgba(16,185,129,0.15); color: var(--badge-verified); }
+.status-badge.missing { background: rgba(239,68,68,0.15); color: var(--badge-missing); }
+.status-badge.modified { background: rgba(245,158,11,0.15); color: var(--badge-modified); }
+.status-badge.orphaned { background: rgba(100,116,139,0.15); color: var(--badge-orphaned); }
+.file-icon { font-size: 1.1rem; margin-right: 6px; }
+.file-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hash-trunc { font-family: monospace; font-size: 0.7rem; color: var(--text-secondary); cursor: pointer; }
+.hash-trunc:hover { color: var(--accent-primary); }
+.btn-sm {
+  padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer;
+  font-size: 0.75rem; transition: all 0.15s;
+}
+.btn-primary { background: var(--accent-primary); color: #fff; }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-success { background: var(--badge-verified); color: #fff; }
+.btn-success:hover { filter: brightness(1.1); }
+.btn-warning { background: var(--badge-modified); color: #fff; }
+.btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
+.btn-outline:hover { border-color: var(--accent-primary); }
+.btn-outline[disabled] { opacity: 0.5; cursor: not-allowed; }
+.btn-sm svg { vertical-align: middle; }
+.toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 8px; color: #fff; font-size: 0.85rem; z-index: 9999; animation: slideIn 0.3s ease; }
+.toast.success { background: var(--badge-verified); }
+.toast.error { background: var(--badge-missing); }
+.toast.warning { background: var(--badge-modified); }
+.toast.info { background: var(--badge-linked); }
+@keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 4px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.modal-box { background: var(--bg-card); border-radius: 12px; padding: 24px; min-width: 400px; max-width: 500px; border: 1px solid var(--border-color); }
+.modal-box h3 { margin: 0 0 16px; }
+.modal-box label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: var(--text-secondary); }
+.modal-box input, .modal-box select { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); margin-bottom: 12px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+@media (max-width: 768px) {
+  .doc-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .stats-row { grid-template-columns: repeat(3, 1fr); }
+  .doc-grid table { font-size: 0.8rem; }
+  .toolbar { flex-direction: column; }
+  .toolbar input { min-width: auto; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="doc-container">
+  <div class="doc-header">
+    <h1>📎 Supporting Documents</h1>
+    <div class="doc-actions">
+      <button class="btn-sm btn-success" onclick="verifyAll()">✓ Verify All</button>
+      <button class="btn-sm btn-primary" onclick="ingestModule(currentModule)">📥 Ingest from USB</button>
+    </div>
+  </div>
+
+  {% set modules = [
+    ("Bank", "🏦", ["Statements", "Reconciliation", "Transfers", "ATM"]),
+    ("Sales", "💰", ["Events", "Invoices", "POs", "Contracts"]),
+    ("Purchase", "📦", ["Orders", "Vendor_Invoices", "Quotations", "GRN"]),
+    ("Events", "🎉", ["Work_Orders", "Staff_Assignments", "Line_Items"]),
+    ("E_Invoice", "📋", ["Submissions", "QR_Codes", "Rejections"]),
+    ("Master_Data", "🗂️", ["Clients", "Vendors", "Items"]),
+    ("HR", "👥", ["Staff", "Owners"]),
+    ("Costing", "💹", ["Budget", "SCM"]),
+    ("OR", "🔬", ["Analysis", "Reports"]),
+    ("Manufacturing", "🏭", ["Production", "QC"]),
+  ] %}
+
+  <div class="module-tabs" id="moduleTabs">
+    {% for name, icon, _ in modules %}
+    <div class="module-tab {{ 'active' if loop.first }}" data-module="{{ name }}" onclick="switchModule('{{ name }}')">
+      {{ icon }} {{ name }}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card total"><div class="value" id="statTotal">-</div><div class="label">Total</div></div>
+    <div class="stat-card linked"><div class="value" id="statLinked">-</div><div class="label">Linked</div></div>
+    <div class="stat-card verified"><div class="value" id="statVerified">-</div><div class="label">Verified</div></div>
+    <div class="stat-card missing"><div class="value" id="statMissing">-</div><div class="label">Missing</div></div>
+    <div class="stat-card orphaned"><div class="value" id="statOrphaned">-</div><div class="label">Orphaned</div></div>
+  </div>
+
+  <div class="func-tabs" id="funcTabs"></div>
+
+  <div class="toolbar">
+    <input type="text" placeholder="Search by filename, transaction ID, or hash..." id="searchInput" oninput="filterDocs()">
+    <select id="statusFilter" onchange="filterDocs()">
+      <option value="">All statuses</option>
+      <option value="linked">Linked</option>
+      <option value="verified">Verified</option>
+      <option value="missing">Missing</option>
+      <option value="modified">Modified</option>
+      <option value="orphaned">Orphaned</option>
+    </select>
+    <span style="font-size:0.8rem;color:var(--text-secondary)" id="resultCount"></span>
+  </div>
+
+  <div class="doc-grid">
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Module</th>
+          <th>Function</th>
+          <th>Transaction</th>
+          <th>Status</th>
+          <th>Hash</th>
+          <th>Size</th>
+          <th>Ingested</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="docTableBody">
+        <tr class="loading"><td colspan="9">Loading documents...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="linkModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeLinkModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3>🔗 Link Document to Transaction</h3>
+    <label>Transaction Table</label>
+    <select id="linkTable">
+      <option value="bnk_transactions">bnk_transactions</option>
+      <option value="events">events</option>
+      <option value="sales_invoices">sales_invoices</option>
+      <option value="purchase_orders">purchase_orders</option>
+      <option value="vendor_invoices">vendor_invoices</option>
+      <option value="work_orders">work_orders</option>
+      <option value="staff_assignments">staff_assignments</option>
+      <option value="event_line_items">event_line_items</option>
+      <option value="clients">clients</option>
+      <option value="vendors">vendors</option>
+      <option value="items">items</option>
+      <option value="staff">staff</option>
+      <option value="owners">owners</option>
+      <option value="budget_lines">budget_lines</option>
+      <option value="or_analyses">or_analyses</option>
+      <option value="mfg_orders">mfg_orders</option>
+    </select>
+    <label>Transaction ID</label>
+    <input type="text" id="linkTxnId" placeholder="e.g. 12345">
+    <div class="modal-actions">
+      <button class="btn-sm btn-outline" onclick="closeLinkModal()">Cancel</button>
+      <button class="btn-sm btn-primary" onclick="confirmLink()">Link</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentModule = 'Bank';
+let currentFunction = '';
+let allDocs = [];
+let linkDocId = null;
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3500);
+}
+
+async function apiFetch(url, opts={}) {
+  const token = localStorage.getItem('incentivehouse_token') || '';
+  const headers = {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...opts.headers};
+  const res = await fetch(url, {...opts, headers});
+  if (res.status === 401) { window.location.href = '/login'; return null; }
+  return res;
+}
+
+async function loadModule(module) {
+  document.getElementById('docTableBody').innerHTML = '<tr class="loading"><td colspan="9">Loading...</td></tr>';
+  const res = await apiFetch(`/api/v1/documents/?module=${module}&limit=500`);
+  if (!res) return;
+  const data = await res.json();
+  allDocs = data.items || [];
+
+  const stats = {total: allDocs.length, linked:0, verified:0, missing:0, orphaned:0, modified:0};
+  allDocs.forEach(d => { if (stats[d.status] !== undefined) stats[d.status]++; });
+  document.getElementById('statTotal').textContent = stats.total;
+  document.getElementById('statLinked').textContent = stats.linked;
+  document.getElementById('statVerified').textContent = stats.verified;
+  document.getElementById('statMissing').textContent = stats.missing;
+  document.getElementById('statOrphaned').textContent = stats.orphaned;
+
+  const funcs = [...new Set(allDocs.map(d => d.function_name))].sort();
+  const funcContainer = document.getElementById('funcTabs');
+  funcContainer.innerHTML = '<div class="func-tab active" onclick="switchFunction(\'\')">All</div>' +
+    funcs.map(f => `<div class="func-tab" onclick="switchFunction('${f}')">${f}</div>`).join('');
+
+  renderTable(allDocs);
+}
+
+function renderTable(docs) {
+  const tbody = document.getElementById('docTableBody');
+  if (docs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-secondary)">No documents found. Click "Ingest from USB" to import.</td></tr>';
+    document.getElementById('resultCount').textContent = '0 results';
+    return;
+  }
+  document.getElementById('resultCount').textContent = `${docs.length} result${docs.length !== 1 ? 's' : ''}`;
+  tbody.innerHTML = docs.map(d => {
+    const icon = {pdf:'📄', xlsx:'📊', xls:'📊', doc:'📝', docx:'📝', jpg:'🖼️', jpeg:'🖼️', png:'🖼️', json:'📋', xml:'📄', txt:'📄'}[d.file_ext] || '📎';
+    const size = d.file_size_bytes > 1048576 ? (d.file_size_bytes/1048576).toFixed(1)+' MB' : d.file_size_bytes > 1024 ? Math.round(d.file_size_bytes/1024)+' KB' : d.file_size_bytes+' B';
+    const hashShort = d.file_hash_sha256 ? d.file_hash_sha256.slice(0, 12)+'...' : '-';
+    return `<tr>
+      <td><span class="file-icon">${icon}</span><span class="file-name" title="${d.file_name}">${d.file_name}</span></td>
+      <td>${d.module_name}</td>
+      <td>${d.function_name}</td>
+      <td><span style="font-size:0.75rem;color:var(--text-secondary)">${d.transaction_table}</span><br><span style="font-size:0.8rem">#${d.transaction_id}</span></td>
+      <td><span class="status-badge ${d.status}">${d.status}</span></td>
+      <td><span class="hash-trunc" title="${d.file_hash_sha256}" onclick="copyHash('${d.file_hash_sha256}')">${hashShort}</span></td>
+      <td>${size}</td>
+      <td style="font-size:0.75rem;color:var(--text-secondary)">${d.ingested_at ? new Date(d.ingested_at).toLocaleDateString() : '-'}</td>
+      <td>
+        ${d.status === 'orphaned' ? `<button class="btn-sm btn-warning" onclick="openLinkModal('${d.id}')">🔗 Link</button>` : ''}
+        <button class="btn-sm btn-outline" onclick="copyPath('${d.archive_path}')">📋 Path</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterDocs() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const status = document.getElementById('statusFilter').value;
+  let filtered = allDocs;
+  if (currentFunction) filtered = filtered.filter(d => d.function_name === currentFunction);
+  if (q) filtered = filtered.filter(d => d.file_name.toLowerCase().includes(q) || d.transaction_id.toLowerCase().includes(q) || (d.file_hash_sha256 && d.file_hash_sha256.toLowerCase().includes(q)));
+  if (status) filtered = filtered.filter(d => d.status === status);
+  renderTable(filtered);
+}
+
+function switchModule(mod) {
+  currentModule = mod;
+  currentFunction = '';
+  document.querySelectorAll('.module-tab').forEach(t => t.classList.toggle('active', t.dataset.module === mod));
+  loadModule(mod);
+}
+
+function switchFunction(func) {
+  currentFunction = func;
+  document.querySelectorAll('.func-tab').forEach(t => t.classList.toggle('active', t.textContent === func || (func === '' && t.textContent === 'All')));
+  filterDocs();
+}
+
+async function ingestModule(module) {
+  const btn = event?.target?.closest?.('button') || document.querySelector('[onclick*="ingestModule"]');
+  const orig = btn?.innerHTML;
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Ingesting...'; }
+
+  try {
+    const res = await apiFetch('/api/v1/documents/ingest', {
+      method: 'POST',
+      body: JSON.stringify({modules: [module], auto_link: true, copy_to_archive: true, compute_hash: true})
+    });
+    if (!res) return;
+    const data = await res.json();
+    showToast(`Ingested ${data.ingested} files from ${module} (${data.linked} linked, ${data.orphaned} orphaned)`, data.errors > 0 ? 'warning' : 'success');
+    loadModule(module);
+  } catch (e) {
+    showToast('Ingest failed: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
+async function verifyAll() {
+  const btn = event?.target;
+  const orig = btn?.innerHTML;
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Verifying...'; }
+  try {
+    const res = await apiFetch('/api/v1/documents/verify', {method: 'POST', body: JSON.stringify({module_name: currentModule})});
+    if (!res) return;
+    const data = await res.json();
+    showToast(`Verified ${data.total_checked}: ${data.verified} OK, ${data.modified} modified, ${data.missing} missing`, data.modified > 0 || data.missing > 0 ? 'warning' : 'success');
+    loadModule(currentModule);
+  } catch (e) {
+    showToast('Verify failed: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
+function openLinkModal(docId) {
+  linkDocId = docId;
+  document.getElementById('linkModal').style.display = 'flex';
+}
+
+function closeLinkModal() {
+  linkDocId = null;
+  document.getElementById('linkModal').style.display = 'none';
+}
+
+async function confirmLink() {
+  const table = document.getElementById('linkTable').value;
+  const txnId = document.getElementById('linkTxnId').value.trim();
+  if (!txnId) { showToast('Please enter a transaction ID', 'error'); return; }
+  try {
+    const res = await apiFetch('/api/v1/documents/link', {
+      method: 'POST',
+      body: JSON.stringify({document_id: linkDocId, transaction_table: table, transaction_id: txnId})
+    });
+    if (!res) return;
+    const data = await res.json();
+    showToast('Document linked', 'success');
+    closeLinkModal();
+    loadModule(currentModule);
+  } catch (e) {
+    showToast('Link failed: ' + e.message, 'error');
+  }
+}
+
+function copyHash(hash) {
+  navigator.clipboard.writeText(hash).then(() => showToast('Hash copied to clipboard', 'info'));
+}
+
+function copyPath(path) {
+  navigator.clipboard.writeText(path).then(() => showToast('Archive path copied', 'info'));
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => loadModule('Bank'));
+</script>
+{% endblock %}

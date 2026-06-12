@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Trial Balance - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; <a href="/reports">Reports</a> &raquo; Trial Balance</div>
+<div class="page-header">
+    <h1>Trial Balance</h1>
+    <div class="actions">
+        <button class="btn btn-ghost" onclick="exportReport('csv')">Export CSV</button>
+        <button class="btn btn-primary" onclick="refreshReport()">Refresh</button>
+    </div>
+</div>
+<div class="content-card">
+    <div class="form-row">
+        <div class="form-group"><label>From</label><input type="date" id="fFrom"></div>
+        <div class="form-group"><label>To</label><input type="date" id="fTo"></div>
+        <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary" onclick="loadReport()">Run</button></div>
+    </div>
+</div>
+<div class="content-card">
+    <div class="table-container">
+        <table class="data-table">
+            <thead><tr><th>Account Code</th><th>Module</th><th>Debit (EGP)</th><th>Credit (EGP)</th><th>Balance (EGP)</th></tr></thead>
+            <tbody id="tbBody"></tbody>
+            <tfoot id="tbFoot"></tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function loadReport(){
+    const from = document.getElementById('fFrom').value;
+    const to = document.getElementById('fTo').value;
+    const params = new URLSearchParams();
+    if(from) params.set('date_from', from);
+    if(to) params.set('date_to', to);
+    const res = await fetch('/api/v1/financial-reports/trial-balance?' + params.toString());
+    const data = await res.json();
+    const tbody = document.getElementById('tbBody');
+    tbody.innerHTML = data.data.map(r => `<tr><td>${r.account_code}</td><td>${r.module}</td><td style="text-align:right">${r.debit.toFixed(2)}</td><td style="text-align:right">${r.credit.toFixed(2)}</td><td style="text-align:right;font-weight:600">${r.balance.toFixed(2)}</td></tr>`).join('');
+    document.getElementById('tbFoot').innerHTML = `<tr style="font-weight:700;background:#f0f4f8"><td colspan="2">Totals</td><td style="text-align:right">${data.total_debit.toFixed(2)}</td><td style="text-align:right">${data.total_credit.toFixed(2)}</td><td style="text-align:right">${(data.total_debit - data.total_credit).toFixed(2)}</td></tr>`;
+}
+function exportReport(fmt){
+    const from = document.getElementById('fFrom').value;
+    const to = document.getElementById('fTo').value;
+    const params = new URLSearchParams({format: fmt});
+    if(from) params.set('date_from', from);
+    if(to) params.set('date_to', to);
+    window.open('/api/v1/financial-reports/trial-balance/export?' + params.toString(), '_blank');
+}
+document.addEventListener('DOMContentLoaded', loadReport);
+</script>
+{% endblock %}

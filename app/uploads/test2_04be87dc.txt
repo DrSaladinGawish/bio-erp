@@ -1,1 +1,0 @@
-Invoice INV-2024-002 Supplier: XYZ Total: 2000.00

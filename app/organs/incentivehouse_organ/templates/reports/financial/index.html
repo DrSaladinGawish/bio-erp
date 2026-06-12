@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Financial Reports - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Financial Reports</div>
+<div class="page-header">
+    <h1>Financial Reports</h1>
+</div>
+<div class="kpi-grid">
+    <div class="kpi-card kpi-active"><div class="kpi-label">Trial Balance</div><div class="kpi-sub">All accounts with debit/credit balances</div><a class="btn btn-primary" href="/reports/financial/trial-balance" style="margin-top:8px">Open</a><a class="btn btn-ghost" href="/api/v1/financial-reports/trial-balance" style="margin-top:4px">JSON</a></div>
+    <div class="kpi-card kpi-revenue"><div class="kpi-label">Profit & Loss</div><div class="kpi-sub">Revenue, expenses, gross profit</div><a class="btn btn-primary" href="/reports/financial/profit-loss" style="margin-top:8px">Open</a><a class="btn btn-ghost" href="/api/v1/financial-reports/profit-loss" style="margin-top:4px">JSON</a></div>
+    <div class="kpi-card kpi-profit"><div class="kpi-label">Balance Sheet</div><div class="kpi-sub">Assets, liabilities, equity</div><a class="btn btn-primary" href="/reports/financial/balance-sheet" style="margin-top:8px">Open</a><a class="btn btn-ghost" href="/api/v1/financial-reports/balance-sheet" style="margin-top:4px">JSON</a></div>
+    <div class="kpi-card kpi-expense"><div class="kpi-label">Cash Flow</div><div class="kpi-sub">Operating, investing, financing</div><a class="btn btn-primary" href="/reports/financial/cash-flow" style="margin-top:8px">Open</a><a class="btn btn-ghost" href="/api/v1/financial-reports/cash-flow" style="margin-top:4px">JSON</a></div>
+</div>
+{% endblock %}

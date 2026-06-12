@@ -69,6 +69,13 @@ FLASK_PERMISSIONS: list[tuple[str, str, str]] = [
     ("supplier.read", "Read suppliers", "suppliers"),
     ("supplier.create", "Create suppliers", "suppliers"),
     ("supplier.update", "Update suppliers", "suppliers"),
+    # Neural AI
+    ("neural.read", "Read neural predictions and features", "neural"),
+    ("neural.create", "Create neural predictions and features", "neural"),
+    ("neural.predict", "Run AI predictions", "neural"),
+    ("neural.train", "Train neural models", "neural"),
+    ("neural.feedback", "Submit prediction feedback", "neural"),
+    ("neural.delete", "Delete neural memory items", "neural"),
 ]
 
 # Flask-compatible role definitions (using FastAPI permission codes)
@@ -125,6 +132,8 @@ ROLE_DEFINITIONS: dict[str, list[str]] = {
         "rfq.award", "supplier.update",
         "admin.access", "approval.read", "approval.approve", "approval.manage",
         "currency_edit",
+        "neural.read", "neural.create", "neural.predict", "neural.train",
+        "neural.feedback", "neural.delete",
     ],
 }
 

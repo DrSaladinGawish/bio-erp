@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Cash Flow - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; <a href="/reports">Reports</a> &raquo; Cash Flow</div>
+<div class="page-header">
+    <h1>Cash Flow Statement</h1>
+    <div class="actions">
+        <button class="btn btn-ghost" onclick="exportReport('csv')">Export CSV</button>
+        <button class="btn btn-primary" onclick="refreshReport()">Refresh</button>
+    </div>
+</div>
+<div class="content-card">
+    <div class="form-row">
+        <div class="form-group"><label>From</label><input type="date" id="fFrom"></div>
+        <div class="form-group"><label>To</label><input type="date" id="fTo"></div>
+        <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary" onclick="loadReport()">Run</button></div>
+    </div>
+</div>
+<div class="kpi-grid" id="cfKpis"></div>
+<div class="content-card" id="cfDetail"></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function loadReport(){
+    const from = document.getElementById('fFrom').value;
+    const to = document.getElementById('fTo').value;
+    const params = new URLSearchParams();
+    if(from) params.set('date_from', from);
+    if(to) params.set('date_to', to);
+    const res = await fetch('/api/v1/financial-reports/cash-flow?' + params.toString());
+    const d = await res.json();
+    document.getElementById('cfKpis').innerHTML = `
+        <div class="kpi-card kpi-revenue"><div class="kpi-label">Operating Net</div><div class="kpi-value">EGP ${d.operating.net.toFixed(2)}</div></div>
+        <div class="kpi-card kpi-active"><div class="kpi-label">Investing Net</div><div class="kpi-value">EGP ${d.investing.net.toFixed(2)}</div></div>
+        <div class="kpi-card kpi-profit"><div class="kpi-label">Financing Net</div><div class="kpi-value">EGP ${d.financing.net.toFixed(2)}</div></div>
+        <div class="kpi-card kpi-expense"><div class="kpi-label">Net Change</div><div class="kpi-value">EGP ${d.net_change.toFixed(2)}</div></div>`;
+    document.getElementById('cfDetail').innerHTML = `
+        <h3>Operating Activities</h3>
+        <table class="data-table">
+            <tr><td>Cash In (Sales)</td><td style="text-align:right">EGP ${d.operating.cash_in.toFixed(2)}</td></tr>
+            <tr><td>Cash Out (Purchases)</td><td style="text-align:right">EGP ${d.operating.cash_out.toFixed(2)}</td></tr>
+            <tr style="font-weight:700"><td>Net Operating</td><td style="text-align:right">EGP ${d.operating.net.toFixed(2)}</td></tr>
+        </table>
+        <h3 style="margin-top:16px">Investing Activities</h3>
+        <table class="data-table">
+            <tr><td>${d.investing.description}</td><td style="text-align:right">EGP ${d.investing.net.toFixed(2)}</td></tr>
+            <tr style="font-weight:700"><td>Net Investing</td><td style="text-align:right">EGP ${d.investing.net.toFixed(2)}</td></tr>
+        </table>
+        <h3 style="margin-top:16px">Financing Activities</h3>
+        <table class="data-table">
+            <tr><td>${d.financing.description}</td><td style="text-align:right">EGP ${d.financing.net.toFixed(2)}</td></tr>
+            <tr style="font-weight:700"><td>Net Financing</td><td style="text-align:right">EGP ${d.financing.net.toFixed(2)}</td></tr>
+        </table>
+        <h3 style="margin-top:16px">Summary</h3>
+        <table class="data-table" style="font-size:1.1em">
+            <tr style="font-weight:700;background:#e8f5e9"><td>Net Change in Cash</td><td style="text-align:right">EGP ${d.net_change.toFixed(2)}</td></tr>
+        </table>`;
+}
+function exportReport(fmt){
+    const from = document.getElementById('fFrom').value;
+    const to = document.getElementById('fTo').value;
+    const params = new URLSearchParams({format: fmt});
+    if(from) params.set('date_from', from);
+    if(to) params.set('date_to', to);
+    window.open('/api/v1/financial-reports/cash-flow/export?' + params.toString(), '_blank');
+}
+document.addEventListener('DOMContentLoaded', loadReport);
+</script>
+{% endblock %}

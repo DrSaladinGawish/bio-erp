@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Workflow / Approval - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Workflow / Approval</div>
+<div class="page-header">
+    <h1>Workflow & Approval Engine</h1>
+    <div class="actions">
+        <button class="btn btn-ghost" onclick="loadSummary()">Refresh</button>
+    </div>
+</div>
+<div class="kpi-grid" id="wfKpis"></div>
+<div class="content-card">
+    <div class="tab-bar" style="display:flex;gap:4px;margin-bottom:16px">
+        <button class="btn btn-primary btn-sm" onclick="loadTab('pending')" id="tabPending">Pending</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadTab('instances')" id="tabInstances">All Instances</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadTab('rules')" id="tabRules">Rules</button>
+    </div>
+    <div id="tabContent"></div>
+</div>
+
+<div class="content-card" id="detailCard" style="display:none">
+    <h3 id="detailTitle">Instance Detail</h3>
+    <div id="detailBody"></div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function loadSummary(){
+    const res = await fetch('/api/v1/workflow/summary');
+    const d = await res.json();
+    document.getElementById('wfKpis').innerHTML = `
+        <div class="kpi-card kpi-active"><div class="kpi-label">Rules</div><div class="kpi-value">${d.total_rules}</div></div>
+        <div class="kpi-card kpi-pending"><div class="kpi-label">Pending</div><div class="kpi-value">${d.pending}</div></div>
+        <div class="kpi-card kpi-revenue"><div class="kpi-label">Approved</div><div class="kpi-value">${d.approved}</div></div>
+        <div class="kpi-card kpi-expense"><div class="kpi-label">Rejected</div><div class="kpi-value">${d.rejected}</div></div>`;
+}
+async function loadTab(tab){
+    document.querySelectorAll('.tab-bar .btn').forEach(b => b.className = 'btn btn-ghost btn-sm');
+    document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).className = 'btn btn-primary btn-sm';
+    const el = document.getElementById('tabContent');
+    if(tab === 'pending'){
+        const res = await fetch('/api/v1/workflow/pending');
+        const d = await res.json();
+        if(!d.data || !d.data.length){ el.innerHTML = '<p>No pending approvals.</p>'; return; }
+        el.innerHTML = `<table class="data-table"><thead><tr><th>ID</th><th>Module</th><th>Doc #</th><th>Amount</th><th>Step</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+            ${d.data.map(i => `<tr><td>${i.id}</td><td>${i.module}</td><td>${i.document_number||''}</td><td>EGP ${i.amount.toFixed(2)}</td><td>${i.current_step}/${i.total_steps}</td><td>${i.status}</td><td><button class="btn btn-sm btn-primary" onclick="viewDetail(${i.id})">View</button></td></tr>`).join('')}
+        </tbody></table>`;
+    } else if(tab === 'instances'){
+        const res = await fetch('/api/v1/workflow/instances?page_size=100');
+        const d = await res.json();
+        if(!d.data || !d.data.length){ el.innerHTML = '<p>No instances found.</p>'; return; }
+        el.innerHTML = `<table class="data-table"><thead><tr><th>ID</th><th>Module</th><th>Doc #</th><th>Amount</th><th>Step</th><th>Status</th><th>Created</th></tr></thead><tbody>
+            ${d.data.map(i => `<tr><td>${i.id}</td><td>${i.module}</td><td>${i.document_number||''}</td><td>EGP ${i.amount.toFixed(2)}</td><td>${i.current_step}/${i.total_steps}</td><td><span class="badge ${i.status==='APPROVED'?'badge-success':i.status==='REJECTED'?'badge-danger':'badge-warning'}">${i.status}</span></td><td>${i.created_at||''}</td></tr>`).join('')}
+        </tbody></table>`;
+    } else if(tab === 'rules'){
+        const res = await fetch('/api/v1/workflow/rules');
+        const d = await res.json();
+        if(!d.data || !d.data.length){ el.innerHTML = '<p>No rules defined. Add rules via the API.</p>'; return; }
+        el.innerHTML = `<table class="data-table"><thead><tr><th>ID</th><th>Module</th><th>Document Type</th><th>Min</th><th>Max</th><th>Approver Role</th><th>Seq</th></tr></thead><tbody>
+            ${d.data.map(r => `<tr><td>${r.id}</td><td>${r.module}</td><td>${r.document_type}</td><td>EGP ${(r.min_amount||0).toFixed(2)}</td><td>${r.max_amount ? 'EGP '+r.max_amount.toFixed(2) : 'Any'}</td><td>${r.approver_role||''}</td><td>${r.sequence}</td></tr>`).join('')}
+        </tbody></table>`;
+    }
+}
+async function viewDetail(id){
+    const res = await fetch('/api/v1/workflow/status/' + id);
+    const d = await res.json();
+    document.getElementById('detailCard').style.display = 'block';
+    document.getElementById('detailTitle').textContent = 'Workflow #' + d.id + ' — ' + d.module.toUpperCase();
+    const stepsHtml = d.steps.map(s => `<tr><td>${s.sequence}</td><td><span class="badge ${s.status==='APPROVED'?'badge-success':s.status==='REJECTED'?'badge-danger':s.status==='PENDING'?'badge-warning':'badge-secondary'}">${s.status}</span></td><td>${s.decision||'-'}</td><td>${s.comments||'-'}</td><td>${s.acted_at||'-'}</td><td>${s.due_at||'-'}</td></tr>`).join('');
+    document.getElementById('detailBody').innerHTML = `
+        <table class="data-table"><tr><td>Document:</td><td>${d.document_number||'-'} (ID: ${d.document_id})</td><td>Amount:</td><td>EGP ${d.amount.toFixed(2)}</td></tr>
+        <tr><td>Status:</td><td colspan="3">${d.status} (Step ${d.current_step}/${d.total_steps})</td></tr></table>
+        <h4 style="margin-top:16px">Approval Steps</h4>
+        <table class="data-table"><thead><tr><th>Step</th><th>Status</th><th>Decision</th><th>Comments</th><th>Acted At</th><th>Due At</th></tr></thead><tbody>${stepsHtml}</tbody></table>`;
+}
+document.addEventListener('DOMContentLoaded', function(){ loadSummary(); loadTab('pending'); });
+</script>
+{% endblock %}
