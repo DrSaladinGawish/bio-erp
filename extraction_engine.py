@@ -14,10 +14,12 @@ logger = logging.getLogger("extraction_engine")
 # --- Database helper ---
 DB_PATH = os.path.join(os.path.dirname(__file__), "incentivehouse.db")
 
+
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def get_table_counts() -> Dict[str, int]:
     with get_db() as conn:
@@ -31,6 +33,7 @@ def get_table_counts() -> Dict[str, int]:
                 tables[table] = -1
         return tables
 
+
 def resolve_source_file(filename: str) -> str:
     if os.path.isabs(filename):
         return filename
@@ -38,7 +41,7 @@ def resolve_source_file(filename: str) -> str:
         filename,
         os.path.join("data", filename),
         os.path.join("uploads", filename),
-        os.path.join("Data Base", filename),          # ← ADDED
+        os.path.join("Data Base", filename),  # ← ADDED
         os.path.join(os.path.dirname(__file__), filename),
         os.path.join(os.path.dirname(__file__), "data", filename),
         os.path.join(os.path.dirname(__file__), "Data Base", filename),  # ← ADDED
@@ -48,9 +51,11 @@ def resolve_source_file(filename: str) -> str:
             return os.path.abspath(c)
     return os.path.abspath(filename)
 
+
 # ============================================================
 # MASTER DATA — Maps actual Excel sheet names to DB tables
 # ============================================================
+
 
 def _resolve_master_table(sheet_name: str) -> Optional[str]:
     """Map Excel sheet names from Data_Base_Mtbls.xlsx to SQLite tables."""
@@ -74,12 +79,19 @@ def _resolve_master_table(sheet_name: str) -> Optional[str]:
     }
     return mapping.get(sheet_name)
 
+
 # ============================================================
 # MASTER DATA EXTRACTION
 # ============================================================
 
+
 def extract_master_data(source_file: str) -> Dict[str, Any]:
-    results = {"tables_processed": 0, "records_inserted": 0, "errors": [], "details": {}}
+    results = {
+        "tables_processed": 0,
+        "records_inserted": 0,
+        "errors": [],
+        "details": {},
+    }
 
     try:
         import pandas as pd
@@ -103,7 +115,10 @@ def extract_master_data(source_file: str) -> Dict[str, Any]:
         for sheet_name in xls.sheet_names:
             table_name = _resolve_master_table(sheet_name)
             if not table_name:
-                results["details"][sheet_name] = {"status": "SKIPPED", "reason": "No table mapping"}
+                results["details"][sheet_name] = {
+                    "status": "SKIPPED",
+                    "reason": "No table mapping",
+                }
                 continue
 
             try:
@@ -112,7 +127,9 @@ def extract_master_data(source_file: str) -> Dict[str, Any]:
                 for hr in range(3):
                     try:
                         df = pd.read_excel(xls, sheet_name=sheet_name, header=hr)
-                        if len(df.columns) >= 2 and not all(str(c).startswith("Unnamed") for c in df.columns):
+                        if len(df.columns) >= 2 and not all(
+                            str(c).startswith("Unnamed") for c in df.columns
+                        ):
                             header_row = hr
                             break
                     except Exception:
@@ -122,11 +139,17 @@ def extract_master_data(source_file: str) -> Dict[str, Any]:
                     results["details"][sheet_name] = {"status": "EMPTY", "records": 0}
                     continue
 
-                df.columns = [str(c).strip().replace(" ", "_").replace("-", "_") for c in df.columns]
+                df.columns = [
+                    str(c).strip().replace(" ", "_").replace("-", "_")
+                    for c in df.columns
+                ]
                 df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
 
                 if df.empty:
-                    results["details"][sheet_name] = {"status": "EMPTY_AFTER_CLEAN", "records": 0}
+                    results["details"][sheet_name] = {
+                        "status": "EMPTY_AFTER_CLEAN",
+                        "records": 0,
+                    }
                     continue
 
                 df["_extracted_at"] = datetime.now().isoformat()
@@ -140,11 +163,15 @@ def extract_master_data(source_file: str) -> Dict[str, Any]:
 
                 placeholders = ", ".join(["?"] * len(cols))
                 col_names = ", ".join([f'"{c}"' for c in cols])
-                insert_sql = f'INSERT INTO "{table_name}" ({col_names}) VALUES ({placeholders})'
+                insert_sql = (
+                    f'INSERT INTO "{table_name}" ({col_names}) VALUES ({placeholders})'
+                )
 
                 records = []
                 for _, row in df.iterrows():
-                    records.append(tuple(str(v) if pd.notna(v) else None for v in row.values))
+                    records.append(
+                        tuple(str(v) if pd.notna(v) else None for v in row.values)
+                    )
 
                 if records:
                     conn.executemany(insert_sql, records)
@@ -152,11 +179,19 @@ def extract_master_data(source_file: str) -> Dict[str, Any]:
                     results["tables_processed"] += 1
                     results["records_inserted"] += len(records)
                     results["details"][sheet_name] = {
-                        "status": "SUCCESS", "records": len(records), "table": table_name, "header_row": header_row
+                        "status": "SUCCESS",
+                        "records": len(records),
+                        "table": table_name,
+                        "header_row": header_row,
                     }
-                    logger.info(f"Master: {sheet_name} -> {table_name}: {len(records)} records")
+                    logger.info(
+                        f"Master: {sheet_name} -> {table_name}: {len(records)} records"
+                    )
                 else:
-                    results["details"][sheet_name] = {"status": "NO_RECORDS", "records": 0}
+                    results["details"][sheet_name] = {
+                        "status": "NO_RECORDS",
+                        "records": 0,
+                    }
 
             except Exception as e:
                 msg = f"{sheet_name}: {str(e)}"
@@ -165,6 +200,7 @@ def extract_master_data(source_file: str) -> Dict[str, Any]:
                 continue
 
     return results
+
 
 # ============================================================
 # MODULE DATA EXTRACTION
@@ -181,7 +217,7 @@ MODULE_CONFIG = {
             "Narration": "narration",
             "Debit": "debit",
             "Credit": "credit",
-        }
+        },
     },
     "SAL": {
         "source_file": "Sales_Data.xlsx",
@@ -192,7 +228,7 @@ MODULE_CONFIG = {
             "Client_ID": "client_id",
             "Amount": "amount",
             "Currency": "currency",
-        }
+        },
     },
     "PUR": {
         "source_file": "Purchase_Data.xlsx",
@@ -203,7 +239,7 @@ MODULE_CONFIG = {
             "Vendor_ID": "vendor_id",
             "Amount": "amount",
             "Currency": "currency",
-        }
+        },
     },
     "EVN": {
         "source_file": "Events_Data.xlsx",
@@ -214,7 +250,7 @@ MODULE_CONFIG = {
             "Client_ID": "client_id",
             "Gross_Sales": "gross_sales",
             "Currency": "currency",
-        }
+        },
     },
     "ENV": {
         "source_file": "Environmental_Data.xlsx",
@@ -225,11 +261,14 @@ MODULE_CONFIG = {
             "Department": "department",
             "Amount": "amount",
             "Currency": "currency",
-        }
+        },
     },
 }
 
-def extract_module_data(module: str, source_file: Optional[str] = None, dry_run: bool = True) -> Dict[str, Any]:
+
+def extract_module_data(
+    module: str, source_file: Optional[str] = None, dry_run: bool = True
+) -> Dict[str, Any]:
     try:
         import pandas as pd
     except ImportError:
@@ -244,9 +283,14 @@ def extract_module_data(module: str, source_file: Optional[str] = None, dry_run:
     col_map = config["col_map"]
 
     result = {
-        "status": "SUCCESS", "module": module, "source_file": file_path,
-        "target_table": target_table, "records_read": 0, "records_inserted": 0,
-        "errors": [], "dry_run": dry_run,
+        "status": "SUCCESS",
+        "module": module,
+        "source_file": file_path,
+        "target_table": target_table,
+        "records_read": 0,
+        "records_inserted": 0,
+        "errors": [],
+        "dry_run": dry_run,
     }
 
     try:
@@ -270,12 +314,19 @@ def extract_module_data(module: str, source_file: Optional[str] = None, dry_run:
     if module == "BNK":
         debit_series = df.get("debit", pd.Series(0, index=df.index))
         credit_series = df.get("credit", pd.Series(0, index=df.index))
-        df["amount"] = pd.to_numeric(debit_series, errors="coerce").fillna(0) - \
-                       pd.to_numeric(credit_series, errors="coerce").fillna(0)
+        df["amount"] = pd.to_numeric(debit_series, errors="coerce").fillna(
+            0
+        ) - pd.to_numeric(credit_series, errors="coerce").fillna(0)
         df["currency"] = df.get("check_book_id", pd.Series("", index=df.index)).apply(
-            lambda x: "USD" if "USD" in str(x).upper() else
-                      "EUR" if "EUR" in str(x).upper() else
-                      "GBP" if "GBP" in str(x).upper() else "EGP"
+            lambda x: (
+                "USD"
+                if "USD" in str(x).upper()
+                else "EUR"
+                if "EUR" in str(x).upper()
+                else "GBP"
+                if "GBP" in str(x).upper()
+                else "EGP"
+            )
         )
 
     df["_extracted_at"] = datetime.now().isoformat()
@@ -299,8 +350,19 @@ def extract_module_data(module: str, source_file: Optional[str] = None, dry_run:
                         _extracted_at TEXT, _batch_id TEXT, _module TEXT
                     )
                 """)
-                insert_cols = ["transaction_id", "check_book_id", "transaction_date", "narration",
-                               "debit", "credit", "amount", "currency", "_extracted_at", "_batch_id", "_module"]
+                insert_cols = [
+                    "transaction_id",
+                    "check_book_id",
+                    "transaction_date",
+                    "narration",
+                    "debit",
+                    "credit",
+                    "amount",
+                    "currency",
+                    "_extracted_at",
+                    "_batch_id",
+                    "_module",
+                ]
             elif module == "SAL":
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS sales_staging (
@@ -309,8 +371,16 @@ def extract_module_data(module: str, source_file: Optional[str] = None, dry_run:
                         _extracted_at TEXT, _batch_id TEXT, _module TEXT
                     )
                 """)
-                insert_cols = ["invoice_no", "invoice_date", "client_id", "amount", "currency",
-                               "_extracted_at", "_batch_id", "_module"]
+                insert_cols = [
+                    "invoice_no",
+                    "invoice_date",
+                    "client_id",
+                    "amount",
+                    "currency",
+                    "_extracted_at",
+                    "_batch_id",
+                    "_module",
+                ]
             elif module == "PUR":
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS purchase_staging (
@@ -319,8 +389,16 @@ def extract_module_data(module: str, source_file: Optional[str] = None, dry_run:
                         _extracted_at TEXT, _batch_id TEXT, _module TEXT
                     )
                 """)
-                insert_cols = ["po_no", "po_date", "vendor_id", "amount", "currency",
-                               "_extracted_at", "_batch_id", "_module"]
+                insert_cols = [
+                    "po_no",
+                    "po_date",
+                    "vendor_id",
+                    "amount",
+                    "currency",
+                    "_extracted_at",
+                    "_batch_id",
+                    "_module",
+                ]
             elif module == "EVN":
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS events_staging (
@@ -329,8 +407,16 @@ def extract_module_data(module: str, source_file: Optional[str] = None, dry_run:
                         _extracted_at TEXT, _batch_id TEXT, _module TEXT
                     )
                 """)
-                insert_cols = ["pnr_id", "event_date", "client_id", "gross_sales", "currency",
-                               "_extracted_at", "_batch_id", "_module"]
+                insert_cols = [
+                    "pnr_id",
+                    "event_date",
+                    "client_id",
+                    "gross_sales",
+                    "currency",
+                    "_extracted_at",
+                    "_batch_id",
+                    "_module",
+                ]
             elif module == "ENV":
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS environmental_staging (
@@ -339,8 +425,16 @@ def extract_module_data(module: str, source_file: Optional[str] = None, dry_run:
                         _extracted_at TEXT, _batch_id TEXT, _module TEXT
                     )
                 """)
-                insert_cols = ["project_id", "project_date", "department", "amount", "currency",
-                               "_extracted_at", "_batch_id", "_module"]
+                insert_cols = [
+                    "project_id",
+                    "project_date",
+                    "department",
+                    "amount",
+                    "currency",
+                    "_extracted_at",
+                    "_batch_id",
+                    "_module",
+                ]
 
             placeholders = ", ".join(["?"] * len(insert_cols))
             insert_sql = f"INSERT INTO {target_table} ({', '.join(insert_cols)}) VALUES ({placeholders})"
@@ -352,9 +446,22 @@ def extract_module_data(module: str, source_file: Optional[str] = None, dry_run:
                     val = row.get(col)
                     if pd.isna(val):
                         record.append(None)
-                    elif col in ["transaction_id", "check_book_id", "narration", "invoice_no", "client_id",
-                                 "currency", "po_no", "vendor_id", "pnr_id", "project_id", "department",
-                                 "_extracted_at", "_batch_id", "_module"]:
+                    elif col in [
+                        "transaction_id",
+                        "check_book_id",
+                        "narration",
+                        "invoice_no",
+                        "client_id",
+                        "currency",
+                        "po_no",
+                        "vendor_id",
+                        "pnr_id",
+                        "project_id",
+                        "department",
+                        "_extracted_at",
+                        "_batch_id",
+                        "_module",
+                    ]:
                         record.append(str(val))
                     else:
                         record.append(float(val))
@@ -372,9 +479,11 @@ def extract_module_data(module: str, source_file: Optional[str] = None, dry_run:
 
     return result
 
+
 # ============================================================
 # QUALITY SCORING
 # ============================================================
+
 
 def calculate_quality_score(module: str, batch_id: str) -> Dict[str, Any]:
     with get_db() as conn:
@@ -383,7 +492,9 @@ def calculate_quality_score(module: str, batch_id: str) -> Dict[str, Any]:
             return {"score": 0, "errors": ["Unknown module"]}
 
         table = config["target_table"]
-        cursor = conn.execute(f"SELECT COUNT(*) FROM {table} WHERE _batch_id = ?", (batch_id,))
+        cursor = conn.execute(
+            f"SELECT COUNT(*) FROM {table} WHERE _batch_id = ?", (batch_id,)
+        )
         total = cursor.fetchone()[0]
 
         if total == 0:
@@ -393,20 +504,29 @@ def calculate_quality_score(module: str, batch_id: str) -> Dict[str, Any]:
         issues = []
 
         if module == "BNK":
-            null_txn = conn.execute(f"SELECT COUNT(*) FROM {table} WHERE _batch_id = ? AND transaction_id IS NULL", (batch_id,)).fetchone()[0]
+            null_txn = conn.execute(
+                f"SELECT COUNT(*) FROM {table} WHERE _batch_id = ? AND transaction_id IS NULL",
+                (batch_id,),
+            ).fetchone()[0]
             if null_txn > 0:
                 score -= 10
                 issues.append(f"{null_txn} records missing transaction_id")
 
-            null_narr = conn.execute(f"SELECT COUNT(*) FROM {table} WHERE _batch_id = ? AND narration IS NULL", (batch_id,)).fetchone()[0]
+            null_narr = conn.execute(
+                f"SELECT COUNT(*) FROM {table} WHERE _batch_id = ? AND narration IS NULL",
+                (batch_id,),
+            ).fetchone()[0]
             if null_narr > 0:
                 score -= 5
                 issues.append(f"{null_narr} records missing narration")
 
-            dupes = conn.execute(f"""
+            dupes = conn.execute(
+                f"""
                 SELECT transaction_id, COUNT(*) as cnt FROM {table}
                 WHERE _batch_id = ? GROUP BY transaction_id HAVING cnt > 1
-            """, (batch_id,)).fetchall()
+            """,
+                (batch_id,),
+            ).fetchall()
             if dupes:
                 score -= 10 * len(dupes)
                 issues.append(f"{len(dupes)} duplicate transaction_ids")
@@ -415,8 +535,9 @@ def calculate_quality_score(module: str, batch_id: str) -> Dict[str, Any]:
             "score": max(0, score),
             "total_records": total,
             "issues": issues,
-            "batch_id": batch_id
+            "batch_id": batch_id,
         }
+
 
 if __name__ == "__main__":
     print("Extraction Engine v2.2.3 loaded.")

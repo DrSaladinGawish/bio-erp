@@ -16,11 +16,12 @@ End-points (prefix ``/api/v1/pur``):
   GET  /spend-by-month             — monthly spend series
   GET  /aging-report               — vendor-invoice aging buckets
 """
+
 from __future__ import annotations
 
 import logging
 from datetime import date
-from typing import Annotated, List, Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
@@ -29,8 +30,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_async_session
 from ..models_production import (
-    PurchaseOrder, VendorInvoice, Vendor,
+    PurchaseOrder,
+    VendorInvoice,
 )
+from app.models.ihe_models import Vendor as IHEVendor
 from ..schemas import PaginatedResponse
 
 logger = logging.getLogger(__name__)
@@ -38,6 +41,7 @@ router = APIRouter(prefix="/api/v1/pur", tags=["PUR Purchase"])
 
 
 # ── Pydantic models ────────────────────────────────────────────────────
+
 
 class PurchaseOrderCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -98,7 +102,10 @@ class PURSummary(BaseModel):
 
 # ── Helpers ────────────────────────────────────────────────────────────
 
-def _po_filters(vendor_id, event_id, pnr_id, date_from, date_to, status_, currency, search):
+
+def _po_filters(
+    vendor_id, event_id, pnr_id, date_from, date_to, status_, currency, search
+):
     f = []
     if vendor_id is not None:
         f.append(PurchaseOrder.vendor_id == vendor_id)
@@ -115,14 +122,18 @@ def _po_filters(vendor_id, event_id, pnr_id, date_from, date_to, status_, curren
     if currency:
         f.append(PurchaseOrder.currency == currency)
     if search:
-        f.append(or_(
-            PurchaseOrder.po_no.ilike(f"%{search}%"),
-            PurchaseOrder.notes.ilike(f"%{search}%"),
-        ))
+        f.append(
+            or_(
+                PurchaseOrder.po_no.ilike(f"%{search}%"),
+                PurchaseOrder.notes.ilike(f"%{search}%"),
+            )
+        )
     return f
 
 
-def _vi_filters(vendor_id, event_id, pnr_id, po_id, date_from, date_to, status_, currency, search):
+def _vi_filters(
+    vendor_id, event_id, pnr_id, po_id, date_from, date_to, status_, currency, search
+):
     f = []
     if vendor_id is not None:
         f.append(VendorInvoice.vendor_id == vendor_id)
@@ -141,14 +152,17 @@ def _vi_filters(vendor_id, event_id, pnr_id, po_id, date_from, date_to, status_,
     if currency:
         f.append(VendorInvoice.currency == currency)
     if search:
-        f.append(or_(
-            VendorInvoice.invoice_no.ilike(f"%{search}%"),
-            VendorInvoice.notes.ilike(f"%{search}%"),
-        ))
+        f.append(
+            or_(
+                VendorInvoice.invoice_no.ilike(f"%{search}%"),
+                VendorInvoice.notes.ilike(f"%{search}%"),
+            )
+        )
     return f
 
 
 # ── End-points ─────────────────────────────────────────────────────────
+
 
 @router.get("/orders", response_model=PaginatedResponse[PurchaseOrderOut])
 async def list_orders(
@@ -165,8 +179,9 @@ async def list_orders(
     page_size: Annotated[int, Query(ge=1, le=500)] = 50,
 ):
     stmt = select(PurchaseOrder)
-    f = _po_filters(vendor_id, event_id, pnr_id, date_from, date_to,
-                    status_, currency, search)
+    f = _po_filters(
+        vendor_id, event_id, pnr_id, date_from, date_to, status_, currency, search
+    )
     if f:
         stmt = stmt.where(and_(*f))
     count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -176,7 +191,9 @@ async def list_orders(
     rows = (await session.execute(stmt)).scalars().all()
     return PaginatedResponse(
         data=[PurchaseOrderOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
@@ -186,25 +203,35 @@ async def get_order(
     po_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    po = (await session.execute(
-        select(PurchaseOrder).where(PurchaseOrder.id == po_id)
-    )).scalar_one_or_none()
+    po = (
+        await session.execute(select(PurchaseOrder).where(PurchaseOrder.id == po_id))
+    ).scalar_one_or_none()
     if not po:
         raise HTTPException(404, "Purchase order not found")
-    invoices = (await session.execute(
-        select(VendorInvoice).where(VendorInvoice.po_id == po_id)
-    )).scalars().all()
+    invoices = (
+        (
+            await session.execute(
+                select(VendorInvoice).where(VendorInvoice.po_id == po_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
     invoiced_total = sum(i.total or 0 for i in invoices)
     return {
         "po": PurchaseOrderOut.model_validate(po).model_dump(),
-        "vendor_invoices": [VendorInvoiceOut.model_validate(i).model_dump() for i in invoices],
+        "vendor_invoices": [
+            VendorInvoiceOut.model_validate(i).model_dump() for i in invoices
+        ],
         "invoice_count": len(invoices),
         "invoiced_total": round(invoiced_total, 2),
         "outstanding": round((po.total or 0) - invoiced_total, 2),
     }
 
 
-@router.post("/orders", response_model=PurchaseOrderOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/orders", response_model=PurchaseOrderOut, status_code=status.HTTP_201_CREATED
+)
 async def create_order(
     payload: PurchaseOrderCreate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
@@ -232,8 +259,17 @@ async def list_invoices(
     page_size: Annotated[int, Query(ge=1, le=500)] = 50,
 ):
     stmt = select(VendorInvoice)
-    f = _vi_filters(vendor_id, event_id, pnr_id, po_id, date_from, date_to,
-                    status_, currency, search)
+    f = _vi_filters(
+        vendor_id,
+        event_id,
+        pnr_id,
+        po_id,
+        date_from,
+        date_to,
+        status_,
+        currency,
+        search,
+    )
     if f:
         stmt = stmt.where(and_(*f))
     count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -243,7 +279,9 @@ async def list_invoices(
     rows = (await session.execute(stmt)).scalars().all()
     return PaginatedResponse(
         data=[VendorInvoiceOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
@@ -253,15 +291,19 @@ async def get_invoice(
     invoice_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    inv = (await session.execute(
-        select(VendorInvoice).where(VendorInvoice.id == invoice_id)
-    )).scalar_one_or_none()
+    inv = (
+        await session.execute(
+            select(VendorInvoice).where(VendorInvoice.id == invoice_id)
+        )
+    ).scalar_one_or_none()
     if not inv:
         raise HTTPException(404, "Vendor invoice not found")
     return VendorInvoiceOut.model_validate(inv)
 
 
-@router.post("/invoices", response_model=VendorInvoiceOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/invoices", response_model=VendorInvoiceOut, status_code=status.HTTP_201_CREATED
+)
 async def create_invoice(
     payload: VendorInvoiceCreate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
@@ -287,12 +329,14 @@ async def get_summary(
     po_base = select(PurchaseOrder)
     if po_f:
         po_base = po_base.where(and_(*po_f))
-    po_head = (await session.execute(
-        select(
-            func.count().label("cnt"),
-            func.coalesce(func.sum(PurchaseOrder.total), 0).label("amt"),
-        ).select_from(po_base.subquery())
-    )).one()
+    po_head = (
+        await session.execute(
+            select(
+                func.count().label("cnt"),
+                func.coalesce(func.sum(PurchaseOrder.total), 0).label("amt"),
+            ).select_from(po_base.subquery())
+        )
+    ).one()
     vi_f = []
     if date_from:
         vi_f.append(VendorInvoice.invoice_date >= date_from)
@@ -301,26 +345,37 @@ async def get_summary(
     vi_base = select(VendorInvoice)
     if vi_f:
         vi_base = vi_base.where(and_(*vi_f))
-    vi_head = (await session.execute(
-        select(
-            func.count().label("cnt"),
-            func.coalesce(func.sum(VendorInvoice.total), 0).label("amt"),
-            func.coalesce(func.sum(VendorInvoice.paid_amount), 0).label("paid"),
-        ).select_from(vi_base.subquery())
-    )).one()
-    po_status_rows = (await session.execute(
-        select(PurchaseOrder.status, func.count().label("cnt"))
-        .group_by(PurchaseOrder.status)
-    )).all()
-    vi_status_rows = (await session.execute(
-        select(VendorInvoice.status, func.count().label("cnt"))
-        .group_by(VendorInvoice.status)
-    )).all()
-    cur_rows = (await session.execute(
-        select(VendorInvoice.currency,
-               func.coalesce(func.sum(VendorInvoice.total), 0).label("amt"))
-        .group_by(VendorInvoice.currency)
-    )).all()
+    vi_head = (
+        await session.execute(
+            select(
+                func.count().label("cnt"),
+                func.coalesce(func.sum(VendorInvoice.total), 0).label("amt"),
+                func.coalesce(func.sum(VendorInvoice.paid_amount), 0).label("paid"),
+            ).select_from(vi_base.subquery())
+        )
+    ).one()
+    po_status_rows = (
+        await session.execute(
+            select(PurchaseOrder.status, func.count().label("cnt")).group_by(
+                PurchaseOrder.status
+            )
+        )
+    ).all()
+    vi_status_rows = (
+        await session.execute(
+            select(VendorInvoice.status, func.count().label("cnt")).group_by(
+                VendorInvoice.status
+            )
+        )
+    ).all()
+    cur_rows = (
+        await session.execute(
+            select(
+                VendorInvoice.currency,
+                func.coalesce(func.sum(VendorInvoice.total), 0).label("amt"),
+            ).group_by(VendorInvoice.currency)
+        )
+    ).all()
     return PURSummary(
         total_pos=po_head.cnt or 0,
         total_vendor_invoices=vi_head.cnt or 0,
@@ -340,16 +395,32 @@ async def by_event(
     event_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    pos = (await session.execute(
-        select(PurchaseOrder).where(PurchaseOrder.event_id == event_id)
-    )).scalars().all()
-    invoices = (await session.execute(
-        select(VendorInvoice).where(VendorInvoice.event_id == event_id)
-    )).scalars().all()
+    pos = (
+        (
+            await session.execute(
+                select(PurchaseOrder).where(PurchaseOrder.event_id == event_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    invoices = (
+        (
+            await session.execute(
+                select(VendorInvoice).where(VendorInvoice.event_id == event_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
     return {
         "event_id": event_id,
-        "purchase_orders": [PurchaseOrderOut.model_validate(p).model_dump() for p in pos],
-        "vendor_invoices": [VendorInvoiceOut.model_validate(i).model_dump() for i in invoices],
+        "purchase_orders": [
+            PurchaseOrderOut.model_validate(p).model_dump() for p in pos
+        ],
+        "vendor_invoices": [
+            VendorInvoiceOut.model_validate(i).model_dump() for i in invoices
+        ],
         "po_count": len(pos),
         "invoice_count": len(invoices),
         "po_total": round(sum(p.total or 0 for p in pos), 2),
@@ -362,16 +433,32 @@ async def by_vendor(
     vendor_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    pos = (await session.execute(
-        select(PurchaseOrder).where(PurchaseOrder.vendor_id == vendor_id)
-    )).scalars().all()
-    invoices = (await session.execute(
-        select(VendorInvoice).where(VendorInvoice.vendor_id == vendor_id)
-    )).scalars().all()
+    pos = (
+        (
+            await session.execute(
+                select(PurchaseOrder).where(PurchaseOrder.vendor_id == vendor_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    invoices = (
+        (
+            await session.execute(
+                select(VendorInvoice).where(VendorInvoice.vendor_id == vendor_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
     return {
         "vendor_id": vendor_id,
-        "purchase_orders": [PurchaseOrderOut.model_validate(p).model_dump() for p in pos],
-        "vendor_invoices": [VendorInvoiceOut.model_validate(i).model_dump() for i in invoices],
+        "purchase_orders": [
+            PurchaseOrderOut.model_validate(p).model_dump() for p in pos
+        ],
+        "vendor_invoices": [
+            VendorInvoiceOut.model_validate(i).model_dump() for i in invoices
+        ],
         "po_count": len(pos),
         "invoice_count": len(invoices),
         "po_total": round(sum(p.total or 0 for p in pos), 2),
@@ -410,7 +497,8 @@ async def top_vendors(
             "spend": round(r.spend or 0, 2),
             "paid": round(r.paid or 0, 2),
             "outstanding": round((r.spend or 0) - (r.paid or 0), 2),
-        } for r in rows
+        }
+        for r in rows
     ]
 
 
@@ -443,10 +531,14 @@ async def spend_by_month(
                 "invoice_count": r.cnt,
                 "spend": round(r.spend or 0, 2),
                 "tax": round(r.tax or 0, 2),
-            } for r in rows if r.ym
+            }
+            for r in rows
+            if r.ym
         ]
     except Exception:
-        rows = (await session.execute(text("""
+        rows = (
+            await session.execute(
+                text("""
             SELECT strftime('%Y-%m', invoice_date) AS ym,
                    COUNT(*) AS cnt,
                    COALESCE(SUM(total), 0) AS spend,
@@ -454,14 +546,18 @@ async def spend_by_month(
             FROM vendor_invoices
             GROUP BY ym
             ORDER BY ym
-        """))).all()
+        """)
+            )
+        ).all()
         return [
             {
                 "month": r.ym,
                 "invoice_count": r.cnt,
                 "spend": round(r.spend or 0, 2),
                 "tax": round(r.tax or 0, 2),
-            } for r in rows if r.ym
+            }
+            for r in rows
+            if r.ym
         ]
 
 
@@ -472,15 +568,22 @@ async def aging_report(
 ):
     """Vendor-invoice aging buckets (0-30 / 31-60 / 61-90 / 90+)."""
     from datetime import datetime as _dt
+
     cutoff = as_of or _dt.utcnow().date()
-    rows = (await session.execute(
-        select(VendorInvoice).where(
-            and_(
-                VendorInvoice.status.in_(["OPEN", "PARTIAL"]),
-                VendorInvoice.due_date.isnot(None),
+    rows = (
+        (
+            await session.execute(
+                select(VendorInvoice).where(
+                    and_(
+                        VendorInvoice.status.in_(["OPEN", "PARTIAL"]),
+                        VendorInvoice.due_date.isnot(None),
+                    )
+                )
             )
         )
-    )).scalars().all()
+        .scalars()
+        .all()
+    )
     buckets = {"0-30": 0.0, "31-60": 0.0, "61-90": 0.0, "90+": 0.0}
     counts = {"0-30": 0, "31-60": 0, "61-90": 0, "90+": 0}
     total = 0.0
@@ -493,16 +596,154 @@ async def aging_report(
             continue
         total += outstanding
         if days_past <= 30:
-            buckets["0-30"] += outstanding; counts["0-30"] += 1
+            buckets["0-30"] += outstanding
+            counts["0-30"] += 1
         elif days_past <= 60:
-            buckets["31-60"] += outstanding; counts["31-60"] += 1
+            buckets["31-60"] += outstanding
+            counts["31-60"] += 1
         elif days_past <= 90:
-            buckets["61-90"] += outstanding; counts["61-90"] += 1
+            buckets["61-90"] += outstanding
+            counts["61-90"] += 1
         else:
-            buckets["90+"] += outstanding; counts["90+"] += 1
+            buckets["90+"] += outstanding
+            counts["90+"] += 1
     return {
         "as_of": cutoff.isoformat(),
         "total_outstanding": round(total, 2),
         "buckets": {k: round(v, 2) for k, v in buckets.items()},
         "counts": counts,
     }
+
+
+# -- PUR Vendors (from dbo.Vendor) --
+
+
+class PURVendorOut(BaseModel):
+    VendorCode: str
+    VendorName: str
+    TaxID: Optional[str] = None
+    Address: Optional[str] = None
+    Telephone: Optional[str] = None
+    Email: Optional[str] = None
+    VendorType: Optional[str] = None
+    PaymentTerms: Optional[str] = None
+    IsActive: bool = True
+
+
+class PURVendorCreate(BaseModel):
+    VendorCode: str
+    VendorName: str
+    TaxID: Optional[str] = None
+    Address: Optional[str] = None
+    Telephone: Optional[str] = None
+    Email: Optional[str] = None
+    VendorType: Optional[str] = None
+    PaymentTerms: Optional[str] = None
+    IsActive: bool = True
+
+
+@router.get("/vendors", response_model=list[PURVendorOut])
+async def list_pur_vendors(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    result = await session.execute(select(IHEVendor).order_by(IHEVendor.VendorCode))
+    return result.scalars().all()
+
+
+@router.post("/vendors", response_model=PURVendorOut, status_code=201)
+async def create_pur_vendor(
+    payload: PURVendorCreate,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    vendor = IHEVendor(**payload.model_dump())
+    session.add(vendor)
+    await session.commit()
+    await session.refresh(vendor)
+    return vendor
+
+
+@router.get("/vendors/{vendor_code}", response_model=PURVendorOut)
+async def get_pur_vendor(
+    vendor_code: str,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    result = await session.execute(
+        select(IHEVendor).where(IHEVendor.VendorCode == vendor_code)
+    )
+    vendor = result.scalar_one_or_none()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    return vendor
+
+
+@router.put("/vendors/{vendor_code}", response_model=PURVendorOut)
+async def update_pur_vendor(
+    vendor_code: str,
+    payload: PURVendorCreate,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    result = await session.execute(
+        select(IHEVendor).where(IHEVendor.VendorCode == vendor_code)
+    )
+    vendor = result.scalar_one_or_none()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    for key, val in payload.model_dump().items():
+        setattr(vendor, key, val)
+    await session.commit()
+    await session.refresh(vendor)
+    return vendor
+
+
+@router.delete("/vendors/{vendor_code}", status_code=204)
+async def delete_pur_vendor(
+    vendor_code: str,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    result = await session.execute(
+        select(IHEVendor).where(IHEVendor.VendorCode == vendor_code)
+    )
+    vendor = result.scalar_one_or_none()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    await session.delete(vendor)
+    await session.commit()
+
+
+# -- PUR Vouchers (from dbo.JournalVoucher) --
+
+
+class PURVoucherOut(BaseModel):
+    VoucherNumber: str
+    InvoiceDate: Optional[str] = None
+    EventName: Optional[str] = None
+    TotalValue: Optional[float] = None
+    CurrencyCode: Optional[str] = None
+
+
+@router.get("/vouchers", response_model=list[PURVoucherOut])
+async def list_pur_vouchers(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    from app.models.ihe_models import PurchaseVoucher
+
+    result = await session.execute(
+        select(PurchaseVoucher).order_by(PurchaseVoucher.VoucherNumber)
+    )
+    return result.scalars().all()
+
+
+@router.get("/vouchers/{voucher_id}", response_model=PURVoucherOut)
+async def get_pur_voucher(
+    voucher_id: int,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    from app.models.ihe_models import PurchaseVoucher
+
+    result = await session.execute(
+        select(PurchaseVoucher).where(PurchaseVoucher.VoucherID == voucher_id)
+    )
+    voucher = result.scalar_one_or_none()
+    if not voucher:
+        raise HTTPException(status_code=404, detail="Voucher not found")
+    return voucher

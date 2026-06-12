@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from datetime import timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.cost_engine import CostEngine

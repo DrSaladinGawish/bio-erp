@@ -2,6 +2,7 @@
 IHE-ERP v2.3 - Form template tests (Path A UI remediation).
 Run: pytest tests/test_forms.py -v
 """
+
 import pytest
 
 
@@ -32,7 +33,13 @@ def test_form_page_is_html(sync_client, route):
 def test_pnr_form_has_required_fields(sync_client):
     r = sync_client.get("/evn/new")
     body = r.text
-    for field in ("pnr_number", "client_id", "event_description", "start_date", "end_date"):
+    for field in (
+        "pnr_number",
+        "client_id",
+        "event_description",
+        "start_date",
+        "end_date",
+    ):
         assert field in body, f"PNR form missing field: {field}"
 
 

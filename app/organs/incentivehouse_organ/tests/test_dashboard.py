@@ -2,6 +2,7 @@
 IHE-ERP v2.3.2 - Dashboard data API tests.
 Run: pytest tests/test_dashboard.py -v
 """
+
 import pytest
 
 
@@ -14,9 +15,18 @@ def test_dashboard_data_range(sync_client, rng):
     r = sync_client.get(f"/api/dashboard/data?range={rng}")
     assert r.status_code == 200, f"range={rng} returned {r.status_code}"
     data = r.json()
-    for key in ("total_revenue", "total_expenses", "net_profit", "active_pnrs",
-                "bank_balance", "pending_invoices", "total_vendors",
-                "total_clients", "revenue_by_month", "expenses_by_month"):
+    for key in (
+        "total_revenue",
+        "total_expenses",
+        "net_profit",
+        "active_pnrs",
+        "bank_balance",
+        "pending_invoices",
+        "total_vendors",
+        "total_clients",
+        "revenue_by_month",
+        "expenses_by_month",
+    ):
         assert key in data, f"Missing {key} for range={rng}"
 
 

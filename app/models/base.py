@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
 from sqlalchemy import Integer, String, DateTime, Boolean, ForeignKey, Float
 from sqlalchemy.orm import Mapped, mapped_column, declarative_mixin
 
@@ -11,9 +11,7 @@ def _utcnow() -> datetime:
 @declarative_mixin
 class BaseMixin:
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=_utcnow
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=_utcnow,

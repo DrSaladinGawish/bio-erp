@@ -1,15 +1,18 @@
 """
 P5 — HTMX Prescription Job Page Verification
 """
+
 import json, os, sys, py_compile
 
 EC = r"D:\EventCore_ERP\backend"
 BIO = r"D:\ERP System\BIO_ERP"
 results = []
 
+
 def log(s, st, d=""):
     results.append({"stage": s, "status": st, "detail": d})
     print(f"  [{s}] {st}" + (f"  {d}" if d else ""))
+
 
 print("=" * 60)
 print("P5 HTMX JOB PAGE — VERIFICATION")
@@ -37,12 +40,21 @@ for n, p in files:
 
 print("\nPHASE 3: IMPORT")
 import subprocess
-r = subprocess.run([sys.executable, "-c",
-    "from app.routers.prescriptions_htmx import router; "
-    "routes = [r.path for r in router.routes]; "
-    "print('prefix:', router.prefix); "
-    "print('routes:', routes)"],
-    cwd=EC, capture_output=True, text=True, timeout=15)
+
+r = subprocess.run(
+    [
+        sys.executable,
+        "-c",
+        "from app.routers.prescriptions_htmx import router; "
+        "routes = [r.path for r in router.routes]; "
+        "print('prefix:', router.prefix); "
+        "print('routes:', routes)",
+    ],
+    cwd=EC,
+    capture_output=True,
+    text=True,
+    timeout=15,
+)
 if r.returncode == 0:
     log("IMPORT: prescriptions_htmx", "PASS", r.stdout.strip()[:100])
     routes = r.stdout.strip()
@@ -89,6 +101,9 @@ else:
         if r["status"] == "FAIL":
             print(f"    - {r['stage']}: {r['detail']}")
 
-json.dump({"results": results, "passed": passed, "failed": failed},
-          open(BIO + r"\p5_verify_report.json", "w"), indent=2)
+json.dump(
+    {"results": results, "passed": passed, "failed": failed},
+    open(BIO + r"\p5_verify_report.json", "w"),
+    indent=2,
+)
 print(f"\n  Report: {BIO}\\p5_verify_report.json")

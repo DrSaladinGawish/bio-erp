@@ -13,12 +13,10 @@ Usage:
 """
 
 import logging
-from typing import Optional
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_async_session_factory
 from app.organs.or_organ.auto_trigger import AutoTriggerEngine

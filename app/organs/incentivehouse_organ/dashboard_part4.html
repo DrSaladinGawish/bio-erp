@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IncentiveHouse ERP — Control Center</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌊</text></svg>">
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0f1a; --bg-secondary: #111827; --bg-card: #1e293b; --bg-hover: #243447;
+            --text-primary: #f8fafc; --text-secondary: #94a3b8; --text-muted: #64748b;
+            --accent-cyan: #06b6d4; --accent-blue: #3b82f6; --accent-green: #22c55e;
+            --accent-yellow: #eab308; --accent-red: #ef4444; --accent-purple: #a855f7;
+            --border: #334155; --border-light: #475569; --shadow-glow: 0 0 20px rgba(6,182,212,0.15);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
+
+        .header { background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%); border-bottom: 2px solid var(--accent-cyan); padding: 0.75rem 2rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; box-shadow: var(--shadow-glow); }
+        .logo-section { display: flex; align-items: center; gap: 1rem; }
+        .logo { width: 44px; height: 44px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 15px rgba(6,182,212,0.3); }
+        .company-name { font-size: 1.3rem; font-weight: 700; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em; }
+        .company-subtitle { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+        .header-actions { display: flex; align-items: center; gap: 0.75rem; }
+        .system-badge { padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .system-badge.healthy { background: rgba(34,197,94,0.15); color: var(--accent-green); border: 1px solid rgba(34,197,94,0.3); }
+        .system-badge.warning { background: rgba(234,179,8,0.15); color: var(--accent-yellow); border: 1px solid rgba(234,179,8,0.3); }
+        .system-badge.critical { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
+
+        .exec-summary { background: linear-gradient(135deg, rgba(6,182,212,0.08), rgba(59,130,246,0.05)); border: 1px solid rgba(6,182,212,0.2); border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: auto 1fr auto; gap: 1.5rem; align-items: center; }
+        .exec-health-ring { width: 80px; height: 80px; position: relative; }
+        .exec-health-ring svg { transform: rotate(-90deg); }
+        .exec-health-ring .ring-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 6; }
+        .exec-health-ring .ring-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+        .exec-health-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+        .exec-health-text .score { font-size: 1.4rem; font-weight: 700; }
+        .exec-health-text .label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; }
+        .exec-metrics { display: flex; gap: 2rem; }
+        .exec-metric { display: flex; flex-direction: column; gap: 0.25rem; }
+        .exec-metric-value { font-size: 1.5rem; font-weight: 700; }
+        .exec-metric-value.healthy { color: var(--accent-green); }
+        .exec-metric-value.warning { color: var(--accent-yellow); }
+        .exec-metric-value.critical { color: var(--accent-red); }
+        .exec-metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .exec-actions { display: flex; gap: 0.5rem; }
+
+        .main-container { display: grid; grid-template-columns: 260px 1fr; gap: 1.25rem; padding: 1.25rem; max-width: 1920px; margin: 0 auto; }
+
+        .sidebar { display: flex; flex-direction: column; gap: 0.75rem; }
+        .nav-card { background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+        .nav-card-header { padding: 0.9rem 1rem; background: linear-gradient(90deg, rgba(6,182,212,0.08), transparent); border-bottom: 1px solid var(--border); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
+        .nav-item { padding: 0.8rem 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; transition: all 0.2s; border-left: 3px solid transparent; font-size: 0.9rem; }
+        .nav-item:hover, .nav-item.active { background: rgba(6,182,212,0.08); border-left-color: var(--accent-cyan); }
+        .nav-item .nav-icon { font-size: 1.1rem; width: 24px; text-align: center; }
+        .nav-item .nav-text { font-weight: 500; }
+        .nav-item .nav-desc { font-size: 0.7rem; color: var(--text-muted); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 0.5rem; }
+        .status-dot.online { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+        .status-dot.offline { background: var(--accent-red); }
+        .status-dot.idle { background: var(--accent-yellow); }
+
+        .content { display: flex; flex-direction: column; gap: 1.25rem; }
+
+        .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        .score-card { background: var(--bg-secondary); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border); position: relative; overflow: hidden; transition: all 0.2s; }
+        .score-card:hover { border-color: var(--border-light); transform: translateY(-2px); }
+        .score-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+        .score-card.healthy::before { background: var(--accent-green); }
+        .score-card.warning::before { background: var(--accent-yellow); }
+        .score-card.danger::before { background: var(--accent-red); }
+        .score-card.info::before { background: var(--accent-cyan); }
+        .score-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+        .score-value { font-size: 1.8rem; font-weight: 700; margin-top: 0.4rem; }
+        .score-value.healthy { color: var(--accent-green); }
+        .score-value.warning { color: var(--accent-yellow); }
+        .score-value.danger { color: var(--accent-red); }
+        .score-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+        .flow-container { background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; height: 520px; position: relative; }
+        .flow-header { padding: 0.9rem 1.25rem; background: linear-gradient(90deg, rgba(6,182,212,0.06), transparent); border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        #flowGraph { width: 100%; height: 460px; }
+
+        .table-container { background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+        .table-header { padding: 0.9rem 1.25rem; background: linear-gradient(90deg, rgba(6,182,212,0.06), transparent); border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .data-row { display: grid; grid-template-columns: 1.5fr 0.8fr 1fr 0.8fr 0.8fr 1fr 100px; padding: 0.7rem 1.25rem; border-bottom: 1px solid rgba(51, 65, 85, 0.5); align-items: center; font-size: 0.88rem; }
+        .data-row:hover { background: rgba(6,182,212,0.04); }
+        .data-row:last-child { border-bottom: none; }
+        .health-badge { padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+        .health-badge.healthy { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+        .health-badge.stale { background: rgba(234,179,8,0.15); color: var(--accent-yellow); }
+        .health-badge.orphaned { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+        .health-badge.empty { background: rgba(100,116,139,0.15); color: var(--text-muted); }
+
+        .master-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.9rem; }
+        .master-card { background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border); padding: 1rem; transition: all 0.2s; }
+        .master-card:hover { border-color: var(--accent-cyan); box-shadow: var(--shadow-glow); }
+        .master-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
+        .master-card-title { font-weight: 600; font-size: 0.9rem; }
+        .master-card-module { font-size: 0.7rem; color: var(--text-muted); }
+        .master-health-bar { width: 100%; height: 5px; background: var(--bg-primary); border-radius: 3px; overflow: hidden; }
+        .master-health-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+        .master-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; }
+        .master-stat-value { color: var(--text-primary); font-weight: 600; }
+        .master-recommendation { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.5rem; padding: 0.5rem; background: rgba(6,182,212,0.04); border-radius: 6px; line-height: 1.4; }
+
+        .alerts-panel { background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border); max-height: 380px; overflow-y: auto; }
+        .alert-item { padding: 0.75rem 1.25rem; border-bottom: 1px solid rgba(51, 65, 85, 0.5); font-size: 0.88rem; display: flex; align-items: flex-start; gap: 0.75rem; animation: slideIn 0.3s ease; line-height: 1.4; }
+        .alert-item:last-child { border-bottom: none; }
+        .alert-item.critical { border-left: 3px solid var(--accent-red); background: rgba(239,68,68,0.04); }
+        .alert-item.warning { border-left: 3px solid var(--accent-yellow); background: rgba(234,179,8,0.04); }
+        .alert-item.info { border-left: 3px solid var(--accent-cyan); background: rgba(6,182,212,0.04); }
+
+        .ai-widget { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 2000; font-family: inherit; }
+        .ai-toggle { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); border: none; color: white; font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 20px rgba(6,182,212,0.4); transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .ai-toggle:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(6,182,212,0.5); }
+        .ai-toggle.pulse { animation: aiPulse 2s infinite; }
+        @keyframes aiPulse { 0%, 100% { box-shadow: 0 4px 20px rgba(6,182,212,0.4); } 50% { box-shadow: 0 4px 30px rgba(6,182,212,0.7); } }
+        .ai-window { position: absolute; bottom: 70px; right: 0; width: 380px; max-height: 520px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5), var(--shadow-glow); display: none; flex-direction: column; overflow: hidden; animation: aiWindowIn 0.3s ease; }
+        .ai-window.open { display: flex; }
+        @keyframes aiWindowIn { from { opacity: 0; transform: translateY(10px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .ai-header { padding: 1rem 1.25rem; background: linear-gradient(135deg, rgba(6,182,212,0.1), rgba(59,130,246,0.05)); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .ai-title { font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+        .ai-status { font-size: 0.7rem; color: var(--text-muted); }
+        .ai-close { background: none; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; padding: 0.2rem; }
+        .ai-close:hover { color: var(--text-primary); }
+        .ai-body { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+        .ai-message { padding: 0.75rem 1rem; border-radius: 12px; font-size: 0.88rem; line-height: 1.5; max-width: 90%; }
+        .ai-message.bot { background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.15); align-self: flex-start; }
+        .ai-message.user { background: var(--bg-hover); border: 1px solid var(--border); align-self: flex-end; }
+        .ai-message .msg-time { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.3rem; }
+        .ai-insight { background: rgba(6,182,212,0.05); border: 1px solid rgba(6,182,212,0.1); border-radius: 10px; padding: 0.75rem; font-size: 0.82rem; }
+        .ai-insight-title { font-weight: 600; color: var(--accent-cyan); margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.4rem; }
+        .ai-insight-list { list-style: none; padding: 0; margin: 0.3rem 0 0 0; }
+        .ai-insight-list li { padding: 0.2rem 0; color: var(--text-secondary); font-size: 0.8rem; }
+        .ai-insight-list li::before { content: "•"; color: var(--accent-cyan); margin-right: 0.4rem; }
+        .ai-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+        .ai-action-btn { padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
+        .ai-action-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(6,182,212,0.08); }
+        .ai-input-area { padding: 0.75rem 1rem; border-top: 1px solid var(--border); display: flex; gap: 0.5rem; }
+        .ai-input { flex: 1; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.9rem; color: var(--text-primary); font-size: 0.85rem; outline: none; }
+        .ai-input:focus { border-color: var(--accent-cyan); }
+        .ai-send { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); border: none; border-radius: 8px; color: white; padding: 0 1rem; cursor: pointer; font-size: 1rem; }
+
+        .footer { background: var(--bg-secondary); border-top: 1px solid var(--border); padding: 0.75rem 2rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); margin-top: auto; }
+        .footer-brand { display: flex; align-items: center; gap: 0.5rem; }
+        .footer-links { display: flex; gap: 1.5rem; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--accent-cyan); }
+
+        .legend { display: flex; gap: 1.5rem; padding: 0.6rem 1.25rem; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border); flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 0.35rem; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .btn { padding: 0.55rem 1.1rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4rem; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); color: white; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(6,182,212,0.3); }
+        .btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--border-light); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.78rem; }
+        .loading { padding: 2rem; text-align: center; color: var(--text-muted); }
+        .empty-state { padding: 3rem; text-align: center; color: var(--text-muted); }
+        .toast { position: fixed; bottom: 5.5rem; right: 1.5rem; padding: 0.9rem 1.25rem; border-radius: 10px; font-weight: 600; z-index: 2001; animation: toastIn 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.3); font-size: 0.85rem; }
+        .toast.success { background: var(--accent-green); color: white; }
+        .toast.error { background: var(--accent-red); color: white; }
+        .toast.info { background: var(--accent-cyan); color: white; }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .ws-status { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; padding: 0.25rem 0.5rem; border-radius: 4px; background: var(--bg-card); border: 1px solid var(--border); }
+        .ws-status.connected { color: var(--accent-green); border-color: rgba(34,197,94,0.3); }
+        .ws-status.disconnected { color: var(--accent-red); border-color: rgba(239,68,68,0.3); }
+        .ws-dot { width: 7px; height: 7px; border-radius: 50%; }
+        .ws-dot.connected { background: var(--accent-green); animation: pulse 2s infinite; }
+        .ws-dot.disconnected { background: var(--accent-red); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+        .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.9rem; margin-bottom: 1.25rem; }
+        .module-card { background: var(--bg-secondary); border-radius: 14px; border: 1px solid var(--border); padding: 1rem; text-align: center; transition: all 0.2s; cursor: pointer; position: relative; overflow: hidden; }
+        .module-card:hover { border-color: var(--accent-cyan); transform: translateY(-2px); box-shadow: var(--shadow-glow); }
+        .module-card .card-emoji { font-size: 2rem; margin-bottom: 0.4rem; }
+        .module-card .card-name { font-weight: 600; font-size: 0.85rem; }
+        .module-card .card-role { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+        .module-card .card-ring { width: 56px; height: 56px; position: relative; margin: 0.25rem auto; }
+        .module-card .card-ring svg { transform: rotate(-90deg); }
+        .module-card .card-ring .ring-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 5; }
+        .module-card .card-ring .ring-fill { fill: none; stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease; }
+        .module-card .card-ring .ring-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.85rem; font-weight: 700; }
+        .module-card .card-status { font-size: 0.7rem; margin-top: 0.3rem; }
+        .module-card .card-status.online { color: var(--accent-green); }
+        .module-card .card-status.offline { color: var(--accent-red); }
+        .module-card .card-status.starting { color: var(--accent-yellow); }
+        .drop-zone.dragover { border-color: var(--accent-cyan) !important; background: rgba(6,182,212,0.08) !important; }
+        .file-item { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1rem; border-bottom: 1px solid rgba(51,65,85,0.4); transition: background 0.2s; }
+        .file-item:hover { background: rgba(6,182,212,0.04); }
+        .file-item:last-child { border-bottom: none; }
+        .file-item .file-info { display: flex; align-items: center; gap: 0.8rem; }
+        .file-item .file-icon { font-size: 1.4rem; }
+        .file-item .file-name { font-weight: 500; font-size: 0.88rem; }
+        .file-item .file-meta { font-size: 0.72rem; color: var(--text-muted); }
+        .file-item .file-badge { padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .file-item .file-badge.healthy { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+        .file-item .file-badge.stale { background: rgba(234,179,8,0.15); color: var(--accent-yellow); }
+        .file-item .file-badge.archived { background: rgba(100,116,139,0.15); color: var(--text-muted); }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo-section">
+            <div class="logo">🌊</div>
+            <div>
+                <div class="company-name">IncentiveHouse</div>
+                <div class="company-subtitle">ERP Control Center</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div class="ws-status disconnected" id="wsStatus">
+                <div class="ws-dot disconnected" id="wsDot"></div>
+                <span id="wsText">Offline</span>
+            </div>
+            <span class="system-badge warning" id="systemBadge">Checking...</span>
+            <button class="btn btn-secondary btn-sm" onclick="refreshAll()" id="refreshBtn">🔄 Refresh</button>
+            <button class="btn btn-primary btn-sm" onclick="triggerScan()" id="scanBtn">🔍 Scan</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="nav-card">
+                <div class="nav-card-header">Navigation</div>
+                <div class="nav-item active" onclick="switchTab('flow')" data-tab="flow">
+                    <span class="nav-icon">🌊</span>
+                    <div><div class="nav-text">Data Flow</div><div class="nav-desc">Live topology graph</div></div>
+                </div>
+                <div class="nav-item" onclick="switchTab('locations')" data-tab="locations">
+                    <span class="nav-icon">📍</span>
+                    <div><div class="nav-text">Data Locations</div><div class="nav-desc">Where data lives</div></div>
+                </div>
+                <div class="nav-item" onclick="switchTab('master')" data-tab="master">
+                    <span class="nav-icon">🏛️</span>
+                    <div><div class="nav-text">Master Tables</div><div class="nav-desc">Health & staleness</div></div>
+                </div>
+                <div class="nav-item" onclick="switchTab('alerts')" data-tab="alerts">
+                    <span class="nav-icon">🚨</span>
+                    <div><div class="nav-text">Alerts</div><div class="nav-desc">Critical issues</div></div>
+                </div>
+                <div class="nav-item" onclick="switchTab('documents')" data-tab="documents">
+                    <span class="nav-icon">📄</span>
+                    <div><div class="nav-text">Documents</div><div class="nav-desc">Files & uploads</div></div>
+                </div>
+            </div>
+            <div class="nav-card">
+                <div class="nav-card-header">Module Status</div>
+                <div class="nav-item"><span class="status-dot online"></span><span>Bio-ERP Core <span style="color:var(--text-muted);font-size:0.75rem;">:8000</span></span></div>
+                <div class="nav-item"><span class="status-dot online"></span><span>IncentiveHouse <span style="color:var(--text-muted);font-size:0.75rem;">:9001</span></span></div>
+                <div class="nav-item"><span class="status-dot idle"></span><span>EventCore <span style="color:var(--text-muted);font-size:0.75rem;">:8001</span></span></div>
+                <div class="nav-item"><span class="status-dot online"></span><span>OR Module <span style="color:var(--text-muted);font-size:0.75rem;">/api/v1/or</span></span></div>
+                <div class="nav-item"><span class="status-dot offline"></span><span>SCM Module <span style="color:var(--text-muted);font-size:0.75rem;">Staging</span></span></div>
+            </div>
+            <div class="nav-card">
+                <div class="nav-card-header">Quick Filters</div>
+                <div class="nav-item" onclick="filterLocations('master')"><span style="font-size:0.85rem;">🏷️</span> Master Data</div>
+                <div class="nav-item" onclick="filterLocations('stale')"><span style="font-size:0.85rem;">⏰</span> Stale Data</div>
+                <div class="nav-item" onclick="filterMaster('critical')"><span style="font-size:0.85rem;">🔴</span> Critical Tables</div>
+                <div class="nav-item" onclick="clearFilters()"><span style="font-size:0.85rem;">🔄</span> Clear All</div>
+            </div>
+        </aside>
+
+        <main class="content">
+            <div class="exec-summary" id="execSummary">
+                <div class="exec-health-ring">
+                    <svg width="80" height="80" viewBox="0 0 80 80">
+                        <circle class="ring-bg" cx="40" cy="40" r="34"/>
+                        <circle class="ring-fill" id="healthRing" cx="40" cy="40" r="34" stroke="#06b6d4" stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
+                    </svg>
+                    <div class="exec-health-text">
+                        <div class="score" id="execScore">--</div>
+                        <div class="label">Health</div>
+                    </div>
+                </div>
+                <div class="exec-metrics">
+                    <div class="exec-metric"><div class="exec-metric-value" id="execNodes">--</div><div class="exec-metric-label">Data Nodes</div></div>
+                    <div class="exec-metric"><div class="exec-metric-value" id="execEdges">--</div><div class="exec-metric-label">Active Flows</div></div>
+                    <div class="exec-metric"><div class="exec-metric-value warning" id="execAlerts">--</div><div class="exec-metric-label">Alerts</div></div>
+                    <div class="exec-metric"><div class="exec-metric-value" id="execTables">--</div><div class="exec-metric-label">Master Tables</div></div>
+                    <div class="exec-metric"><div class="exec-metric-value" id="execEntities">--</div><div class="exec-metric-label">Data Entities</div></div>
+                </div>
+                <div class="exec-actions">
+                    <button class="btn btn-primary btn-sm" onclick="triggerScan()">🔍 Capture Snapshot</button>
+                    <button class="btn btn-secondary btn-sm" onclick="refreshAll()">🔄 Refresh</button>
+                </div>
+            </div>
+
+            <div class="module-grid" id="moduleGrid"><div class="loading">Loading modules...</div></div>
+
+            <div class="score-grid">
+                <div class="score-card info">
+                    <div class="score-label">Flow Health</div>
+                    <div class="score-value" id="flowHealthScore">--</div>
+                    <div class="score-sub" id="flowHealthSub">--</div>
+                </div>
+                <div class="score-card healthy">
+                    <div class="score-label">Data Health</div>
+                    <div class="score-value healthy" id="dataHealthScore">--</div>
+                    <div class="score-sub" id="dataHealthSub">--</div>
+                </div>
+                <div class="score-card warning">
+                    <div class="score-label">Master Health</div>
+                    <div class="score-value warning" id="masterHealthScore">--</div>
+                    <div class="score-sub" id="masterHealthSub">--</div>
+                </div>
+                <div class="score-card danger">
+                    <div class="score-label">Critical Alerts</div>
+                    <div class="score-value danger" id="alertCount">--</div>
+                    <div class="score-sub" id="alertSub">--</div>
+                </div>
+            </div>
+
+            <div class="tab-content active" id="tab-flow">
+                <div class="flow-container">
+                    <div class="flow-header">
+                        <span>🌊 Real-Time Data Flow Topology</span>
+                        <span style="font-size:0.78rem;color:var(--text-muted);" id="flowTimestamp">--</span>
+                    </div>
+                    <div id="flowGraph"></div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-dot" style="background:#22c55e;"></div> Active</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#eab308;"></div> Idle</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div> Error/Offline</div>
+                        <div class="legend-item">— Solid: Flowing</div>
+                        <div class="legend-item">- - Dashed: Stalled</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-locations">
+                <div class="table-container">
+                    <div class="table-header">
+                        <span>📍 Data Entity Locations Map</span>
+                        <span style="font-size:0.78rem;color:var(--text-muted);" id="locationCount">-- entities</span>
+                    </div>
+                    <div style="padding:0.5rem 1.25rem;background:rgba(6,182,212,0.03);font-size:0.78rem;color:var(--text-muted);display:grid;grid-template-columns:1.5fr 0.8fr 1fr 0.8fr 0.8fr 1fr 100px;font-weight:600;">
+                        <span>Entity</span><span>Type</span><span>Primary Location</span><span>Rows</span><span>Replicas</span><span>Last Update</span><span>Health</span>
+                    </div>
+                    <div id="locationsBody"><div class="loading">Loading data locations...</div></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-master">
+                <div class="table-container" style="margin-bottom:1rem;">
+                    <div class="table-header">
+                        <span>🏛️ Master Table Health Dashboard</span>
+                        <span style="font-size:0.78rem;color:var(--text-muted);" id="masterSummary">--</span>
+                    </div>
+                </div>
+                <div class="master-grid" id="masterGrid"><div class="loading" style="grid-column:1/-1;">Loading master tables...</div></div>
+            </div>
+
+            <div class="tab-content" id="tab-alerts">
+                <div class="table-container" style="margin-bottom:1rem;">
+                    <div class="table-header">
+                        <span>🚨 Critical Alerts & Notifications</span>
+                        <span style="font-size:0.78rem;color:var(--text-muted);" id="alertSummary">--</span>
+                    </div>
+                </div>
+                <div class="alerts-panel" id="alertsPanel"><div class="loading">Loading alerts...</div></div>
+            </div>
+
+            <div class="tab-content" id="tab-documents">
+                <div class="table-container" style="margin-bottom:1rem;">
+                    <div class="table-header">
+                        <span>📄 Document Manager</span>
+                        <span style="font-size:0.78rem;color:var(--text-muted);" id="fileSummary">-- files</span>
+                    </div>
+                </div>
+                <div class="drop-zone" id="dropZone" style="background:var(--bg-card);border:2px dashed var(--border);border-radius:12px;padding:2rem;text-align:center;margin-bottom:1rem;cursor:pointer;transition:all 0.2s;">
+                    <div style="font-size:2rem;margin-bottom:0.5rem;">📁</div>
+                    <div style="font-weight:600;color:var(--text-secondary);">Drag & drop Excel files here to upload</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.3rem;">Data_Base_Mtbls.xlsx, Bnk_TRNX SOURCE.xlsx, etc.</div>
+                    <input type="file" id="fileInput" style="display:none" accept=".xlsx,.xls,.csv">
+                </div>
+                <div class="file-list" id="fileList"><div class="loading">Loading files...</div></div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-brand"><span>🌊</span><span><strong>IncentiveHouse</strong> ERP Control Center</span></div>
+        <div class="footer-links">
+            <a href="/docs" target="_blank">API Docs</a>
+            <a href="status" target="_blank">Status</a>
+            <span>ERP Builder Protocol v2.2</span>
+            <span>BIO-ERP v5.1</span>
+        </div>
+        <div>© 2026 IncentiveHouse. All rights reserved.</div>
+    </footer>
+
+    <div class="ai-widget">
+        <div class="ai-window" id="aiWindow">
+            <div class="ai-header">
+                <div><div class="ai-title">🤖 ERP AI Assistant</div><div class="ai-status" id="aiStatus">Analyzing system...</div></div>
+                <button class="ai-close" onclick="toggleAI()">×</button>
+            </div>
+            <div class="ai-body" id="aiBody">
+                <div class="ai-message bot">
+                    <div>Welcome to IncentiveHouse ERP Control Center. I am monitoring your system health and data flows.</div>
+                    <div class="msg-time">Just now</div>
+                </div>
+            </div>
+            <div class="ai-input-area">
+                <input type="text" class="ai-input" id="aiInput" placeholder="Ask about system health..." onkeypress="if(event.key==='Enter')sendAIMessage()">
+                <button class="ai-send" onclick="sendAIMessage()">➤</button>
+            </div>
+        </div>
+        <button class="ai-toggle pulse" id="aiToggle" onclick="toggleAI()">🤖</button>
+    </div>
+    <script>
+        let flowNetwork = null, ws = null, autoRefreshInterval = null;
+        let currentFilter = { locations: null, master: null };
+        let lastSnapshot = null, aiOpen = false, aiContext = 'overview';
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item[data-tab]').forEach(n => n.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.querySelector('.nav-item[data-tab="' + tabName + '"]').classList.add('active');
+            aiContext = tabName;
+            if (aiOpen) generateAIInsights();
+            if (tabName === 'flow' && flowNetwork) setTimeout(() => flowNetwork.fit(), 100);
+        }
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = protocol + '//' + window.location.host + '/api/v1/launcher/ws';
+            ws = new WebSocket(wsUrl);
+            ws.onopen = () => { updateWsStatus(true); };
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'snapshot') { lastSnapshot = data.payload; updateAllViews(data.payload); }
+            };
+            ws.onclose = () => { updateWsStatus(false); setTimeout(connectWebSocket, 5000); };
+            ws.onerror = () => { updateWsStatus(false); };
+        }
+
+        function updateWsStatus(connected) {
+            const dot = document.getElementById('wsDot'), text = document.getElementById('wsText'), status = document.getElementById('wsStatus');
+            if (connected) { dot.className = 'ws-dot connected'; text.textContent = 'Live'; status.className = 'ws-status connected'; }
+            else { dot.className = 'ws-dot disconnected'; text.textContent = 'Offline'; status.className = 'ws-status disconnected'; }
+        }
+
+        async function fetchJSON(url) {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        }
+
+        async function refreshAll() {
+            const btn = document.getElementById('refreshBtn');
+            btn.disabled = true; btn.textContent = '⏳...';
+            try {
+                const [snapshot, graph, locations, masterTables, aiInsights, modulesResp, filesResp] = await Promise.all([
+                    fetchJSON('flow/snapshot'), fetchJSON('flow/graph'),
+                    fetchJSON('locations'), fetchJSON('master-tables'),
+                    fetchJSON('ai/insights'), fetchJSON('modules'),
+                    fetchJSON('files')
+                ]);
+                lastSnapshot = snapshot;
+                updateScoreCards(snapshot); updateExecutiveSummary(snapshot); updateSystemBadge(snapshot);
+                renderFlowGraph(graph); renderLocations(locations.locations || []);
+                renderMasterTables(masterTables.tables || []); renderAlerts(snapshot.critical_alerts || []);
+                renderModuleGrid(modulesResp.modules || []); renderFiles(filesResp.files || []);
+                updateAIInsights(aiInsights); showToast('Dashboard refreshed', 'success');
+            } catch (err) { showToast('Refresh failed: ' + err.message, 'error'); console.error(err); }
+            finally { btn.disabled = false; btn.textContent = '🔄 Refresh'; }
+        }
+
+        async function triggerScan() {
+            const btn = document.getElementById('scanBtn');
+            btn.disabled = true; btn.textContent = '⏳...';
+            try {
+                const response = await fetch('flow/snapshot', { method: 'POST' });
+                const data = await response.json();
+                showToast('Snapshot: ' + data.node_count + ' nodes, ' + data.edge_count + ' edges', 'success');
+                await refreshAll();
+            } catch (err) { showToast('Scan failed: ' + err.message, 'error'); }
+            finally { btn.disabled = false; btn.textContent = '🔍 Scan'; }
+        }
+
+        function updateExecutiveSummary(snapshot) {
+            const overall = Math.round((snapshot.overall_flow_health + snapshot.overall_data_health + snapshot.overall_master_health) / 3);
+            document.getElementById('execScore').textContent = overall;
+            document.getElementById('execScore').style.color = overall >= 80 ? 'var(--accent-green)' : overall >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+            const ring = document.getElementById('healthRing');
+            const circumference = 2 * Math.PI * 34;
+            ring.style.strokeDashoffset = circumference - (overall / 100) * circumference;
+            ring.style.stroke = overall >= 80 ? 'var(--accent-green)' : overall >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+            document.getElementById('execNodes').textContent = snapshot.node_count || '--';
+            document.getElementById('execEdges').textContent = snapshot.edge_count || '--';
+            document.getElementById('execAlerts').textContent = snapshot.critical_alerts?.length || 0;
+            document.getElementById('execAlerts').className = 'exec-metric-value ' + (snapshot.critical_alerts?.length > 0 ? 'critical' : 'healthy');
+            document.getElementById('execTables').textContent = snapshot.master_table_count || '--';
+            document.getElementById('execEntities').textContent = snapshot.location_count || '--';
+        }
+
+        function updateSystemBadge(snapshot) {
+            const badge = document.getElementById('systemBadge');
+            const overall = Math.round((snapshot.overall_flow_health + snapshot.overall_data_health + snapshot.overall_master_health) / 3);
+            badge.textContent = overall >= 80 ? 'System Healthy' : overall >= 50 ? 'Attention Needed' : 'Critical';
+            badge.className = 'system-badge ' + (overall >= 80 ? 'healthy' : overall >= 50 ? 'warning' : 'critical');
+        }
+
+        function updateScoreCards(snapshot) {
+            document.getElementById('flowHealthScore').textContent = snapshot.overall_flow_health + '/100';
+            document.getElementById('flowHealthSub').textContent = snapshot.node_count + ' nodes monitored';
+            document.getElementById('dataHealthScore').textContent = snapshot.overall_data_health + '/100';
+            document.getElementById('dataHealthSub').textContent = snapshot.location_count + ' entities tracked';
+            document.getElementById('masterHealthScore').textContent = snapshot.overall_master_health + '/100';
+            document.getElementById('masterHealthSub').textContent = snapshot.master_table_count + ' tables checked';
+            document.getElementById('alertCount').textContent = snapshot.critical_alerts.length;
+            document.getElementById('alertSub').textContent = snapshot.critical_alerts.length > 0 ? 'Action required' : 'All clear';
+            document.getElementById('flowTimestamp').textContent = new Date(snapshot.timestamp).toLocaleString();
+        }
+
+        function renderFlowGraph(graphData) {
+            const container = document.getElementById('flowGraph');
+            if (!container || !graphData.nodes) return;
+            const levelMap = { 'module': 0, 'database_table': 1, 'file': 2, 'api': 2 };
+            const nodeLevels = {};
+            graphData.nodes.forEach(n => { nodeLevels[n.id] = levelMap[n.type] !== undefined ? levelMap[n.type] : 1; });
+            const nodeColor = (n) => {
+                if (n.status === 'active') return { background: '#22c55e', border: '#16a34a' };
+                if (n.status === 'idle') return { background: '#eab308', border: '#ca8a04' };
+                return { background: '#ef4444', border: '#dc2626' };
+            };
+            const nodes = new vis.DataSet(graphData.nodes.map(n => ({
+                id: n.id, label: n.label, group: n.group,
+                level: nodeLevels[n.id],
+                shape: n.type === 'database_table' ? 'box' : n.type === 'file' ? 'ellipse' : n.type === 'api' ? 'diamond' : 'hexagon',
+                color: nodeColor(n),
+                size: n.type === 'module' ? 32 : 20, title: n.title || n.label,
+                font: { color: '#f8fafc', size: 11, face: 'Segoe UI', multi: 'html' },
+                borderWidth: n.type === 'module' ? 3 : 1
+            })));
+            const edges = new vis.DataSet(graphData.edges.map(e => ({
+                id: e.id, from: e.from, to: e.to, label: e.label, title: e.title || e.label,
+                color: { color: e.status === 'flowing' ? '#22c55e' : e.status === 'stalled' ? '#ef4444' : '#64748b', opacity: e.status === 'flowing' ? 1 : 0.4 },
+                dashes: e.status === 'stalled' ? [10, 5] : (e.status === 'flowing' ? false : [5, 5]),
+                arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+                width: e.volume > 1000 ? 3 : e.volume > 100 ? 2 : 1,
+                smooth: { type: 'curvedCW', roundness: 0.15 }
+            })));
+            const options = {
+                groups: { 'Bio-ERP Core': { color: { background: '#3b82f6', border: '#2563eb' } },
+                          'IncentiveHouse ERP': { color: { background: '#06b6d4', border: '#0891b2' } },
+                          'EventCore ERP': { color: { background: '#a855f7', border: '#9333ea' } },
+                          'OR-ERP Module': { color: { background: '#f97316', border: '#ea580c' } },
+                          'SCM Module': { color: { background: '#ec4899', border: '#db2777' } },
+                          'External': { color: { background: '#64748b', border: '#475569' } },
+                          'AI Layer': { color: { background: '#14b8a6', border: '#0d9488' } } },
+                layout: { hierarchical: { direction: 'UD', sortMethod: 'directed', levelSeparation: 150, nodeSpacing: 180, treeSpacing: 250 } },
+                physics: { enabled: false },
+                interaction: { hover: true, tooltipDelay: 200 },
+                edges: { smooth: { type: 'curvedCW', roundness: 0.15 } }
+            };
+            if (flowNetwork) flowNetwork.destroy();
+            flowNetwork = new vis.Network(container, { nodes, edges }, options);
+            // Synapse pulse animation for flowing edges
+            let pulsePhase = 0;
+            if (window._synapseInterval) clearInterval(window._synapseInterval);
+            window._synapseInterval = setInterval(() => {
+                pulsePhase = (pulsePhase + 1) % 4;
+                const flowingEdges = graphData.edges.filter(e => e.status === 'flowing');
+                flowingEdges.forEach(e => {
+                    try { flowNetwork.body.data.edges.update({ id: e.id, dashes: pulsePhase < 2 ? false : [8, 4] }); } catch(ex) {}
+                });
+            }, 600);
+            flowNetwork.on('destroy', () => { if (window._synapseInterval) clearInterval(window._synapseInterval); });
+        }
+
+        function renderLocations(locations) {
+            const container = document.getElementById('locationsBody');
+            const filtered = currentFilter.locations ? locations.filter(l => l.entity_type === currentFilter.locations || l.health_status === currentFilter.locations) : locations;
+            document.getElementById('locationCount').textContent = filtered.length + ' entities';
+            if (filtered.length === 0) { container.innerHTML = '<div class="empty-state">No data locations found</div>'; return; }
+            container.innerHTML = filtered.map(loc => '<div class="data-row"><div><div style="font-weight:600;font-size:0.85rem;">' + loc.entity_name + '</div><div style="font-size:0.72rem;color:var(--text-muted);">' + loc.primary_module + '</div></div><div style="font-size:0.8rem;color:var(--text-muted);">' + loc.entity_type + '</div><div style="font-size:0.8rem;"><div>' + loc.primary_table + '</div><div style="font-size:0.72rem;color:var(--text-muted);">' + loc.primary_db + '</div></div><div style="font-weight:600;font-size:0.85rem;">' + (loc.row_count?.toLocaleString() || 'N/A') + '</div><div style="font-size:0.8rem;">' + (loc.replicas?.length || 0) + '</div><div style="font-size:0.78rem;color:var(--text-muted);">' + (loc.last_updated ? new Date(loc.last_updated).toLocaleDateString() : 'Never') + '</div><div><span class="health-badge ' + loc.health_status + '">' + loc.health_status + '</span></div></div>').join('');
+        }
+
+        function filterLocations(filter) { currentFilter.locations = filter; switchTab('locations'); if (lastSnapshot) renderLocations(lastSnapshot.locations || []); }
+
+        function renderMasterTables(tables) {
+            const container = document.getElementById('masterGrid');
+            const filtered = currentFilter.master ? tables.filter(t => { if (currentFilter.master === 'critical') return t.health_score < 50; if (currentFilter.master === 'stale') return t.is_stale; return true; }) : tables;
+            const healthy = tables.filter(t => t.health_score >= 80).length;
+            const degraded = tables.filter(t => t.health_score >= 50 && t.health_score < 80).length;
+            const critical = tables.filter(t => t.health_score < 50).length;
+            document.getElementById('masterSummary').textContent = tables.length + ' tables | ' + healthy + ' healthy | ' + degraded + ' degraded | ' + critical + ' critical';
+            if (filtered.length === 0) { container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">No tables match filter</div>'; return; }
+            container.innerHTML = filtered.map(t => {
+                const healthColor = t.health_score >= 80 ? 'var(--accent-green)' : t.health_score >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+                return '<div class="master-card"><div class="master-card-header"><div><div class="master-card-title">' + t.table_name + '</div><div class="master-card-module">' + t.module + ' &bull; ' + t.database + '</div></div><span class="health-badge ' + (t.health_score >= 80 ? 'healthy' : t.health_score >= 50 ? 'stale' : 'orphaned') + '">' + t.health_score + '/100</span></div><div class="master-health-bar"><div class="master-health-fill" style="width:' + t.health_score + '%;background:' + healthColor + ';"></div></div><div class="master-stats"><div>Rows: <span class="master-stat-value">' + (t.row_count?.toLocaleString() || 0) + '</span></div><div>Trend: <span class="master-stat-value">' + t.row_count_trend + '</span></div><div>Orphans: <span class="master-stat-value">' + t.orphan_count + '</span></div><div>Dupes: <span class="master-stat-value">' + t.duplicate_count + '</span></div></div><div class="master-recommendation">' + t.recommendation + '</div><div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem;">' + (t.is_stale ? '⏰ Stale ' : '✓ Fresh ') + (t.last_update ? '&bull; ' + new Date(t.last_update).toLocaleDateString() : '') + (t.index_health !== 'unknown' ? ' &bull; Index: ' + t.index_health : '') + '</div></div>';
+            }).join('');
+        }
+
+        function filterMaster(filter) { currentFilter.master = filter; switchTab('master'); if (lastSnapshot) renderMasterTables(lastSnapshot.master_tables || []); }
+        function clearFilters() { currentFilter = { locations: null, master: null }; refreshAll(); }
+
+        function renderModuleGrid(modules) {
+            const container = document.getElementById('moduleGrid');
+            if (!modules || modules.length === 0) { container.innerHTML = '<div class="loading">No modules found</div>'; return; }
+            container.innerHTML = modules.map(m => {
+                const healthColor = m.health >= 80 ? '#22c55e' : m.health >= 50 ? '#eab308' : '#ef4444';
+                const circumference = 2 * Math.PI * 22;
+                const offset = circumference - (m.health / 100) * circumference;
+                const online = m.status === 'online';
+                return '<div class="module-card" onclick="' + (m.url ? "window.open('" + m.url + "','_blank')" : '') + '">' +
+                    '<div class="card-emoji">' + (m.emoji || '🧩') + '</div>' +
+                    '<div class="card-name">' + m.name + '</div>' +
+                    '<div class="card-role">' + (m.role || '') + '</div>' +
+                    '<div class="card-ring">' +
+                    '<svg width="56" height="56" viewBox="0 0 56 56">' +
+                    '<circle class="ring-bg" cx="28" cy="28" r="22"/>' +
+                    '<circle class="ring-fill" cx="28" cy="28" r="22" stroke="' + healthColor + '" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '"/>' +
+                    '</svg>' +
+                    '<div class="ring-text" style="color:' + healthColor + ';">' + m.health + '%</div>' +
+                    '</div>' +
+                    '<div class="card-status ' + m.status + '">' + (online ? '🟢 Online' : m.status === 'unknown' ? '🟡 Unknown' : '🔴 Offline') + '</div>' +
+                    (m.port ? '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.2rem;">:' + m.port + '</div>' : '') +
+                    '</div>';
+            }).join('');
+        }
+
+        function renderFiles(files) {
+            const container = document.getElementById('fileList');
+            document.getElementById('fileSummary').textContent = files.length + ' file' + (files.length !== 1 ? 's' : '');
+            if (files.length === 0) { container.innerHTML = '<div class="empty-state">No Excel files found on D:\\. Drop files above to upload.</div>'; return; }
+            container.innerHTML = files.map(f => '<div class="file-item"><div class="file-info"><div class="file-icon">📄</div><div><div class="file-name">' + f.name + '</div><div class="file-meta">' + f.size_mb + ' MB &bull; ' + f.staleness_hours + 'h ago &bull; ' + f.path + '</div></div></div><div><span class="file-badge ' + f.status + '">' + f.status + '</span></div></div>').join('');
+        }
+
+        function renderAlerts(alerts) {
+            const container = document.getElementById('alertsPanel');
+            document.getElementById('alertSummary').textContent = alerts.length + ' active alert' + (alerts.length !== 1 ? 's' : '');
+            if (alerts.length === 0) { container.innerHTML = '<div class="empty-state">🎉 All systems healthy — no alerts!</div>'; return; }
+            container.innerHTML = alerts.map(alert => {
+                let type = 'info';
+                if (alert.includes('STALLED') || alert.includes('OFFLINE') || alert.includes('MASTER TABLE')) type = 'critical';
+                else if (alert.includes('STALE')) type = 'warning';
+                return '<div class="alert-item ' + type + '">' + alert + '</div>';
+            }).join('');
+        }
+
+        function toggleAI() {
+            const win = document.getElementById('aiWindow'), toggle = document.getElementById('aiToggle');
+            aiOpen = !aiOpen; win.classList.toggle('open', aiOpen); toggle.classList.toggle('pulse', !aiOpen);
+            if (aiOpen) generateAIInsights();
+        }
+
+        function updateAIInsights(insights) { if (!insights) return; document.getElementById('aiStatus').textContent = insights.summary || 'Monitoring system...'; }
+
+        function generateAIInsights() {
+            if (!lastSnapshot) return;
+            const body = document.getElementById('aiBody');
+            const alerts = lastSnapshot.critical_alerts || [];
+            let insightHTML = '';
+            if (aiContext === 'overview' || aiContext === 'flow') {
+                const flowing = lastSnapshot.edges?.filter(e => e.status === 'flowing').length || 0;
+                const stalled = lastSnapshot.edges?.filter(e => e.status === 'stalled').length || 0;
+                insightHTML += '<div class="ai-insight"><div class="ai-insight-title">📊 Data Flow Status</div><ul class="ai-insight-list"><li>' + flowing + ' of ' + (lastSnapshot.edge_count || 0) + ' data flows are active</li>' + (stalled > 0 ? '<li>⚠️ ' + stalled + ' flow' + (stalled > 1 ? 's' : '') + ' stalled — check node connectivity</li>' : '') + '<li>Last update: ' + new Date(lastSnapshot.timestamp).toLocaleTimeString() + '</li></ul></div>';
+            }
+            if (aiContext === 'overview' || aiContext === 'master') {
+                const staleTables = lastSnapshot.master_tables?.filter(t => t.is_stale).length || 0;
+                const criticalTables = lastSnapshot.master_tables?.filter(t => t.health_score < 50).length || 0;
+                insightHTML += '<div class="ai-insight"><div class="ai-insight-title">🏛️ Master Table Health</div><ul class="ai-insight-list"><li>' + (lastSnapshot.master_table_count || 0) + ' tables monitored</li>' + (staleTables > 0 ? '<li>⏰ ' + staleTables + ' table' + (staleTables > 1 ? 's' : '') + ' need refresh</li>' : '') + (criticalTables > 0 ? '<li>🔴 ' + criticalTables + ' table' + (criticalTables > 1 ? 's' : '') + ' in critical state</li>' : '') + '</ul><div class="ai-actions">' + (staleTables > 0 ? '<button class="ai-action-btn" onclick="filterMaster('stale')">View Stale</button>' : '') + (criticalTables > 0 ? '<button class="ai-action-btn" onclick="filterMaster('critical')">View Critical</button>' : '') + '</div></div>';
+            }
+            if (aiContext === 'overview' || aiContext === 'documents') {
+                fetchJSON('files').then(d => {
+                    const files = d.files || [];
+                    const stale = files.filter(f => f.status === 'stale' || f.status === 'archived').length;
+                    if (files.length > 0) {
+                        const extra = '<div class="ai-insight"><div class="ai-insight-title">📄 Document Status</div><ul class="ai-insight-list"><li>' + files.length + ' file(s) on D:\\</li><li>' + stale + ' file(s) stale or archived</li><li>Latest: ' + files[0].name + ' (' + files[0].staleness_hours + 'h ago)</li></ul><div class="ai-actions"><button class="ai-action-btn" onclick="switchTab(\'documents\')">View Documents</button></div></div>';
+                        body.innerHTML += extra;
+                    }
+                });
+            }
+            if (alerts.length > 0) {
+                insightHTML += '<div class="ai-insight"><div class="ai-insight-title">🚨 Priority Actions</div><ul class="ai-insight-list">' + alerts.slice(0, 3).map(a => '<li>' + a + '</li>').join('') + '</ul><div class="ai-actions"><button class="ai-action-btn" onclick="switchTab(\'alerts\')">View All Alerts</button><button class="ai-action-btn" onclick="triggerScan()">Run Scan</button></div></div>';
+            }
+            body.innerHTML = insightHTML || '<div class="ai-message bot"><div>Select a tab to see contextual insights.</div></div>';
+        }
+
+        function sendAIMessage() {
+            const input = document.getElementById('aiInput');
+            const text = input.value.trim();
+            if (!text) return;
+            const body = document.getElementById('aiBody');
+            body.innerHTML += '<div class="ai-message user"><div>' + text + '</div><div class="msg-time">' + new Date().toLocaleTimeString() + '</div></div>';
+            input.value = '';
+            body.scrollTop = body.scrollHeight;
+            setTimeout(() => {
+                let response = "I'm analyzing your system data. ";
+                if (text.toLowerCase().includes('health')) response += 'Overall system health is ' + document.getElementById('execScore').textContent + '%. Check the Executive Summary for details.';
+                else if (text.toLowerCase().includes('alert') || text.toLowerCase().includes('error')) response += 'There are ' + document.getElementById('alertCount').textContent + ' active alerts. Switch to the Alerts tab to see details.';
+                else if (text.toLowerCase().includes('table') || text.toLowerCase().includes('master')) response += 'I am monitoring ' + document.getElementById('execTables').textContent + ' master tables. Use the Master Tables tab to inspect them.';
+                else if (text.toLowerCase().includes('flow') || text.toLowerCase().includes('data')) response += 'Data flow topology shows ' + document.getElementById('execNodes').textContent + ' nodes and ' + document.getElementById('execEdges').textContent + ' active connections.';
+                else response += "I can help with system health, alerts, master tables, and data flows. What would you like to know?";
+                body.innerHTML += '<div class="ai-message bot"><div>' + response + '</div><div class="msg-time">' + new Date().toLocaleTimeString() + '</div></div>';
+                body.scrollTop = body.scrollHeight;
+            }, 600);
+        }
+
+        function showToast(message, type) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.animation = 'toastIn 0.3s ease reverse'; setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const resp = await fetch('files/upload', { method: 'POST', body: formData });
+                const data = await resp.json();
+                showToast('Uploaded: ' + data.filename + ' (' + data.size_mb + ' MB)', 'success');
+                const filesResp = await fetchJSON('files');
+                renderFiles(filesResp.files || []);
+            } catch (err) { showToast('Upload failed: ' + err.message, 'error'); }
+        }
+
+        function initDropZone() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            if (!dropZone) return;
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault(); dropZone.classList.remove('dragover');
+                for (const file of e.dataTransfer.files) uploadFile(file);
+            });
+            fileInput.addEventListener('change', () => {
+                for (const file of fileInput.files) uploadFile(file);
+                fileInput.value = '';
+            });
+        }
+
+        function updateAllViews(snapshot) {
+            updateScoreCards(snapshot); updateExecutiveSummary(snapshot); updateSystemBadge(snapshot);
+            fetchJSON('flow/graph').then(renderFlowGraph);
+            fetchJSON('locations').then(d => renderLocations(d.locations || []));
+            fetchJSON('master-tables').then(d => renderMasterTables(d.tables || []));
+            fetchJSON('modules').then(d => renderModuleGrid(d.modules || []));
+            fetchJSON('files').then(d => renderFiles(d.files || []));
+            renderAlerts(snapshot.critical_alerts || []);
+            if (aiOpen) generateAIInsights();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => { refreshAll(); connectWebSocket(); initDropZone(); });
+    </script>
+</body>
+</html>

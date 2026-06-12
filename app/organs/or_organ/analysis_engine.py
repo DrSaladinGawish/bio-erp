@@ -24,31 +24,22 @@ Usage:
 
 import json
 import os
-import tempfile
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from dataclasses import dataclass, asdict
 
-import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 # Import OR engines
-from app.organs.or_organ.or_erp_module import (
-    ORERPModule,
-    DecisionState, DecisionAlternative,
-    LPObjective, LPConstraint,
-    InventoryItem,
-    TransportNode, TransportRoute,
-    TOCResource,
-    BreakEvenPoint
-)
+from app.organs.or_organ.or_erp_module import ORERPModule
 
 
 @dataclass
 class AnalysisScenario:
     """Represents a single what-if scenario"""
+
     id: str
     name: str
     description: str
@@ -61,9 +52,10 @@ class AnalysisScenario:
             self.created_at = datetime.now().isoformat()
 
 
-@dataclass  
+@dataclass
 class AnalysisReport:
     """Complete analysis report with multiple scenarios"""
+
     report_id: str
     report_type: str
     base_parameters: Dict[str, Any]
@@ -82,7 +74,7 @@ class AnalysisReport:
             "base_parameters": self.base_parameters,
             "scenarios": [asdict(s) for s in self.scenarios],
             "recommendations": self.recommendations,
-            "generated_at": self.generated_at
+            "generated_at": self.generated_at,
         }
 
     def save_to_file(self, directory: str = "./analysis_reports"):
@@ -107,20 +99,26 @@ class ORAnalysisEngine:
     5. DISPOSABLE: Analysis files can be deleted without impact
     """
 
-    def __init__(self, production_db_url: str = None, analysis_dir: str = "./analysis_sandbox"):
+    def __init__(
+        self, production_db_url: str = None, analysis_dir: str = "./analysis_sandbox"
+    ):
         """
         Args:
             production_db_url: Connection string for read-only access to production DB
             analysis_dir: Directory for temporary analysis files (disposable)
         """
-        self.production_db_url = production_db_url or os.getenv("DATABASE_URL", "sqlite:///bio_erp.db")
+        self.production_db_url = production_db_url or os.getenv(
+            "DATABASE_URL", "sqlite:///bio_erp.db"
+        )
         self.analysis_dir = analysis_dir
         self.or_module = ORERPModule()
 
         # Create read-only engine (no write permissions)
         self.engine = create_engine(
             self.production_db_url,
-            connect_args={"options": "-c default_transaction_read_only=on"} if "postgresql" in self.production_db_url else {}
+            connect_args={"options": "-c default_transaction_read_only=on"}
+            if "postgresql" in self.production_db_url
+            else {},
         )
         self.Session = sessionmaker(bind=self.engine)
 
@@ -142,11 +140,13 @@ class ORAnalysisEngine:
     # SCENARIO 1: Inventory What-If Analysis
     # =================================================================
 
-    def what_if_inventory(self, 
-                         demand_multiplier: float = 1.0,
-                         holding_cost_change: float = 0.0,
-                         ordering_cost_change: float = 0.0,
-                         scenario_name: str = None) -> AnalysisScenario:
+    def what_if_inventory(
+        self,
+        demand_multiplier: float = 1.0,
+        holding_cost_change: float = 0.0,
+        ordering_cost_change: float = 0.0,
+        scenario_name: str = None,
+    ) -> AnalysisScenario:
         """
         Analyze inventory impact of demand/cost changes.
 
@@ -166,15 +166,17 @@ class ORAnalysisEngine:
             df = self._read_production_data(query)
         except Exception:
             # Fallback: use sample data if table doesn't exist yet
-            df = pd.DataFrame({
-                "sku": ["RAW-001", "RAW-002", "RAW-003"],
-                "item_name": ["Steel", "Plastic", "Chip"],
-                "annual_demand": [2400, 5000, 800],
-                "ordering_cost": [150, 200, 300],
-                "holding_cost_per_unit": [12, 8, 25],
-                "unit_cost": [80, 45, 120],
-                "lead_time_days": [7, 5, 14]
-            })
+            df = pd.DataFrame(
+                {
+                    "sku": ["RAW-001", "RAW-002", "RAW-003"],
+                    "item_name": ["Steel", "Plastic", "Chip"],
+                    "annual_demand": [2400, 5000, 800],
+                    "ordering_cost": [150, 200, 300],
+                    "holding_cost_per_unit": [12, 8, 25],
+                    "unit_cost": [80, 45, 120],
+                    "lead_time_days": [7, 5, 14],
+                }
+            )
 
         # Apply what-if parameters
         scenarios_results = []
@@ -184,10 +186,11 @@ class ORAnalysisEngine:
                 "name": row["item_name"],
                 "annual_demand": row["annual_demand"] * demand_multiplier,
                 "ordering_cost": row["ordering_cost"] * (1 + ordering_cost_change),
-                "holding_cost_per_unit": row["holding_cost_per_unit"] * (1 + holding_cost_change),
+                "holding_cost_per_unit": row["holding_cost_per_unit"]
+                * (1 + holding_cost_change),
                 "unit_cost": row["unit_cost"],
                 "lead_time_days": row["lead_time_days"],
-                "daily_demand": (row["annual_demand"] * demand_multiplier) / 365
+                "daily_demand": (row["annual_demand"] * demand_multiplier) / 365,
             }
 
             result = self.or_module.optimize_inventory([modified_item], "eoq")
@@ -200,13 +203,16 @@ class ORAnalysisEngine:
             parameters={
                 "demand_multiplier": demand_multiplier,
                 "holding_cost_change": holding_cost_change,
-                "ordering_cost_change": ordering_cost_change
+                "ordering_cost_change": ordering_cost_change,
             },
             results={
                 "items_analyzed": len(scenarios_results),
-                "total_annual_cost": sum(r.get("eoq_basic", {}).get("total_annual_cost", 0) for r in scenarios_results),
-                "items": scenarios_results
-            }
+                "total_annual_cost": sum(
+                    r.get("eoq_basic", {}).get("total_annual_cost", 0)
+                    for r in scenarios_results
+                ),
+                "items": scenarios_results,
+            },
         )
 
         self._save_scenario(scenario)
@@ -216,11 +222,13 @@ class ORAnalysisEngine:
     # SCENARIO 2: Production Mix Optimization
     # =================================================================
 
-    def optimize_production_mix(self, 
-                               labor_hours_available: float = None,
-                               machine_hours_available: float = None,
-                               material_a_available: float = None,
-                               scenario_name: str = None) -> AnalysisScenario:
+    def optimize_production_mix(
+        self,
+        labor_hours_available: float = None,
+        machine_hours_available: float = None,
+        material_a_available: float = None,
+        scenario_name: str = None,
+    ) -> AnalysisScenario:
         """
         Optimize production mix given resource constraints.
         Reads current product profitability from production data.
@@ -232,7 +240,7 @@ class ORAnalysisEngine:
         objective = {
             "name": "Maximize Profit",
             "coefficients": [40, 30, 50],  # Profit per unit of Product A, B, C
-            "sense": "maximize"
+            "sense": "maximize",
         }
 
         constraints = [
@@ -240,20 +248,20 @@ class ORAnalysisEngine:
                 "name": "Labor Hours",
                 "coefficients": [2, 1, 3],
                 "rhs": labor_hours_available or 100,
-                "operator": "<="
+                "operator": "<=",
             },
             {
-                "name": "Machine Hours", 
+                "name": "Machine Hours",
                 "coefficients": [1, 2, 1],
                 "rhs": machine_hours_available or 80,
-                "operator": "<="
+                "operator": "<=",
             },
             {
                 "name": "Material A",
                 "coefficients": [3, 0, 2],
                 "rhs": material_a_available or 90,
-                "operator": "<="
-            }
+                "operator": "<=",
+            },
         ]
 
         result = self.or_module.solve_linear_program(objective, constraints)
@@ -265,9 +273,9 @@ class ORAnalysisEngine:
             parameters={
                 "labor_hours": labor_hours_available or 100,
                 "machine_hours": machine_hours_available or 80,
-                "material_a": material_a_available or 90
+                "material_a": material_a_available or 90,
             },
-            results=result
+            results=result,
         )
 
         self._save_scenario(scenario)
@@ -277,25 +285,52 @@ class ORAnalysisEngine:
     # SCENARIO 3: Transportation Cost Analysis
     # =================================================================
 
-    def analyze_transportation(self,
-                              sources: List[Dict] = None,
-                              destinations: List[Dict] = None,
-                              routes: List[Dict] = None,
-                              method: str = "vogel",
-                              scenario_name: str = None) -> AnalysisScenario:
+    def analyze_transportation(
+        self,
+        sources: List[Dict] = None,
+        destinations: List[Dict] = None,
+        routes: List[Dict] = None,
+        method: str = "vogel",
+        scenario_name: str = None,
+    ) -> AnalysisScenario:
         """Analyze transportation costs with different methods"""
 
         # Default: Egypt distribution network (from textbook example)
         if sources is None:
             sources = [
-                {"id": "CAI", "name": "Cairo Factory", "supply": 500, "is_source": True},
-                {"id": "ALX", "name": "Alexandria Factory", "supply": 400, "is_source": True}
+                {
+                    "id": "CAI",
+                    "name": "Cairo Factory",
+                    "supply": 500,
+                    "is_source": True,
+                },
+                {
+                    "id": "ALX",
+                    "name": "Alexandria Factory",
+                    "supply": 400,
+                    "is_source": True,
+                },
             ]
         if destinations is None:
             destinations = [
-                {"id": "GIZ", "name": "Giza Warehouse", "demand": 300, "is_source": False},
-                {"id": "LUX", "name": "Luxor Warehouse", "demand": 350, "is_source": False},
-                {"id": "ASN", "name": "Aswan Warehouse", "demand": 250, "is_source": False}
+                {
+                    "id": "GIZ",
+                    "name": "Giza Warehouse",
+                    "demand": 300,
+                    "is_source": False,
+                },
+                {
+                    "id": "LUX",
+                    "name": "Luxor Warehouse",
+                    "demand": 350,
+                    "is_source": False,
+                },
+                {
+                    "id": "ASN",
+                    "name": "Aswan Warehouse",
+                    "demand": 250,
+                    "is_source": False,
+                },
             ]
         if routes is None:
             routes = [
@@ -304,17 +339,23 @@ class ORAnalysisEngine:
                 {"from_id": "CAI", "to_id": "ASN", "cost_per_unit": 150},
                 {"from_id": "ALX", "to_id": "GIZ", "cost_per_unit": 80},
                 {"from_id": "ALX", "to_id": "LUX", "cost_per_unit": 90},
-                {"from_id": "ALX", "to_id": "ASN", "cost_per_unit": 100}
+                {"from_id": "ALX", "to_id": "ASN", "cost_per_unit": 100},
             ]
 
-        result = self.or_module.solve_transportation(sources, destinations, routes, method)
+        result = self.or_module.solve_transportation(
+            sources, destinations, routes, method
+        )
 
         scenario = AnalysisScenario(
             id=f"TRNS_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
             name=scenario_name or f"Transport_{method}",
             description=f"Transportation analysis using {method} method",
-            parameters={"method": method, "sources": len(sources), "destinations": len(destinations)},
-            results=result
+            parameters={
+                "method": method,
+                "sources": len(sources),
+                "destinations": len(destinations),
+            },
+            results=result,
         )
 
         self._save_scenario(scenario)
@@ -324,19 +365,29 @@ class ORAnalysisEngine:
     # SCENARIO 4: PERT/CPM Project Scheduling
     # =================================================================
 
-    def analyze_project_schedule(self,
-                                activities: List[Dict] = None,
-                                scenario_name: str = None) -> AnalysisScenario:
+    def analyze_project_schedule(
+        self, activities: List[Dict] = None, scenario_name: str = None
+    ) -> AnalysisScenario:
         """Analyze project schedule and identify critical path"""
 
         if activities is None:
             activities = [
-                {"id": "A", "name": "Site Preparation", "predecessors": [], "duration": 3},
+                {
+                    "id": "A",
+                    "name": "Site Preparation",
+                    "predecessors": [],
+                    "duration": 3,
+                },
                 {"id": "B", "name": "Foundation", "predecessors": ["A"], "duration": 4},
                 {"id": "C", "name": "Framing", "predecessors": ["B"], "duration": 5},
                 {"id": "D", "name": "Electrical", "predecessors": ["C"], "duration": 2},
                 {"id": "E", "name": "Plumbing", "predecessors": ["C"], "duration": 3},
-                {"id": "F", "name": "Finishing", "predecessors": ["D", "E"], "duration": 4}
+                {
+                    "id": "F",
+                    "name": "Finishing",
+                    "predecessors": ["D", "E"],
+                    "duration": 4,
+                },
             ]
 
         result = self.or_module.analyze_network(activities)
@@ -346,7 +397,7 @@ class ORAnalysisEngine:
             name=scenario_name or "Project_Schedule_Analysis",
             description="PERT/CPM network analysis for project scheduling",
             parameters={"activities_count": len(activities)},
-            results=result
+            results=result,
         )
 
         self._save_scenario(scenario)
@@ -371,7 +422,7 @@ class ORAnalysisEngine:
         for config in scenario_configs:
             scenario_type = config.get("type")
             params = config.get("params", {})
-            name = config.get("name", f"Scenario_{len(scenarios)+1}")
+            name = config.get("name", f"Scenario_{len(scenarios) + 1}")
 
             if scenario_type == "inventory":
                 scenario = self.what_if_inventory(scenario_name=name, **params)
@@ -394,7 +445,7 @@ class ORAnalysisEngine:
             report_type="scenario_comparison",
             base_parameters={},
             scenarios=scenarios,
-            recommendations=recommendations
+            recommendations=recommendations,
         )
 
         report.save_to_file(self.analysis_dir)
@@ -413,7 +464,9 @@ class ORAnalysisEngine:
 
             if costs:
                 best = min(costs, key=lambda x: x[1])
-                recommendations.append(f"Lowest cost scenario: {best[0]} (${best[1]:,.2f})")
+                recommendations.append(
+                    f"Lowest cost scenario: {best[0]} (${best[1]:,.2f})"
+                )
 
             # Compare project durations
             durations = []
@@ -423,7 +476,9 @@ class ORAnalysisEngine:
 
             if durations:
                 fastest = min(durations, key=lambda x: x[1])
-                recommendations.append(f"Fastest completion: {fastest[0]} ({fastest[1]} days)")
+                recommendations.append(
+                    f"Fastest completion: {fastest[0]} ({fastest[1]} days)"
+                )
 
         return recommendations
 
@@ -434,6 +489,7 @@ class ORAnalysisEngine:
     def clear_analysis_files(self):
         """Delete all analysis files (disposable)"""
         import glob
+
         files = glob.glob(f"{self.analysis_dir}/*.json")
         for f in files:
             os.remove(f)
@@ -442,6 +498,7 @@ class ORAnalysisEngine:
     def list_scenarios(self) -> List[Dict]:
         """List all saved scenarios"""
         import glob
+
         scenarios = []
         for filename in glob.glob(f"{self.analysis_dir}/scenario_*.json"):
             with open(filename, "r", encoding="utf-8") as f:

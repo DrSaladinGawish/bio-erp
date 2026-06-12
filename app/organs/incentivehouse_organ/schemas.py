@@ -17,6 +17,7 @@ the legacy migration pipeline depends on:
 All schemas use Pydantic v2 ``ConfigDict(from_attributes=True)`` so they
 can be returned directly from SQLAlchemy ORM instances.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -28,6 +29,7 @@ from pydantic import BaseModel, ConfigDict, Field
 # ════════════════════════════════════════════════════════════════════
 #  1–6   Staging + Audit
 # ════════════════════════════════════════════════════════════════════
+
 
 class IncentiveHouseAuditLogBase(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -57,6 +59,7 @@ class IncentiveHouseAuditLogRead(IncentiveHouseAuditLogBase):
 
 class StagingRecordBase(BaseModel):
     """Common fields for the five *Staging tables (Bnk/Sal/Pur/Evn/Env)."""
+
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
     agent_id: Optional[str] = None
@@ -122,6 +125,7 @@ class EnvStagingRead(StagingRecordBase):
 # ════════════════════════════════════════════════════════════════════
 #  7–13  Pipeline lifecycle logs
 # ════════════════════════════════════════════════════════════════════
+
 
 class ExtractionLogBase(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -252,6 +256,7 @@ class ObserveLogRead(ObserveLogBase):
 #  14–15 Reconciliation
 # ════════════════════════════════════════════════════════════════════
 
+
 class BnkReconciliationBase(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
     transaction_id: Optional[str] = None
@@ -301,6 +306,7 @@ class BnkTrnxStagingRead(BnkTrnxStagingBase):
 # ════════════════════════════════════════════════════════════════════
 #  16–21 Master data
 # ════════════════════════════════════════════════════════════════════
+
 
 class ClientBase(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -411,6 +417,7 @@ class PnrRecordRead(PnrRecordBase):
 # ════════════════════════════════════════════════════════════════════
 #  22–27 Config / meta / operational
 # ════════════════════════════════════════════════════════════════════
+
 
 class SourcePathBase(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -525,11 +532,14 @@ class AgentRunRead(AgentRunBase):
 #  API request/response envelopes (used by routers)
 # ════════════════════════════════════════════════════════════════════
 
+
 class ExtractionRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
     file_path: str = Field(..., description="Full path to Excel source file")
     module: str = Field(..., pattern="^(Bnk|Sal|Pur|Evn|Env|GL)$")
-    sheet_name: Optional[str] = Field(None, description="Excel sheet name (auto-detect if null)")
+    sheet_name: Optional[str] = Field(
+        None, description="Excel sheet name (auto-detect if null)"
+    )
     header_row: Optional[int] = Field(None, description="Header row index 0-based")
     batch_size: int = Field(default=500, ge=1, le=5000)
     dry_run: bool = Field(default=True, description="Validate only, skip staging write")
@@ -597,7 +607,9 @@ class StagingListResponse(BaseModel):
 class PromoteRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
     module: str = Field(..., pattern="^(Bnk|Sal|Pur|Evn|Env)$")
-    record_ids: Optional[list[int]] = Field(None, description="Specific IDs to promote (null = all PASS)")
+    record_ids: Optional[list[int]] = Field(
+        None, description="Specific IDs to promote (null = all PASS)"
+    )
     confirmed: bool = Field(False, description="Must be True to actually promote")
 
 
@@ -635,6 +647,7 @@ class SourceListResponse(BaseModel):
 #  Reconciliation envelopes (used by recon_api.py / recon router)
 # ════════════════════════════════════════════════════════════════════
 
+
 class ReconStatusItem(BaseModel):
     recon_status: str
     count: int
@@ -661,8 +674,8 @@ class CheckBookSummary(BaseModel):
 #  BNK Router schemas (used by bnk_router.py)
 # ════════════════════════════════════════════════════════════════════
 
-from datetime import date, datetime
-from typing import Any, Generic, TypeVar
+from datetime import date
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -752,42 +765,100 @@ class BNKReconciliationStatus(BaseModel):
 
 __all__ = [
     # 1–6  Staging + audit
-    "IncentiveHouseAuditLogBase", "IncentiveHouseAuditLogCreate", "IncentiveHouseAuditLogRead",
+    "IncentiveHouseAuditLogBase",
+    "IncentiveHouseAuditLogCreate",
+    "IncentiveHouseAuditLogRead",
     "StagingRecordBase",
-    "BnkStagingCreate", "BnkStagingRead",
-    "SalStagingCreate", "SalStagingRead",
-    "PurStagingCreate", "PurStagingRead",
-    "EvnStagingCreate", "EvnStagingRead",
-    "EnvStagingCreate", "EnvStagingRead",
+    "BnkStagingCreate",
+    "BnkStagingRead",
+    "SalStagingCreate",
+    "SalStagingRead",
+    "PurStagingCreate",
+    "PurStagingRead",
+    "EvnStagingCreate",
+    "EvnStagingRead",
+    "EnvStagingCreate",
+    "EnvStagingRead",
     # 7–13 Lifecycle logs
-    "ExtractionLogBase", "ExtractionLogCreate", "ExtractionLogRead",
-    "ValidationLogBase", "ValidationLogCreate", "ValidationLogRead",
-    "StagingLogBase", "StagingLogCreate", "StagingLogRead",
-    "ReconcileLogBase", "ReconcileLogCreate", "ReconcileLogRead",
-    "ApprovalLogBase", "ApprovalLogCreate", "ApprovalLogRead",
-    "PromotionLogBase", "PromotionLogCreate", "PromotionLogRead",
-    "ObserveLogBase", "ObserveLogCreate", "ObserveLogRead",
+    "ExtractionLogBase",
+    "ExtractionLogCreate",
+    "ExtractionLogRead",
+    "ValidationLogBase",
+    "ValidationLogCreate",
+    "ValidationLogRead",
+    "StagingLogBase",
+    "StagingLogCreate",
+    "StagingLogRead",
+    "ReconcileLogBase",
+    "ReconcileLogCreate",
+    "ReconcileLogRead",
+    "ApprovalLogBase",
+    "ApprovalLogCreate",
+    "ApprovalLogRead",
+    "PromotionLogBase",
+    "PromotionLogCreate",
+    "PromotionLogRead",
+    "ObserveLogBase",
+    "ObserveLogCreate",
+    "ObserveLogRead",
     # 14–15 Reconciliation
-    "BnkReconciliationBase", "BnkReconciliationCreate", "BnkReconciliationRead",
-    "BnkTrnxStagingBase", "BnkTrnxStagingCreate", "BnkTrnxStagingRead",
+    "BnkReconciliationBase",
+    "BnkReconciliationCreate",
+    "BnkReconciliationRead",
+    "BnkTrnxStagingBase",
+    "BnkTrnxStagingCreate",
+    "BnkTrnxStagingRead",
     # 16–21 Master data
-    "ClientBase", "ClientCreate", "ClientRead",
-    "CostCenterBase", "CostCenterCreate", "CostCenterRead",
-    "ChequeBookBase", "ChequeBookCreate", "ChequeBookRead",
-    "SubLedgerKeyBase", "SubLedgerKeyCreate", "SubLedgerKeyRead",
-    "TrnxKeyBase", "TrnxKeyCreate", "TrnxKeyRead",
-    "PnrRecordBase", "PnrRecordCreate", "PnrRecordRead",
+    "ClientBase",
+    "ClientCreate",
+    "ClientRead",
+    "CostCenterBase",
+    "CostCenterCreate",
+    "CostCenterRead",
+    "ChequeBookBase",
+    "ChequeBookCreate",
+    "ChequeBookRead",
+    "SubLedgerKeyBase",
+    "SubLedgerKeyCreate",
+    "SubLedgerKeyRead",
+    "TrnxKeyBase",
+    "TrnxKeyCreate",
+    "TrnxKeyRead",
+    "PnrRecordBase",
+    "PnrRecordCreate",
+    "PnrRecordRead",
     # 22–27 Config / meta
-    "SourcePathBase", "SourcePathCreate", "SourcePathRead",
-    "MappingRuleBase", "MappingRuleCreate", "MappingRuleRead",
-    "ValidationRuleBase", "ValidationRuleCreate", "ValidationRuleRead",
-    "SnapshotRecordBase", "SnapshotRecordCreate", "SnapshotRecordRead",
-    "ErrorLogBase", "ErrorLogCreate", "ErrorLogRead",
-    "AgentRunBase", "AgentRunCreate", "AgentRunRead",
+    "SourcePathBase",
+    "SourcePathCreate",
+    "SourcePathRead",
+    "MappingRuleBase",
+    "MappingRuleCreate",
+    "MappingRuleRead",
+    "ValidationRuleBase",
+    "ValidationRuleCreate",
+    "ValidationRuleRead",
+    "SnapshotRecordBase",
+    "SnapshotRecordCreate",
+    "SnapshotRecordRead",
+    "ErrorLogBase",
+    "ErrorLogCreate",
+    "ErrorLogRead",
+    "AgentRunBase",
+    "AgentRunCreate",
+    "AgentRunRead",
     # API envelopes
-    "ExtractionRequest", "ModuleExtractionResult", "ExtractionResponse",
-    "StagingQuery", "StagingRecord", "StagingListResponse",
-    "PromoteRequest", "PromoteResponse",
-    "AgentStatusResponse", "SourceFileInfo", "SourceListResponse",
-    "ReconStatusItem", "VarianceItem", "CheckBookSummary",
+    "ExtractionRequest",
+    "ModuleExtractionResult",
+    "ExtractionResponse",
+    "StagingQuery",
+    "StagingRecord",
+    "StagingListResponse",
+    "PromoteRequest",
+    "PromoteResponse",
+    "AgentStatusResponse",
+    "SourceFileInfo",
+    "SourceListResponse",
+    "ReconStatusItem",
+    "VarianceItem",
+    "CheckBookSummary",
 ]

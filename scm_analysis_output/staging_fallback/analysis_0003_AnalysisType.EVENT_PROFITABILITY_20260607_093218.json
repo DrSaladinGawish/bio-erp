@@ -1,0 +1,44 @@
+{
+  "id": 3,
+  "saved_at": "2026-06-07T09:32:18.338052",
+  "event_id": 99,
+  "analysis_type": "event_profitability",
+  "input_data": {},
+  "results": {
+    "analysis_type": "event_profitability",
+    "event_id": 99,
+    "event_name": "Minimal Event",
+    "revenue": 100000.0,
+    "primary_cost": 0,
+    "support_cost": 0,
+    "sustainability_cost": 0,
+    "overhead_allocation": 0.0,
+    "total_cost": 0.0,
+    "gross_profit": 100000.0,
+    "gross_margin_pct": 100.0,
+    "budget_variance": 80000.0,
+    "budget_variance_pct": 100.0,
+    "client_profitability": {
+      "client_id": 1,
+      "client_name": "Test",
+      "event_gross_profit": 100000.0,
+      "event_margin_pct": 100.0,
+      "budget_variance": 80000.0,
+      "budget_variance_pct": 100.0
+    },
+    "status": "profitable",
+    "recommendations": [
+      "Gross margin 100.0% \u2014 healthy",
+      "Budget variance: +100.0% \u2014 under budget",
+      "True cost includes sustainability \u2014 not reflected in standard P&L"
+    ],
+    "confidence_score": 0.9
+  },
+  "recommendations": [
+    "Gross margin 100.0% \u2014 healthy",
+    "Budget variance: +100.0% \u2014 under budget",
+    "True cost includes sustainability \u2014 not reflected in standard P&L"
+  ],
+  "confidence_score": 0.9,
+  "created_by": "scm_cost_engine"
+}

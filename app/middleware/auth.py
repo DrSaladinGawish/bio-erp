@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
@@ -9,6 +9,7 @@ from sqlalchemy.orm import joinedload
 from app.config import settings
 from app.database import get_db
 from app.models import User, Role
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
@@ -43,9 +44,7 @@ async def get_current_user(
 ) -> User:
     token = credentials.credentials
     try:
-        payload = jwt.decode(
-            token, settings.JWT_SECRET, algorithms=["HS256"]
-        )
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
         user_id = int(payload.get("sub"))
     except (JWTError, ValueError, TypeError):
         raise HTTPException(

@@ -1,0 +1,9 @@
+
+# ── ADD THESE LINES TO app/main.py (after other router includes) ──
+
+from app.dashboard_api import router as dashboard_router
+app.include_router(dashboard_router)
+
+# Also ensure /api/v2/status is available (backward compat)
+from app.dashboard_api import router as dashboard_v2_router
+app.include_router(dashboard_v2_router, prefix="/api/v2")

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Budgeting & Forecasting - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Budgeting & Forecasting</div>
+<div class="page-header"><h1>Budgeting & Forecasting</h1></div>
+<div class="kpi-grid">
+  <div class="kpi-card kpi-active"><div class="kpi-label">Total Lines</div><div class="kpi-value" id="kpiTotal">-</div></div>
+  <div class="kpi-card kpi-revenue"><div class="kpi-label">Planned</div><div class="kpi-value" id="kpiPlanned">-</div></div>
+  <div class="kpi-card kpi-profit"><div class="kpi-label">Actual</div><div class="kpi-value" id="kpiActual">-</div></div>
+</div>
+<div class="content-card"><h3>Budget Lines</h3><div id="budgetTableWrap">Loading...</div></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function loadBudget(){ try{
+  var d = await fetch('/api/v1/budget/summary').then(r=>r.json());
+  document.getElementById('kpiTotal').textContent = d.total_lines;
+  document.getElementById('kpiPlanned').textContent = 'EGP ' + (d.total_planned||0).toLocaleString();
+  document.getElementById('kpiActual').textContent = 'EGP ' + (d.total_actual||0).toLocaleString();
+  var r = await fetch('/api/v1/budget/lines').then(r=>r.json());
+  var rows = r.data||[];
+  if(!rows.length){ document.getElementById('budgetTableWrap').innerHTML='<div class="alert alert-info">No budget lines yet.</div>'; return; }
+  var html='<table class="data-table"><thead><tr><th>ID</th><th>Event</th><th>FY</th><th>Planned</th><th>Approved</th><th>Actual</th><th>Status</th></tr></thead><tbody>';
+  rows.forEach(function(r){ html+='<tr><td>'+r.id+'</td><td>'+r.event_id+'</td><td>'+r.fiscal_year+'</td><td>EGP '+(r.planned_amount||0).toLocaleString()+'</td><td>EGP '+(r.approved_amount||0).toLocaleString()+'</td><td>EGP '+(r.actual_amount||0).toLocaleString()+'</td><td>'+r.status+'</td></tr>'; });
+  html+='</tbody></table>'; document.getElementById('budgetTableWrap').innerHTML=html;
+}catch(e){ document.getElementById('budgetTableWrap').innerHTML='<div class="alert alert-error">Error: '+e+'</div>'; }}
+loadBudget();
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Approval Workflow - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Approval Workflow</div>
+<div class="page-header"><h1>Approval Workflow</h1></div>
+<div class="kpi-grid">
+  <div class="kpi-card kpi-active"><div class="kpi-label">Rules</div><div class="kpi-value" id="kpiRules">-</div></div>
+  <div class="kpi-card kpi-pending"><div class="kpi-label">Pending</div><div class="kpi-value" id="kpiPending">-</div></div>
+  <div class="kpi-card kpi-profit"><div class="kpi-label">Approved</div><div class="kpi-value" id="kpiApproved">-</div></div>
+</div>
+<div class="content-card"><h3>Approval Instances</h3><div id="approvalTableWrap">Loading...</div></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function loadApproval(){ try{
+  var s = await fetch('/api/v1/approval/summary').then(r=>r.json());
+  document.getElementById('kpiRules').textContent = s.total_rules;
+  document.getElementById('kpiPending').textContent = s.pending;
+  document.getElementById('kpiApproved').textContent = s.approved;
+  var r = await fetch('/api/v1/approval/instances').then(r=>r.json());
+  var rows = r.data||[];
+  if(!rows.length){ document.getElementById('approvalTableWrap').innerHTML='<div class="alert alert-info">No approval instances yet.</div>'; return; }
+  var html='<table class="data-table"><thead><tr><th>Module</th><th>Type</th><th>Amount</th><th>Requester</th><th>Status</th></tr></thead><tbody>';
+  rows.forEach(function(r){ html+='<tr><td>'+r.module+'</td><td>'+r.document_type+'</td><td>EGP '+(r.amount||0).toLocaleString()+'</td><td>'+r.requested_by+'</td><td>'+r.status+'</td></tr>'; });
+  html+='</tbody></table>'; document.getElementById('approvalTableWrap').innerHTML=html;
+}catch(e){ document.getElementById('approvalTableWrap').innerHTML='<div class="alert alert-error">Error: '+e+'</div>'; }}
+loadApproval();
+</script>
+{% endblock %}

@@ -1,4 +1,4 @@
-﻿from sqlalchemy import select, and_, asc
+from sqlalchemy import select, and_, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.finance import (
     CustomerInvoice,

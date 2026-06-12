@@ -1,0 +1,37 @@
+{
+  "id": 1,
+  "saved_at": "2026-06-07T10:06:08.060479",
+  "event_id": 0,
+  "analysis_type": "cvp_analysis",
+  "input_data": {},
+  "results": {
+    "analysis_type": "cvp_analysis",
+    "fixed_costs": 50000.0,
+    "variable_cost_per_unit": 800.0,
+    "selling_price_per_unit": 1500.0,
+    "contribution_margin": 700.0,
+    "cm_ratio": 0.4667,
+    "break_even_units": 71.43,
+    "break_even_revenue": 107142.86,
+    "current_volume": 200.0,
+    "current_revenue": 300000.0,
+    "current_profit": 90000.0,
+    "margin_of_safety_units": 128.57,
+    "margin_of_safety_pct": 64.29,
+    "target_profit": 30000.0,
+    "target_volume": 114.29,
+    "operating_leverage": 1.56,
+    "recommendations": [
+      "Break-even at 71 units \u2014 minimum viable event size",
+      "Margin of safety: 64.3% \u2014 healthy",
+      "Operating leverage: 1.56 \u2014 moderate"
+    ]
+  },
+  "recommendations": [
+    "Break-even at 71 units \u2014 minimum viable event size",
+    "Margin of safety: 64.3% \u2014 healthy",
+    "Operating leverage: 1.56 \u2014 moderate"
+  ],
+  "confidence_score": 0.0,
+  "created_by": "scm_cost_engine"
+}

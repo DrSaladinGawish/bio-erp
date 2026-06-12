@@ -1,9 +1,8 @@
 # =============================================================================
-#  IncentiveHouse ERP — Production container
-# =============================================================================
-#  Multi-stage build:
-#    * builder   — installs Python deps into a virtual env
-#    * runtime   — slim base, copies venv, runs uvicorn
+#  IncentiveHouse ERP v5.5 - Production container
+#  Multi-stage build: builder + runtime
+#  Entry point: app.main:app (mounts incentivehouse organ as sub-app)
+#  Port: 9001
 # =============================================================================
 
 # ---------- Stage 1: builder ----------
@@ -16,16 +15,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install build deps for any wheels that need compilation
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         gcc \
         libpq-dev \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app/requirements.txt
-
-# Create virtual env and install
 RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --upgrade pip \
     && /opt/venv/bin/pip install -r /app/requirements.txt
@@ -37,38 +34,37 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
     HOST=0.0.0.0 \
-    PORT=8001 \
-    LOG_LEVEL=info \
-    ALLOW_AUTO_CREATE=true
+    PORT=9001 \
+    LOG_LEVEL=info
 
 WORKDIR /app
 
-# Install only runtime libs (libpq for psycopg2, curl for healthchecks)
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libpq5 \
         curl \
+        fontconfig \
+        libpango-1.0-0 \
+        libpangocairo-1.0-0 \
+        libgdk-pixbuf-xlib-2.0-0 \
+        libffi-dev \
+        libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
 RUN useradd --create-home --uid 1000 appuser \
-    && mkdir -p /app/data /app/logs \
+    && mkdir -p /app/data /app/logs /app/uploads \
     && chown -R appuser:appuser /app
 
-# Copy venv from builder
 COPY --from=builder /opt/venv /opt/venv
-
-# Copy application code
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libpq* /usr/lib/x86_64-linux-gnu/
 COPY --chown=appuser:appuser . /app/
 
 USER appuser
 
-EXPOSE 8001
+EXPOSE 9001
 
-# Healthcheck (uses /health endpoint)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD curl -fsS http://127.0.0.1:8001/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -fsS http://127.0.0.1:9001/health || exit 1
 
-# Default: launch the IncentiveHouse FastAPI app on port 8001
-CMD ["uvicorn", "app.organs.incentivehouse_organ.main:app", \
-     "--host", "0.0.0.0", "--port", "8001", \
+CMD ["uvicorn", "app.main:app", \
+     "--host", "0.0.0.0", "--port", "9001", \
      "--proxy-headers", "--forwarded-allow-ips", "*"]

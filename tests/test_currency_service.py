@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
-import pytest
 from httpx import AsyncClient
 
 from app.services.currency_service import CurrencyService
@@ -47,9 +46,7 @@ class TestCurrencyService:
         assert "rate" in result
 
     async def test_currency_api_endpoint(self, client: AsyncClient):
-        resp = await client.get(
-            "/api/v1/currency/convert?amount=100&from=USD&to=EGP"
-        )
+        resp = await client.get("/api/v1/currency/convert?amount=100&from=USD&to=EGP")
         assert resp.status_code < 500
 
     async def test_currency_rates_endpoint(self, client: AsyncClient):

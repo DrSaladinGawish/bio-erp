@@ -5,10 +5,10 @@ Completes the Doctor -> Patient feedback loop
 """
 
 import httpx
-import json
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional
 from pydantic import BaseModel
+
 
 class ORResultPayload(BaseModel):
     job_id: str
@@ -20,6 +20,7 @@ class ORResultPayload(BaseModel):
     generated_at: datetime
     source_module: str = "or_erp"
     source_url: str = "http://localhost:8000/api/v1/or/"
+
 
 class EventBridgeORHook:
     """
@@ -45,11 +46,17 @@ class EventBridgeORHook:
         # Check if event type is relevant for OR analysis
         event_type = event_data.get("event_type", "").lower()
         relevant_types = [
-            "job_created", "job_updated", "invoice_generated",
-            "cost_estimate", "budget_approved", "resource_allocated"
+            "job_created",
+            "job_updated",
+            "invoice_generated",
+            "cost_estimate",
+            "budget_approved",
+            "resource_allocated",
         ]
 
-        return any(t in event_type for t in relevant_types) or event_data.get("requires_or_analysis", False)
+        return any(t in event_type for t in relevant_types) or event_data.get(
+            "requires_or_analysis", False
+        )
 
     async def push_or_results(self, job_id: str, or_results: dict) -> dict:
         """Push OR analysis results to EventCore job page"""
@@ -63,18 +70,18 @@ class EventBridgeORHook:
                 "or_score": or_results.get("or_score", 0),
                 "sensitivity_range": {
                     "min": or_results.get("sensitivity_min", 0),
-                    "max": or_results.get("sensitivity_max", 0)
+                    "max": or_results.get("sensitivity_max", 0),
                 },
                 "recommendations": or_results.get("recommendations", []),
                 "analysis_url": f"http://localhost:8000/api/v1/or/analysis/results/{or_results.get('analysis_id', '')}",
-                "status": "completed"
+                "status": "completed",
             },
             "ui_render_hints": {
                 "badge_color": "#17a2b8",
                 "badge_text": "OR Optimized",
                 "modal_trigger": True,
-                "display_section": "cost_analysis_tab"
-            }
+                "display_section": "cost_analysis_tab",
+            },
         }
 
         try:
@@ -82,7 +89,7 @@ class EventBridgeORHook:
             response = await self.client.post(
                 f"{self.eventcore_base_url}/api/v1/jobs/{job_id}/or-insights",
                 json=payload,
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
 
             if response.status_code in (200, 201):
@@ -90,7 +97,7 @@ class EventBridgeORHook:
                     "success": True,
                     "job_id": job_id,
                     "eventcore_status": response.status_code,
-                    "message": "OR results pushed to EventCore job page"
+                    "message": "OR results pushed to EventCore job page",
                 }
             else:
                 return {
@@ -98,7 +105,7 @@ class EventBridgeORHook:
                     "job_id": job_id,
                     "eventcore_status": response.status_code,
                     "error": response.text,
-                    "message": "EventCore rejected the payload"
+                    "message": "EventCore rejected the payload",
                 }
 
         except httpx.ConnectError:
@@ -106,14 +113,14 @@ class EventBridgeORHook:
                 "success": False,
                 "job_id": job_id,
                 "error": "EventCore unreachable",
-                "message": f"Could not connect to EventCore at {self.eventcore_base_url}. Job page not updated."
+                "message": f"Could not connect to EventCore at {self.eventcore_base_url}. Job page not updated.",
             }
         except Exception as e:
             return {
                 "success": False,
                 "job_id": job_id,
                 "error": str(e),
-                "message": "Unexpected error during reverse flow push"
+                "message": "Unexpected error during reverse flow push",
             }
 
     async def on_event_created(self, event_id: str, event_data: dict) -> dict:
@@ -130,7 +137,11 @@ class EventBridgeORHook:
         if or_results:
             return await self.push_or_results(job_id, or_results)
 
-        return {"success": False, "job_id": job_id, "reason": "OR analysis produced no results"}
+        return {
+            "success": False,
+            "job_id": job_id,
+            "reason": "OR analysis produced no results",
+        }
 
     async def _run_or_analysis(self, job_id: str, event_data: dict) -> Optional[dict]:
         """Run OR analysis via BIO-ERP OR module"""
@@ -145,20 +156,26 @@ class EventBridgeORHook:
                         "job_id": job_id,
                         "parameters": {
                             "event_data": event_data,
-                            "objective": "cost_minimization"
-                        }
+                            "objective": "cost_minimization",
+                        },
                     },
-                    timeout=60.0
+                    timeout=60.0,
                 )
 
                 if response.status_code == 200:
                     data = response.json()
                     return {
                         "analysis_id": data.get("analysis_id", ""),
-                        "or_score": data.get("results", {}).get("efficiency_score", 0.534),
-                        "sensitivity_min": data.get("results", {}).get("sensitivity_min", 0.532),
-                        "sensitivity_max": data.get("results", {}).get("sensitivity_max", 0.537),
-                        "recommendations": data.get("recommendations", [])
+                        "or_score": data.get("results", {}).get(
+                            "efficiency_score", 0.534
+                        ),
+                        "sensitivity_min": data.get("results", {}).get(
+                            "sensitivity_min", 0.532
+                        ),
+                        "sensitivity_max": data.get("results", {}).get(
+                            "sensitivity_max", 0.537
+                        ),
+                        "recommendations": data.get("recommendations", []),
                     }
         except Exception:
             pass
@@ -172,8 +189,8 @@ class EventBridgeORHook:
             "recommendations": [
                 "Optimal resource allocation achieved",
                 "Cost sensitivity within acceptable range",
-                "No critical bottlenecks detected"
-            ]
+                "No critical bottlenecks detected",
+            ],
         }
 
     async def close(self):
@@ -201,6 +218,7 @@ from fastapi import APIRouter
 
 reverse_router = APIRouter(prefix="/reverse-flow", tags=["P2 Reverse Flow"])
 
+
 @reverse_router.post("/push/{job_id}")
 async def manual_push_or_results(job_id: str, payload: ORResultPayload):
     """Manually push OR results to EventCore job page"""
@@ -208,6 +226,7 @@ async def manual_push_or_results(job_id: str, payload: ORResultPayload):
     result = await hook.push_or_results(job_id, payload.model_dump())
     await hook.close()
     return result
+
 
 @reverse_router.get("/status/{job_id}")
 async def check_reverse_flow_status(job_id: str):
@@ -217,5 +236,5 @@ async def check_reverse_flow_status(job_id: str):
         "reverse_flow_status": "pending_implementation",
         "eventcore_url": "http://localhost:8001",
         "bio_erp_url": "http://localhost:8000",
-        "note": "Implement EventCore /api/v1/jobs/{job_id}/or-insights endpoint to receive data"
+        "note": "Implement EventCore /api/v1/jobs/{job_id}/or-insights endpoint to receive data",
     }

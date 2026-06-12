@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Event Budget Tracking - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Event Budget Tracking</div>
+<div class="page-header">
+    <h1>Event Budget Tracking</h1>
+    <div class="actions">
+        <button class="btn btn-ghost" onclick="refreshAll()">Refresh</button>
+        <button class="btn btn-primary" onclick="openNewModal()">+ New Budget Line</button>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid" id="ebKpis">
+    <div class="kpi-card kpi-active"><div class="kpi-label">Total Lines</div><div class="kpi-value" id="kpiCount">-</div></div>
+    <div class="kpi-card kpi-revenue"><div class="kpi-label">Total Planned</div><div class="kpi-value" id="kpiPlanned">-</div></div>
+    <div class="kpi-card kpi-expense"><div class="kpi-label">Total Actual</div><div class="kpi-value" id="kpiActual">-</div></div>
+    <div class="kpi-card kpi-profit"><div class="kpi-label">Variance</div><div class="kpi-value" id="kpiVar">-</div></div>
+</div>
+
+<!-- Profitability table -->
+<div class="content-card">
+    <h3 style="margin-bottom:12px;color:var(--primary)">Per-Event Profitability</h3>
+    <div id="profitWrap">Loading...</div>
+</div>
+
+<!-- Filters -->
+<div class="content-card">
+    <h3 style="margin-bottom:12px;color:var(--primary)">Filters</h3>
+    <div class="form-row">
+        <div class="form-group"><label>Event ID</label><input type="number" id="fEvent"></div>
+        <div class="form-group"><label>Category</label><input type="text" id="fCategory" placeholder="REVENUE / COST_VENUE ..."></div>
+        <div class="form-group"><label>Search</label><input type="text" id="fSearch"></div>
+    </div>
+    <button class="btn btn-primary" onclick="loadList()">Apply</button>
+</div>
+
+<!-- Table -->
+<div class="content-card">
+    <h3 style="margin-bottom:12px;color:var(--primary)">Budget Lines</h3>
+    <div id="tableWrap">Loading...</div>
+</div>
+
+<!-- New modal -->
+<div id="newModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:8px;padding:24px;width:520px;max-width:90vw;">
+        <h3 style="margin-bottom:16px;color:var(--primary)">New Event Budget Line</h3>
+        <div class="form-row">
+            <div class="form-group"><label>Event ID *</label><input type="number" id="n_event_id"></div>
+            <div class="form-group"><label>PNR ID</label><input type="number" id="n_pnr_id"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Category *</label><input type="text" id="n_category" placeholder="REVENUE / COST_VENUE / COST_CATERING"></div>
+            <div class="form-group"><label>Sub-category</label><input type="text" id="n_sub_category"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Planned *</label><input type="number" step="0.01" id="n_planned"></div>
+            <div class="form-group"><label>Actual</label><input type="number" step="0.01" id="n_actual" value="0"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Committed</label><input type="number" step="0.01" id="n_committed" value="0"></div>
+            <div class="form-group"><label>Currency</label>
+                <select id="n_currency"><option>EGP</option><option>USD</option><option>EUR</option></select>
+            </div>
+        </div>
+        <div class="form-group"><label>Notes</label><textarea id="n_notes" rows="2"></textarea></div>
+        <div class="form-actions">
+            <button class="btn btn-ghost" onclick="closeNewModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitNew()">Create</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function fmtEgp(n){ try{ return "EGP " + Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }catch(e){ return "EGP 0.00"; } }
+function esc(s){ return (s==null?"":String(s)).replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">"); }
+
+async function loadKpis(){
+    try{
+        var d = await fetch('/api/v1/event-budget/summary').then(r=>r.json());
+        document.getElementById('kpiCount').textContent = d.total_lines||0;
+        document.getElementById('kpiPlanned').textContent = fmtEgp(d.total_planned);
+        document.getElementById('kpiActual').textContent = fmtEgp(d.total_actual);
+        document.getElementById('kpiVar').textContent = fmtEgp(d.total_variance);
+    }catch(e){ console.error(e); }
+    await loadProfitability();
+}
+
+async function loadProfitability(){
+    try{
+        var rows = await fetch('/api/v1/event-budget/profitability').then(r=>r.json());
+        if(!rows.length){
+            document.getElementById('profitWrap').innerHTML = '<div class="alert alert-info">No budget data yet. Add budget lines to see per-event profitability.</div>';
+            return;
+        }
+        var html = '<table class="data-table"><thead><tr><th>Event ID</th><th>Rev. Planned</th><th>Rev. Actual</th><th>Cost Planned</th><th>Cost Actual</th><th>Margin Planned</th><th>Margin Actual</th></tr></thead><tbody>';
+        rows.forEach(function(r){
+            var marginColor = r.margin_actual >= 0 ? 'var(--success)' : 'var(--danger)';
+            html += '<tr>';
+            html += '<td><strong>Event #'+esc(r.event_id)+'</strong></td>';
+            html += '<td>'+fmtEgp(r.revenue_planned)+'</td>';
+            html += '<td>'+fmtEgp(r.revenue_actual)+'</td>';
+            html += '<td>'+fmtEgp(r.cost_planned)+'</td>';
+            html += '<td>'+fmtEgp(r.cost_actual)+'</td>';
+            html += '<td>'+fmtEgp(r.margin_planned)+'</td>';
+            html += '<td style="color:'+marginColor+';font-weight:600">'+fmtEgp(r.margin_actual)+'</td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('profitWrap').innerHTML = html;
+    }catch(e){
+        document.getElementById('profitWrap').innerHTML = '<div class="alert alert-error">Error: '+e+'</div>';
+    }
+}
+
+async function loadList(){
+    var qs = new URLSearchParams();
+    var ev = document.getElementById('fEvent').value; if(ev) qs.set('event_id',ev);
+    var c = document.getElementById('fCategory').value; if(c) qs.set('category',c);
+    var q = document.getElementById('fSearch').value; if(q) qs.set('search',q);
+    qs.set('page_size','100');
+    try{
+        var resp = await fetch('/api/v1/event-budget/lines?'+qs.toString()).then(r=>r.json());
+        var rows = resp.data || [];
+        if(!rows.length){
+            document.getElementById('tableWrap').innerHTML = '<div class="alert alert-info">No budget lines found. Click "+ New Budget Line" to add one.</div>';
+            return;
+        }
+        var html = '<table class="data-table"><thead><tr><th>Event</th><th>Category</th><th>Sub-category</th><th>Planned</th><th>Actual</th><th>Committed</th><th>Variance</th><th>Notes</th><th>Actions</th></tr></thead><tbody>';
+        rows.forEach(function(r){
+            var v = r.variance || 0;
+            var vColor = v >= 0 ? 'var(--success)' : 'var(--danger)';
+            html += '<tr>';
+            html += '<td><strong>#'+esc(r.event_id)+'</strong></td>';
+            html += '<td>'+esc(r.category)+'</td>';
+            html += '<td>'+esc(r.sub_category||'-')+'</td>';
+            html += '<td>'+fmtEgp(r.planned_amount)+'</td>';
+            html += '<td>'+fmtEgp(r.actual_amount)+'</td>';
+            html += '<td>'+fmtEgp(r.committed_amount)+'</td>';
+            html += '<td style="color:'+vColor+';font-weight:600">'+fmtEgp(v)+'</td>';
+            html += '<td>'+esc((r.notes||'').substring(0,40))+'</td>';
+            html += '<td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteOne('+r.id+')">Delete</button></td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<p style="margin-top:10px;color:var(--text-light);font-size:12px">'+resp.total+' total line(s)</p>';
+        document.getElementById('tableWrap').innerHTML = html;
+    }catch(e){
+        document.getElementById('tableWrap').innerHTML = '<div class="alert alert-error">Error: '+e+'</div>';
+    }
+}
+
+async function deleteOne(id){
+    if(!confirm('Delete this budget line?')) return;
+    try{
+        await fetch('/api/v1/event-budget/lines/'+id,{method:'DELETE'});
+        refreshAll();
+    }catch(e){ alert('Error: '+e); }
+}
+
+function refreshAll(){ loadKpis(); loadList(); }
+function openNewModal(){ document.getElementById('newModal').style.display = 'flex'; }
+function closeNewModal(){ document.getElementById('newModal').style.display = 'none'; }
+async function submitNew(){
+    var payload = {
+        event_id: parseInt(document.getElementById('n_event_id').value) || null,
+        pnr_id: parseInt(document.getElementById('n_pnr_id').value) || null,
+        category: document.getElementById('n_category').value.trim(),
+        sub_category: document.getElementById('n_sub_category').value || null,
+        planned_amount: parseFloat(document.getElementById('n_planned').value) || 0,
+        actual_amount: parseFloat(document.getElementById('n_actual').value) || 0,
+        committed_amount: parseFloat(document.getElementById('n_committed').value) || 0,
+        currency: document.getElementById('n_currency').value,
+        notes: document.getElementById('n_notes').value || null
+    };
+    if(!payload.event_id || !payload.category || payload.planned_amount === 0){
+        alert('Event ID, Category, and Planned Amount are required'); return;
+    }
+    try{
+        var r = await fetch('/api/v1/event-budget/lines',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        if(!r.ok){ var err = await r.json(); throw new Error(err.detail||'Failed'); }
+        closeNewModal();
+        refreshAll();
+    }catch(e){ alert('Error: '+e.message); }
+}
+
+refreshAll();
+</script>
+{% endblock %}

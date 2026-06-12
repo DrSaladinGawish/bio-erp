@@ -1,0 +1,55 @@
+{
+  "id": 1,
+  "saved_at": "2026-06-07T10:05:55.223739",
+  "event_id": 0,
+  "analysis_type": "value_chain_analysis",
+  "input_data": {},
+  "results": {
+    "analysis_type": "value_chain_analysis",
+    "total_cost": 100000.0,
+    "total_primary_cost": 80000.0,
+    "total_support_cost": 20000.0,
+    "margin_ratio": 0.3,
+    "primary_activities": [
+      {
+        "name": "Venue",
+        "category": "primary",
+        "cost_egp": 45000.0,
+        "revenue_attributable_egp": 60000.0,
+        "client_satisfaction_score": 8.5,
+        "competitive_advantage": 7.0
+      },
+      {
+        "name": "Catering",
+        "category": "primary",
+        "cost_egp": 35000.0,
+        "revenue_attributable_egp": 40000.0,
+        "client_satisfaction_score": 9.0,
+        "competitive_advantage": 6.5
+      }
+    ],
+    "support_activities": [
+      {
+        "name": "Planning",
+        "category": "support",
+        "cost_egp": 20000.0,
+        "revenue_attributable_egp": 30000.0,
+        "client_satisfaction_score": 8.0,
+        "competitive_advantage": 7.0
+      }
+    ],
+    "linkages": [],
+    "recommendations": [
+      "Highest cost primary activity: Venue (45,000.00 EGP). Evaluate outsourcing.",
+      "Low efficiency support: Planning (ratio 0.50). Consider automation or reduction.",
+      "Map client satisfaction scores to cost drivers to identify over/under-investment."
+    ]
+  },
+  "recommendations": [
+    "Highest cost primary activity: Venue (45,000.00 EGP). Evaluate outsourcing.",
+    "Low efficiency support: Planning (ratio 0.50). Consider automation or reduction.",
+    "Map client satisfaction scores to cost drivers to identify over/under-investment."
+  ],
+  "confidence_score": 0.0,
+  "created_by": "scm_cost_engine"
+}

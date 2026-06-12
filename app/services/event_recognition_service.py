@@ -2,18 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import select, and_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
 from app.models import (
-    Client,
     Event,
     EventLineItem,
-    EventMasterNode,
     EventOperation,
-    ItemCategory,
-    ItemSubCategory,
     ServiceUOM,
     Staff,
 )
@@ -66,7 +61,7 @@ class EventRecognitionService:
 
         template_items = []
         if category_id:
-            tmpl = await db.execute(
+            await db.execute(
                 select(ServiceUOM).where(
                     ServiceUOM.category_id == category_id,
                     ServiceUOM.is_active,
@@ -107,12 +102,14 @@ class EventRecognitionService:
         suggestions = []
         for e in events:
             if e.venue and e.actual_pax and e.actual_pax >= pax * 0.8:
-                suggestions.append({
-                    "venue": e.venue,
-                    "venue_ar": e.venue_ar,
-                    "capacity": e.actual_pax,
-                    "event_code": e.event_code,
-                })
+                suggestions.append(
+                    {
+                        "venue": e.venue,
+                        "venue_ar": e.venue_ar,
+                        "capacity": e.actual_pax,
+                        "event_code": e.event_code,
+                    }
+                )
 
         return {
             "valid": True,
@@ -150,7 +147,9 @@ class EventRecognitionService:
             "lifecycle_status": event.lifecycle_status,
             "ops_manager_id": existing.ops_manager_id if existing else None,
             "briefing_completed": existing.briefing_completed if existing else False,
-            "load_in_time": existing.load_in_time.isoformat() if existing and existing.load_in_time else None,
+            "load_in_time": existing.load_in_time.isoformat()
+            if existing and existing.load_in_time
+            else None,
             "sound_check_done": existing.sound_check_done if existing else False,
             "catering_final_count": existing.catering_final_count if existing else None,
             "staff": staff_list,

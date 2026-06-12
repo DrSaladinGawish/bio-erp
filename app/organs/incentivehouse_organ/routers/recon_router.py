@@ -17,30 +17,38 @@ End-points (prefix ``/api/v1/recon``):
   POST /export                     — export reconciliation report
   GET  /health                     — engine health + last-run info
 """
+
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
+from datetime import datetime
 from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select, func, and_, or_, desc, text
+from sqlalchemy import select, func, and_, desc, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_async_session
 from ..models_production import (
-    ReconMatch, SalesInvoice, PurchaseOrder, VendorInvoice,
-    Event, Client, PnrRecord, CostCenter,
+    ReconMatch,
+    SalesInvoice,
+    VendorInvoice,
+    Event,
 )
 from ..models import BNKTransaction
 from ..schemas import PaginatedResponse
+from app.organs.incentivehouse_organ.admin_permissions_module import (
+    Permission,
+    require_permission,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/recon", tags=["RECON Reconciliation"])
 
 
 # ── Pydantic models ────────────────────────────────────────────────────
+
 
 class ReconRunRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -113,6 +121,7 @@ class ReconSummary(BaseModel):
 
 # ── Engine helpers ─────────────────────────────────────────────────────
 
+
 def _rule_exact_amount_date(s, t, tol_amt: float, tol_days: int):
     """Match if amounts equal within tolerance and dates within tolerance."""
     if abs((s.get("amount") or 0) - (t.get("amount") or 0)) > tol_amt:
@@ -126,7 +135,8 @@ def _rule_exact_amount_date(s, t, tol_amt: float, tol_days: int):
     return {
         "match_type": "exact_amount_date",
         "rule_applied": "exact_amount_date",
-        "confidence": 0.95 - (0.01 * (abs((s.get("amount") or 0) - (t.get("amount") or 0)))),
+        "confidence": 0.95
+        - (0.01 * (abs((s.get("amount") or 0) - (t.get("amount") or 0)))),
     }
 
 
@@ -184,67 +194,96 @@ def _parse_dt(s):
 
 # ── Source/target extractors per module ────────────────────────────────
 
+
 async def _extract_bnk(session) -> List[dict]:
-    rows = (await session.execute(
-        select(BNKTransaction).where(BNKTransaction.is_reconciled == 0)
-    )).scalars().all()
+    rows = (
+        (
+            await session.execute(
+                select(BNKTransaction).where(BNKTransaction.is_reconciled == 0)
+            )
+        )
+        .scalars()
+        .all()
+    )
     return [
         {
             "id": str(r.id),
-            "amount": float(r.amount or ((r.credit_amount or 0) - (r.debit_amount or 0))),
+            "amount": float(
+                r.amount or ((r.credit_amount or 0) - (r.debit_amount or 0))
+            ),
             "date": r.txn_date,
             "reference": r.reference_no or "",
-        } for r in rows
+        }
+        for r in rows
     ]
 
 
 async def _extract_gl_source(session, table_name: str) -> List[dict]:
     """Extract GL items (debit/credit) as a flat list — used for PUR/SAL cross-check."""
     try:
-        rows = (await session.execute(text(f"""
+        rows = (
+            await session.execute(
+                text(f"""
             SELECT id, transaction_id, transaction_date,
                    COALESCE(debit_amount, 0) - COALESCE(credit_amount, 0) AS amount,
                    description
             FROM {table_name}
             WHERE validation_status != 'FAIL'
-        """))).all()
+        """)
+            )
+        ).all()
         return [
             {
                 "id": str(r.id),
                 "amount": float(r.amount or 0),
                 "date": r.transaction_date,
                 "reference": r.transaction_id or "",
-            } for r in rows
+            }
+            for r in rows
         ]
     except Exception:
         return []
 
 
 async def _extract_sal(session) -> List[dict]:
-    rows = (await session.execute(
-        select(SalesInvoice).where(SalesInvoice.status != "CANCELLED")
-    )).scalars().all()
+    rows = (
+        (
+            await session.execute(
+                select(SalesInvoice).where(SalesInvoice.status != "CANCELLED")
+            )
+        )
+        .scalars()
+        .all()
+    )
     return [
         {
             "id": str(r.id),
             "amount": float(r.total or 0),
             "date": r.invoice_date,
             "reference": r.invoice_no or "",
-        } for r in rows
+        }
+        for r in rows
     ]
 
 
 async def _extract_pur(session) -> List[dict]:
-    rows = (await session.execute(
-        select(VendorInvoice).where(VendorInvoice.status != "CANCELLED")
-    )).scalars().all()
+    rows = (
+        (
+            await session.execute(
+                select(VendorInvoice).where(VendorInvoice.status != "CANCELLED")
+            )
+        )
+        .scalars()
+        .all()
+    )
     return [
         {
             "id": str(r.id),
             "amount": float(r.total or 0),
             "date": r.invoice_date,
             "reference": r.invoice_no or "",
-        } for r in rows
+        }
+        for r in rows
     ]
 
 
@@ -256,11 +295,13 @@ async def _extract_evn(session) -> List[dict]:
             "amount": float(r.gross_sales or 0),
             "date": r.event_date,
             "reference": r.event_code or "",
-        } for r in rows
+        }
+        for r in rows
     ]
 
 
 # ── Engine core ────────────────────────────────────────────────────────
+
 
 async def _run_engine(
     session: AsyncSession,
@@ -321,7 +362,9 @@ async def _run_engine(
                     src_amt = s.get("amount") or 0
                     tgt_amt = t.get("amount") or 0
                     var = round(src_amt - tgt_amt, 2)
-                    match_status = "VARIANCE" if abs(var) > req.amount_tolerance else "MATCHED"
+                    match_status = (
+                        "VARIANCE" if abs(var) > req.amount_tolerance else "MATCHED"
+                    )
                     if match_status == "MATCHED":
                         matched += 1
                     else:
@@ -369,10 +412,12 @@ async def _run_engine(
 
 # ── End-points ─────────────────────────────────────────────────────────
 
+
 @router.post("/run", response_model=ReconRunResponse)
 async def run_reconciliation(
     req: ReconRunRequest,
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    _=Depends(require_permission(Permission.RECONCILE_BANK)),
 ):
     try:
         return await _run_engine(session, req)
@@ -387,6 +432,7 @@ async def bulk_match(
     module: Annotated[str, Query(pattern="^(Bnk|Sal|Pur|Evn|Env|all)$")] = "all",
     threshold: Annotated[float, Query(ge=0, le=1)] = 0.85,
     dry_run: Annotated[bool, Query()] = False,
+    _=Depends(require_permission(Permission.RECONCILE_BANK)),
 ):
     req = ReconRunRequest(module=module, match_threshold=threshold, dry_run=dry_run)
     return await _run_engine(session, req)
@@ -396,18 +442,25 @@ async def bulk_match(
 async def recon_status(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    rows = (await session.execute(
-        select(ReconMatch.match_status, func.count().label("cnt"),
-               func.coalesce(func.sum(func.abs(ReconMatch.variance)), 0).label("var_sum"))
-        .group_by(ReconMatch.match_status)
-    )).all()
+    rows = (
+        await session.execute(
+            select(
+                ReconMatch.match_status,
+                func.count().label("cnt"),
+                func.coalesce(func.sum(func.abs(ReconMatch.variance)), 0).label(
+                    "var_sum"
+                ),
+            ).group_by(ReconMatch.match_status)
+        )
+    ).all()
     return {
         "rows": [
             {
                 "match_status": r.match_status or "UNKNOWN",
                 "count": r.cnt or 0,
                 "total_variance": round(float(r.var_sum or 0), 2),
-            } for r in rows
+            }
+            for r in rows
         ]
     }
 
@@ -418,12 +471,18 @@ async def top_variances(
     limit: Annotated[int, Query(ge=1, le=500)] = 50,
 ):
     try:
-        rows = (await session.execute(
-            select(ReconMatch)
-            .where(ReconMatch.match_status == "VARIANCE")
-            .order_by(desc(ReconMatch.variance))
-            .limit(limit)
-        )).scalars().all()
+        rows = (
+            (
+                await session.execute(
+                    select(ReconMatch)
+                    .where(ReconMatch.match_status == "VARIANCE")
+                    .order_by(desc(ReconMatch.variance))
+                    .limit(limit)
+                )
+            )
+            .scalars()
+            .all()
+        )
         return [ReconMatchOut.model_validate(r).model_dump() for r in rows]
     except Exception as exc:
         logger.exception("top_variances failed: %s", exc)
@@ -453,7 +512,9 @@ async def list_matches(
     rows = (await session.execute(stmt)).scalars().all()
     return PaginatedResponse(
         data=[ReconMatchOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
@@ -463,18 +524,21 @@ async def get_match(
     match_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    m = (await session.execute(
-        select(ReconMatch).where(ReconMatch.id == match_id)
-    )).scalar_one_or_none()
+    m = (
+        await session.execute(select(ReconMatch).where(ReconMatch.id == match_id))
+    ).scalar_one_or_none()
     if not m:
         raise HTTPException(404, "Match not found")
     return ReconMatchOut.model_validate(m)
 
 
-@router.post("/manual-match", response_model=ReconMatchOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/manual-match", response_model=ReconMatchOut, status_code=status.HTTP_201_CREATED
+)
 async def manual_match(
     payload: ManualMatchRequest,
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    _=Depends(require_permission(Permission.RECONCILE_BANK)),
 ):
     var = round((payload.source_amount or 0) - (payload.target_amount or 0), 2)
     match_status = "MATCHED" if abs(var) < 0.01 else "VARIANCE"
@@ -504,9 +568,9 @@ async def unmatch(
     match_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    m = (await session.execute(
-        select(ReconMatch).where(ReconMatch.id == match_id)
-    )).scalar_one_or_none()
+    m = (
+        await session.execute(select(ReconMatch).where(ReconMatch.id == match_id))
+    ).scalar_one_or_none()
     if not m:
         raise HTTPException(404, "Match not found")
     await session.delete(m)
@@ -518,27 +582,37 @@ async def unmatch(
 async def get_summary(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    head = (await session.execute(
-        select(
-            func.count().label("total"),
-            func.coalesce(func.sum(func.abs(ReconMatch.variance)), 0).label("var_sum"),
+    head = (
+        await session.execute(
+            select(
+                func.count().label("total"),
+                func.coalesce(func.sum(func.abs(ReconMatch.variance)), 0).label(
+                    "var_sum"
+                ),
+            )
         )
-    )).one()
-    status_rows = (await session.execute(
-        select(ReconMatch.match_status, func.count().label("cnt"))
-        .group_by(ReconMatch.match_status)
-    )).all()
+    ).one()
+    status_rows = (
+        await session.execute(
+            select(ReconMatch.match_status, func.count().label("cnt")).group_by(
+                ReconMatch.match_status
+            )
+        )
+    ).all()
     by_status = {r.match_status: r.cnt for r in status_rows if r.match_status}
-    mod_rows = (await session.execute(
-        select(ReconMatch.module, func.count().label("cnt"))
-        .group_by(ReconMatch.module)
-    )).all()
+    mod_rows = (
+        await session.execute(
+            select(ReconMatch.module, func.count().label("cnt")).group_by(
+                ReconMatch.module
+            )
+        )
+    ).all()
     by_module = {r.module: r.cnt for r in mod_rows if r.module}
-    last = (await session.execute(
-        select(ReconMatch.matched_at)
-        .order_by(desc(ReconMatch.matched_at))
-        .limit(1)
-    )).scalar()
+    last = (
+        await session.execute(
+            select(ReconMatch.matched_at).order_by(desc(ReconMatch.matched_at)).limit(1)
+        )
+    ).scalar()
     return ReconSummary(
         total_matches=head.total or 0,
         matched=by_status.get("MATCHED", 0),
@@ -557,7 +631,9 @@ async def check_books(
 ):
     """Per-check-book rollup (uses bnk_reconciliation table if it has data)."""
     try:
-        rows = (await session.execute(text("""
+        rows = (
+            await session.execute(
+                text("""
             SELECT check_book_id, check_book_name, COUNT(*) AS total,
                    SUM(CASE WHEN COALESCE(recon_status,'') = 'RECONCILED' THEN 1 ELSE 0 END) AS ok,
                    SUM(CASE WHEN COALESCE(recon_status,'') != 'RECONCILED' THEN 1 ELSE 0 END) AS bad,
@@ -565,7 +641,9 @@ async def check_books(
             FROM bnk_reconciliation
             GROUP BY check_book_id, check_book_name
             ORDER BY check_book_id
-        """))).all()
+        """)
+            )
+        ).all()
         return {
             "rows": [
                 {
@@ -575,7 +653,8 @@ async def check_books(
                     "ok": int(r.ok or 0),
                     "bad": int(r.bad or 0),
                     "total_variance": round(float(r.total_variance or 0), 2),
-                } for r in rows
+                }
+                for r in rows
             ]
         }
     except Exception as exc:
@@ -588,12 +667,18 @@ async def by_module(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ):
-    rows = (await session.execute(
-        select(ReconMatch)
-        .where(ReconMatch.module == module)
-        .order_by(desc(ReconMatch.matched_at))
-        .limit(limit)
-    )).scalars().all()
+    rows = (
+        (
+            await session.execute(
+                select(ReconMatch)
+                .where(ReconMatch.module == module)
+                .order_by(desc(ReconMatch.matched_at))
+                .limit(limit)
+            )
+        )
+        .scalars()
+        .all()
+    )
     return [ReconMatchOut.model_validate(r) for r in rows]
 
 
@@ -617,17 +702,17 @@ async def health(
     counts = {}
     for tbl in ("recon_matches", "bnk_reconciliation", "bnk_staging"):
         try:
-            c = (await session.execute(
-                text(f"SELECT COUNT(*) FROM {tbl}")
-            )).scalar() or 0
+            c = (
+                await session.execute(text(f"SELECT COUNT(*) FROM {tbl}"))
+            ).scalar() or 0
             counts[tbl] = int(c)
         except Exception:
             counts[tbl] = None
-    last = (await session.execute(
-        select(ReconMatch.matched_at)
-        .order_by(desc(ReconMatch.matched_at))
-        .limit(1)
-    )).scalar()
+    last = (
+        await session.execute(
+            select(ReconMatch.matched_at).order_by(desc(ReconMatch.matched_at)).limit(1)
+        )
+    ).scalar()
     return {
         "status": "ok",
         "engine": "recon_v1",

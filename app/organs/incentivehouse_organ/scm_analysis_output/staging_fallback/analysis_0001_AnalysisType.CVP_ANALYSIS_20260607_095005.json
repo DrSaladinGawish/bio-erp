@@ -1,0 +1,16 @@
+{
+  "id": 1,
+  "saved_at": "2026-06-07T09:50:05.772851",
+  "event_id": 0,
+  "analysis_type": "cvp_analysis",
+  "input_data": {},
+  "results": {
+    "analysis_type": "cvp_analysis",
+    "error": "Selling price must exceed variable cost per unit",
+    "contribution_margin": 0,
+    "cm_ratio": 0
+  },
+  "recommendations": [],
+  "confidence_score": 0.0,
+  "created_by": "scm_cost_engine"
+}

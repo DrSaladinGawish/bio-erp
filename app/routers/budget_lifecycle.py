@@ -1,4 +1,4 @@
-﻿import hashlib
+import hashlib
 import json
 from datetime import datetime
 from datetime import timezone
@@ -78,7 +78,11 @@ async def submit_budget_version(
         )
 
     setattr(lifecycle, status_attr, "Submitted")
-    setattr(lifecycle, f"v{version}_submitted_at", datetime.now(timezone.utc).replace(tzinfo=None))
+    setattr(
+        lifecycle,
+        f"v{version}_submitted_at",
+        datetime.now(timezone.utc).replace(tzinfo=None),
+    )
     await db.commit()
     return {"event_id": event_id, "version": version, "status": "Submitted"}
 
@@ -109,7 +113,11 @@ async def approve_budget_version(
 
     setattr(lifecycle, status_attr, "Approved")
     setattr(lifecycle, f"v{version}_approved_by", user.id)
-    setattr(lifecycle, f"v{version}_approved_at", datetime.now(timezone.utc).replace(tzinfo=None))
+    setattr(
+        lifecycle,
+        f"v{version}_approved_at",
+        datetime.now(timezone.utc).replace(tzinfo=None),
+    )
     lifecycle.current_active_version = version
     await db.commit()
     return {"event_id": event_id, "version": version, "status": "Approved"}
@@ -141,7 +149,11 @@ async def lock_budget_version(
 
     setattr(lifecycle, status_attr, "Locked")
     setattr(lifecycle, f"v{version}_locked_by", user.id)
-    setattr(lifecycle, f"v{version}_locked_at", datetime.now(timezone.utc).replace(tzinfo=None))
+    setattr(
+        lifecycle,
+        f"v{version}_locked_at",
+        datetime.now(timezone.utc).replace(tzinfo=None),
+    )
 
     # Take a snapshot of current budget lines for this version
     lines_result = await db.execute(

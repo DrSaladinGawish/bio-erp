@@ -1,6 +1,3 @@
-from pathlib import Path
-from typing import Any
-
 import pandas as pd
 
 
@@ -94,6 +91,6 @@ def _build_html_report(
 <body>
 <h1>{title}</h1>
 {table_html}
-<div class="footer">BIO-ERP Report · Generated {__import__('datetime').datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}</div>
+<div class="footer">BIO-ERP Report · Generated {__import__("datetime").datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")}</div>
 </body>
 </html>"""

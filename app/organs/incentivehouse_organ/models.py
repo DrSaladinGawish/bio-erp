@@ -2,9 +2,10 @@
 SQLAlchemy models for IncentiveHouse ERP staging and audit tables.
 All tables are staging-only — never writes to production ledger tables.
 """
+
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Column, DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import declarative_base
 
 IncentiveBase = declarative_base()
@@ -31,6 +32,7 @@ class IncentiveHouseAuditLog(IncentiveBase):
 
 # ── Staging Table Models ──
 # These mirror the Protocell's *__staging tables for SQLAlchemy ORM access.
+
 
 class BnkStaging(IncentiveBase):
     __tablename__ = "bnk_staging"
@@ -149,6 +151,7 @@ class EnvStaging(IncentiveBase):
 
 class BNKTransaction(IncentiveBase):
     """Bank transaction record — used by the BNK router."""
+
     __tablename__ = "bnk_transactions"
     id = Column(Integer, primary_key=True, autoincrement=True)
     account_code = Column(String(20), index=True)

@@ -61,7 +61,9 @@ class EventBridgeORHook:
             return False
         return True
 
-    async def after_event_sync(self, db: AsyncSession, event: EventLog) -> Optional[dict]:
+    async def after_event_sync(
+        self, db: AsyncSession, event: EventLog
+    ) -> Optional[dict]:
         """
         Called after EventBridge syncs an event.
         Returns OR analysis result or None if skipped/failed.
@@ -78,5 +80,7 @@ class EventBridgeORHook:
             )
             return result
         except Exception as e:
-            logger.warning("OR hook: Event %s analysis failed: %s", event.id, e, exc_info=True)
+            logger.warning(
+                "OR hook: Event %s analysis failed: %s", event.id, e, exc_info=True
+            )
             return None

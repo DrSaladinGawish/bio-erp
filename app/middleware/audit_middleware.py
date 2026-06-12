@@ -1,4 +1,4 @@
-﻿from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from app.database import get_async_session_factory
 from app.models.audit import AuditLog

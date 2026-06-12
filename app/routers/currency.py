@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
@@ -70,8 +70,12 @@ async def update_rate(
 @conversion_router.get("/convert")
 async def convert_currency(
     amount: float = Query(..., gt=0, description="Amount to convert"),
-    from_currency: str = Query(..., min_length=3, max_length=3, description="Source currency code (e.g. USD)"),
-    to_currency: str = Query(..., min_length=3, max_length=3, description="Target currency code (e.g. EGP)"),
+    from_currency: str = Query(
+        ..., min_length=3, max_length=3, description="Source currency code (e.g. USD)"
+    ),
+    to_currency: str = Query(
+        ..., min_length=3, max_length=3, description="Target currency code (e.g. EGP)"
+    ),
 ):
     result = await currency_service.convert(amount, from_currency, to_currency)
     return result
@@ -84,5 +88,7 @@ async def list_exchange_rates():
     return {
         "base": "USD",
         "rates": currency_service.rates,
-        "last_updated": currency_service.last_update.isoformat() if currency_service.last_update else None,
+        "last_updated": currency_service.last_update.isoformat()
+        if currency_service.last_update
+        else None,
     }

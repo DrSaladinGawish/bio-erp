@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from datetime import timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -55,7 +55,8 @@ async def create_petty_cash_register(
                 description=line.description,
                 amount=line.amount,
                 receipt_number=line.receipt_number,
-                receipt_date=line.receipt_date or datetime.now(timezone.utc).replace(tzinfo=None),
+                receipt_date=line.receipt_date
+                or datetime.now(timezone.utc).replace(tzinfo=None),
             )
         )
 

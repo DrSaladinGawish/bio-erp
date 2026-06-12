@@ -3,18 +3,22 @@ AI Agent Protocol — Incentive House ERP
 Grounds every LLM/deterministic output to neural node history.
 Guards: Hallucination, Incitation, Omission.
 """
+
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai_ingest.models import (
-    NeuralNode, AIDocumentIngestion, AIDocumentAnalysis,
-    AISuggestedTransaction, AINeuralPatternLog, NodeType,
-    AnalysisStatus, SuggestionStatus,
+    NeuralNode,
+    AIDocumentIngestion,
+    AIDocumentAnalysis,
+    AISuggestedTransaction,
+    AINeuralPatternLog,
+    NodeType,
+    AnalysisStatus,
+    SuggestionStatus,
 )
 from app.ai_ingest.parsers import parse_document
 from app.ai_ingest.analyzer import analyze_document
@@ -37,6 +41,7 @@ class OmissionError(Exception):
 @dataclass
 class GroundingContext:
     """Structured facts from DB — the ONLY truth the agent may reference."""
+
     document_id: int
     raw_text_snippet: str
     extracted_entities: dict
@@ -54,6 +59,7 @@ class GroundingContext:
 @dataclass
 class AgentResponse:
     """Validated agent output — every field cites a source."""
+
     suggestion_type: str
     vendor_id: int | None = None
     vendor_name: str | None = None
@@ -78,7 +84,6 @@ class AgentResponse:
 
 
 class AIAgentProtocol:
-
     CRITICAL_FIELDS = ["amount", "suggestion_type", "description"]
     WARNING_FIELDS = ["vendor_id", "gl_account_id", "date", "tax_amount"]
 
@@ -94,9 +99,10 @@ class AIAgentProtocol:
         entities = {}  # populated by caller after analysis
 
         result = await self.db.execute(
-            select(AIDocumentAnalysis).where(
-                AIDocumentAnalysis.document_id == doc_id
-            ).order_by(AIDocumentAnalysis.id.desc()).limit(1)
+            select(AIDocumentAnalysis)
+            .where(AIDocumentAnalysis.document_id == doc_id)
+            .order_by(AIDocumentAnalysis.id.desc())
+            .limit(1)
         )
         analysis = result.scalar_one_or_none()
 
@@ -124,30 +130,35 @@ class AIAgentProtocol:
         vendor_id = raw.get("vendor_id")
         amount = raw.get("amount")
         gl_id = raw.get("gl_account_id")
-        inv_num = raw.get("invoice_number") or str(raw.get("description", ""))[:50]
 
         if amount and context.detected_amount:
-            if amount < context.detected_amount * 0.8 or amount > context.detected_amount * 1.2:
+            if (
+                amount < context.detected_amount * 0.8
+                or amount > context.detected_amount * 1.2
+            ):
                 self.violations.append(
                     f"HALLUCINATION: amount {amount} deviates >20% from detected {context.detected_amount}"
                 )
 
         doc_refs = raw.get("historical_basis", [])
         for ref in doc_refs:
-            if isinstance(ref, dict) and ref.get("transaction_id") == context.document_id:
+            if (
+                isinstance(ref, dict)
+                and ref.get("transaction_id") == context.document_id
+            ):
                 self.violations.append(
                     f"INCITATION: circular reference to document_id {context.document_id}"
                 )
 
-        for field in self.CRITICAL_FIELDS:
-            if raw.get(field) is None or raw.get(field) == "":
-                self.violations.append(f"OMISSION: critical field '{field}' missing")
+        for fname in self.CRITICAL_FIELDS:
+            if raw.get(fname) is None or raw.get(fname) == "":
+                self.violations.append(f"OMISSION: critical field '{fname}' missing")
 
         warnings = []
         requires_review = False
-        for field in self.WARNING_FIELDS:
-            if raw.get(field) is None:
-                warnings.append(f"Missing {field}")
+        for fname in self.WARNING_FIELDS:
+            if raw.get(fname) is None:
+                warnings.append(f"Missing {fname}")
                 requires_review = True
 
         if self.violations:
@@ -172,14 +183,18 @@ class AIAgentProtocol:
             tax_amount=raw.get("tax_amount", 0.0),
             tax_source="statutory_default",
             description=raw.get("description", "Auto-generated suggestion"),
-            description_source="extracted_text" if context.raw_text_snippet else "template",
+            description_source="extracted_text"
+            if context.raw_text_snippet
+            else "template",
             date=raw.get("date") or context.detected_date,
             date_source="extracted" if context.detected_date else "agent_inference",
             due_date=raw.get("due_date"),
             due_date_source="agent_inference",
             confidence_score=min(
-                context.top_neural_matches[0].get("confidence", 0.5) if context.top_neural_matches else 0.5,
-                1.0
+                context.top_neural_matches[0].get("confidence", 0.5)
+                if context.top_neural_matches
+                else 0.5,
+                1.0,
             ),
             reasoning_chain=raw.get("reasoning", ["No reasoning provided"]),
             warnings=warnings,
@@ -229,17 +244,22 @@ Top Neural Node Matches:
         self, context: GroundingContext, api_key: str | None = None
     ) -> AgentResponse:
         import os
+
         key = api_key or os.getenv("OPENAI_API_KEY")
         if not key:
             raise RuntimeError("OPENAI_API_KEY not set")
 
         import openai
+
         client = openai.OpenAI(api_key=key)
         prompt = self.format_prompt_for_openai(context)
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "Deterministic ERP assistant. Never hallucinate. Use provided data only."},
+                {
+                    "role": "system",
+                    "content": "Deterministic ERP assistant. Never hallucinate. Use provided data only.",
+                },
                 {"role": "user", "content": prompt},
             ],
             response_format={"type": "json_object"},
@@ -252,7 +272,13 @@ Top Neural Node Matches:
     async def execute(
         self, ingestion_id: int, use_openai: bool = False, api_key: str | None = None
     ) -> dict:
-        result = {"gate": "agent", "success": False, "analysis": None, "suggestion": None, "error": None}
+        result = {
+            "gate": "agent",
+            "success": False,
+            "analysis": None,
+            "suggestion": None,
+            "error": None,
+        }
 
         doc = await self.db.get(AIDocumentIngestion, ingestion_id)
         if not doc:
@@ -268,11 +294,16 @@ Top Neural Node Matches:
         text = parse_document(file_bytes, doc.filename)
 
         existing_nodes = await self.db.execute(
-            select(NeuralNode).where(NeuralNode.is_active == True).limit(500)
+            select(NeuralNode).where(NeuralNode.is_active).limit(500)
         )
         existing = [
-            {"id": n.id, "label": n.label,
-             "node_type": n.node_type.value if hasattr(n.node_type, "value") else n.node_type}
+            {
+                "id": n.id,
+                "label": n.label,
+                "node_type": n.node_type.value
+                if hasattr(n.node_type, "value")
+                else n.node_type,
+            }
             for n in existing_nodes.scalars().all()
         ]
 
@@ -294,7 +325,9 @@ Top Neural Node Matches:
         if validated is None:
             raw_mock = self._deterministic_suggestion(doc, analysis_data)
             if raw_mock is None:
-                result["error"] = "Could not generate suggestion (confidence too low or no amount detected)"
+                result["error"] = (
+                    "Could not generate suggestion (confidence too low or no amount detected)"
+                )
                 return result
             validated = await self.validate_agent_output(raw_mock, context)
 
@@ -332,13 +365,15 @@ Top Neural Node Matches:
             transaction_type=validated.suggestion_type,
             title=validated.description[:500],
             description=validated.description,
-            journal_lines=[{
-                "coa_account_id": validated.gl_account_id or 0,
-                "coa_account_name": validated.gl_code or "",
-                "debit": validated.amount or 0,
-                "credit": validated.amount or 0,
-                "description": validated.description,
-            }],
+            journal_lines=[
+                {
+                    "coa_account_id": validated.gl_account_id or 0,
+                    "coa_account_name": validated.gl_code or "",
+                    "debit": validated.amount or 0,
+                    "credit": validated.amount or 0,
+                    "description": validated.description,
+                }
+            ],
             total_debit=validated.amount or 0,
             total_credit=validated.amount or 0,
             confidence_score=validated.confidence_score,
@@ -394,7 +429,10 @@ Top Neural Node Matches:
             "date": entities.get("document_date"),
             "due_date": None,
             "invoice_number": entities.get("invoice_number"),
-            "reasoning": ["Amount extracted from document", "Vendor matched by name pattern"],
+            "reasoning": [
+                "Amount extracted from document",
+                "Vendor matched by name pattern",
+            ],
             "confidence": confidence,
         }
 

@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 from celery import shared_task
 from app.services.cost_engine import CostEngine
 from app.services.alert_pubsub import publish_variance_alert

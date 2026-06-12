@@ -4,6 +4,7 @@ Real-time dashboard data API for IHE-ERP.
 Returns 9 KPIs (revenue, expenses, PNRs, bank balance, etc.) and
 monthly series for charts. Supports date-range filters: 7D/30D/90D/YTD/Custom.
 """
+
 from __future__ import annotations
 import logging
 from datetime import datetime, timedelta
@@ -55,9 +56,9 @@ def _safe_sum(db: Session, table: str, col: str, where: str = "1=1") -> float:
     if table not in _TABLES.values():
         return 0.0
     try:
-        row = db.execute(text(
-            f"SELECT COALESCE(SUM({col}), 0) FROM {table} WHERE {where}"
-        )).fetchone()
+        row = db.execute(
+            text(f"SELECT COALESCE(SUM({col}), 0) FROM {table} WHERE {where}")
+        ).fetchone()
         return float(row[0] or 0) if row else 0.0
     except Exception as exc:
         logger.debug("_safe_sum(%s.%s) failed: %s", table, col, exc)
@@ -68,23 +69,28 @@ def _safe_count(db: Session, table: str, where: str = "1=1") -> int:
     if table not in _TABLES.values():
         return 0
     try:
-        return int(db.execute(text(
-            f"SELECT COUNT(*) FROM {table} WHERE {where}"
-        )).scalar() or 0)
+        return int(
+            db.execute(text(f"SELECT COUNT(*) FROM {table} WHERE {where}")).scalar()
+            or 0
+        )
     except Exception as exc:
         logger.debug("_safe_count(%s) failed: %s", table, exc)
         return 0
 
 
-def _monthly_series(db: Session, table: str, date_col: str, amount_col: str,
-                    start: str, end: str) -> list:
+def _monthly_series(
+    db: Session, table: str, date_col: str, amount_col: str, start: str, end: str
+) -> list:
     try:
-        rows = db.execute(text(
-            f"SELECT MONTH({date_col}) as m, COALESCE(SUM({amount_col}), 0) "
-            f"FROM {table} "
-            f"WHERE {date_col} >= :start AND {date_col} <= :end "
-            f"GROUP BY MONTH({date_col})"
-        ), {"start": start, "end": end}).fetchall()
+        rows = db.execute(
+            text(
+                f"SELECT MONTH({date_col}) as m, COALESCE(SUM({amount_col}), 0) "
+                f"FROM {table} "
+                f"WHERE {date_col} >= :start AND {date_col} <= :end "
+                f"GROUP BY MONTH({date_col})"
+            ),
+            {"start": start, "end": end},
+        ).fetchall()
         m = {int(r[0]): float(r[1] or 0) for r in rows}
         return [round(m.get(mo, 0.0), 2) for mo in range(1, 13)]
     except Exception as exc:
@@ -116,8 +122,7 @@ def dashboard_data(
     total_revenue = _safe_sum(db, _TABLES["sales"], "total_amount", sales_where)
     total_expenses = _safe_sum(db, _TABLES["purchases"], "total_amount", pur_where)
     active_pnrs = _safe_count(
-        db, _TABLES["pnr"],
-        "status IN ('CONFIRMED','IN_PROGRESS','OPEN')"
+        db, _TABLES["pnr"], "status IN ('CONFIRMED','IN_PROGRESS','OPEN')"
     )
     bank_balance = _safe_sum(db, _TABLES["bank"], "amount", bank_where)
     pending_invoices = _safe_count(db, _TABLES["sales"], "status = 'PENDING'")
@@ -155,10 +160,11 @@ def dashboard_export(
     format: str = Query("json"),
     db: Session = Depends(get_db),
 ):
-    """Export dashboard data as JSON or real PDF (IHE-ERP v2.3.5+)."""
+    """Export dashboard data as JSON, PDF, or Excel."""
     from fastapi.responses import Response
+
     fmt = format.lower()
-    if fmt not in ("json", "pdf"):
+    if fmt not in ("json", "pdf", "xlsx"):
         raise HTTPException(status_code=422, detail=f"Invalid format: {format}")
     data = dashboard_data(range=range, db=db)
     if fmt == "pdf":
@@ -166,10 +172,10 @@ def dashboard_export(
             from app.organs.incentivehouse_organ.intelligence.pdf_generator import (
                 generate_dashboard_pdf,
             )
+
             pdf_bytes = generate_dashboard_pdf(data, range)
             filename = (
-                f"dashboard_{range}_"
-                f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                f"dashboard_{range}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
             )
             return Response(
                 content=pdf_bytes,
@@ -184,6 +190,69 @@ def dashboard_export(
                 "format": "pdf",
                 "status": "error",
                 "message": f"PDF generation failed: {exc}",
+                "data": data,
+            }
+    if fmt == "xlsx":
+        try:
+            from openpyxl import Workbook
+
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Dashboard"
+            ws.append(["KPI", "Value"])
+            ws.append(
+                [
+                    "Range",
+                    f"{data['range']} ({data['start_date']} to {data['end_date']})",
+                ]
+            )
+            ws.append(["Total Revenue", data["total_revenue"]])
+            ws.append(["Total Expenses", data["total_expenses"]])
+            ws.append(["Net Profit", data["net_profit"]])
+            ws.append(["Active PNRs", data["active_pnrs"]])
+            ws.append(["Bank Balance", data["bank_balance"]])
+            ws.append(["Pending Invoices", data["pending_invoices"]])
+            ws.append(["Total Vendors", data["total_vendors"]])
+            ws.append(["Total Clients", data["total_clients"]])
+            ws.append([])
+            ws.append(["Month", "Revenue", "Expenses"])
+            months = [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec",
+            ]
+            for i, m in enumerate(months):
+                ws.append(
+                    [m, data["revenue_by_month"][i], data["expenses_by_month"][i]]
+                )
+            from io import BytesIO
+
+            buf = BytesIO()
+            wb.save(buf)
+            buf.seek(0)
+            filename = (
+                f"dashboard_{range}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            )
+            return Response(
+                content=buf.getvalue(),
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename={filename}"},
+            )
+        except Exception as exc:
+            logger.warning("Excel generation failed: %s", exc)
+            return {
+                "format": "xlsx",
+                "status": "error",
+                "message": str(exc),
                 "data": data,
             }
     return {"format": "json", "data": data}

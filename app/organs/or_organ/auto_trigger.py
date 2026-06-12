@@ -15,14 +15,9 @@ Integration:
         return event
 """
 
-import json
 import os
 import logging
-from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_async_session_factory
 from app.organs.or_organ.job_or_bridge import EventORBridge
@@ -60,12 +55,19 @@ class AutoTriggerEngine:
             )
             return results
 
-    async def on_stock_alert(self, sku: str, current_qty: float, reorder_point: float) -> dict:
+    async def on_stock_alert(
+        self, sku: str, current_qty: float, reorder_point: float
+    ) -> dict:
         """
         Triggered when inventory falls below reorder point (P1).
         Runs: EOQ reorder calculation + ABC classification update
         """
-        logger.info("Auto-trigger: Stock alert for %s (qty=%s, reorder=%s)", sku, current_qty, reorder_point)
+        logger.info(
+            "Auto-trigger: Stock alert for %s (qty=%s, reorder=%s)",
+            sku,
+            current_qty,
+            reorder_point,
+        )
         async with self._session_factory() as db:
             bridge = EventORBridge(db, sandbox_dir=SANDBOX_DIR)
             result = bridge.analyze_stock_alert(sku, current_qty, reorder_point)

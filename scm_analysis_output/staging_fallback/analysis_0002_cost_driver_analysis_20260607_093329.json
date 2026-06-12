@@ -1,0 +1,48 @@
+{
+  "id": 2,
+  "saved_at": "2026-06-07T09:33:29.533572",
+  "event_id": 0,
+  "analysis_type": "cost_driver_analysis",
+  "input_data": {},
+  "results": {
+    "analysis_type": "cost_driver_analysis",
+    "structural_drivers": 1,
+    "executional_drivers": 1,
+    "gap_analysis": [
+      {
+        "driver": "Event Scale",
+        "type": "structural",
+        "current": 150.0,
+        "optimal": 200.0,
+        "gap": 50.0,
+        "gap_pct": 25.0,
+        "unit": "attendees",
+        "impact_on_cost_pct": 15.0,
+        "priority": "high"
+      },
+      {
+        "driver": "Workforce Skill",
+        "type": "executional",
+        "current": 75.0,
+        "optimal": 90.0,
+        "gap": 15.0,
+        "gap_pct": 16.67,
+        "unit": "training_hours",
+        "impact_on_cost_pct": 8.0,
+        "priority": "medium"
+      }
+    ],
+    "recommendations": [
+      "Focus on 1 high-priority cost drivers",
+      "Structural drivers require long-term strategic decisions (scale, technology)",
+      "Executional drivers can be improved through operational excellence"
+    ]
+  },
+  "recommendations": [
+    "Focus on 1 high-priority cost drivers",
+    "Structural drivers require long-term strategic decisions (scale, technology)",
+    "Executional drivers can be improved through operational excellence"
+  ],
+  "confidence_score": 0.0,
+  "created_by": "scm_cost_engine"
+}

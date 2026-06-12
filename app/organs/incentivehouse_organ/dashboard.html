@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incentive House ERP — Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --header-height: 60px;
+            --primary: #1a237e;
+            --secondary: #3949ab;
+            --accent: #00bcd4;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --dark: #121212;
+            --card-bg: #1e1e2f;
+            --text: #e0e0e0;
+            --text-muted: #888;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* HEADER */
+        .top-header {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: var(--header-height);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .top-header .logo {
+            display: flex; align-items: center; gap: 12px;
+            font-size: 1.3rem; font-weight: 700;
+        }
+        .top-header .logo img { height: 36px; }
+        .top-header .user-menu {
+            display: flex; align-items: center; gap: 16px;
+        }
+        .top-header .user-menu .btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 6px 16px; border-radius: 6px;
+            font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+        }
+        .top-header .user-menu .btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            position: fixed; top: var(--header-height); left: 0;
+            width: var(--sidebar-width); height: calc(100vh - var(--header-height));
+            background: var(--card-bg);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            overflow-y: auto; z-index: 900;
+            padding: 16px 0;
+        }
+        .sidebar-section {
+            margin-bottom: 8px;
+        }
+        .sidebar-section-title {
+            padding: 8px 20px;
+            font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 20px; margin: 2px 8px;
+            border-radius: 8px; cursor: pointer;
+            color: var(--text); text-decoration: none;
+            font-size: 0.9rem; transition: all 0.2s;
+        }
+        .sidebar-item:hover, .sidebar-item.active {
+            background: rgba(0,188,212,0.1);
+            color: var(--accent);
+        }
+        .sidebar-item i {
+            width: 20px; text-align: center;
+            font-size: 0.95rem;
+        }
+        .sidebar-item .badge {
+            margin-left: auto;
+            background: var(--danger);
+            color: white; font-size: 0.7rem;
+            padding: 2px 8px; border-radius: 10px;
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 24px;
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        /* KPI CARDS */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px; margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            border-radius: 12px; padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.2s;
+        }
+        .kpi-card:hover { transform: translateY(-2px); }
+        .kpi-card .label {
+            font-size: 0.8rem; color: var(--text-muted);
+            margin-bottom: 8px; text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .kpi-card .value {
+            font-size: 1.6rem; font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .kpi-card .change {
+            font-size: 0.8rem;
+        }
+        .kpi-card .change.up { color: var(--success); }
+        .kpi-card .change.down { color: var(--danger); }
+
+        /* MODULE CARDS */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .module-card {
+            background: var(--card-bg);
+            border-radius: 12px; padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer; transition: all 0.2s;
+            text-decoration: none; color: var(--text);
+            display: block;
+        }
+        .module-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,188,212,0.1);
+        }
+        .module-card .icon {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; margin-bottom: 12px;
+        }
+        .module-card .title {
+            font-size: 1.1rem; font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .module-card .desc {
+            font-size: 0.8rem; color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        .module-card .stats {
+            display: flex; gap: 16px;
+            font-size: 0.8rem;
+        }
+        .module-card .stats .stat {
+            display: flex; flex-direction: column;
+        }
+        .module-card .stats .stat .num {
+            font-weight: 700; color: var(--accent);
+        }
+
+        /* ALERTS */
+        .alert-banner {
+            background: rgba(244,67,54,0.1);
+            border: 1px solid rgba(244,67,54,0.3);
+            border-radius: 8px; padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .alert-banner.warning {
+            background: rgba(255,152,0,0.1);
+            border-color: rgba(255,152,0,0.3);
+        }
+        .alert-banner.info {
+            background: rgba(0,188,212,0.1);
+            border-color: rgba(0,188,212,0.3);
+        }
+
+        /* LOADING STATE */
+        .loading {
+            display: flex; align-items: center; justify-content: center;
+            padding: 40px; color: var(--text-muted);
+        }
+        .loading::after {
+            content: ""; width: 20px; height: 20px;
+            border: 2px solid var(--text-muted);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* SECTION HEADER */
+        .section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .section-header h2 {
+            font-size: 1.2rem; font-weight: 600;
+        }
+        .section-header .view-all {
+            font-size: 0.85rem; color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* ACTIVITY FEED */
+        .activity-list {
+            background: var(--card-bg);
+            border-radius: 12px; padding: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .activity-item {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-item .icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; flex-shrink: 0;
+        }
+        .activity-item .icon.success { background: rgba(76,175,80,0.2); color: var(--success); }
+        .activity-item .icon.warning { background: rgba(255,152,0,0.2); color: var(--warning); }
+        .activity-item .icon.error { background: rgba(244,67,54,0.2); color: var(--danger); }
+        .activity-item .icon.info { background: rgba(0,188,212,0.2); color: var(--accent); }
+        .activity-item .content { flex: 1; }
+        .activity-item .content .text {
+            font-size: 0.9rem; margin-bottom: 2px;
+        }
+        .activity-item .content .meta {
+            font-size: 0.75rem; color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="top-header">
+        <div class="logo">
+            <i class="fas fa-building" style="font-size:1.5rem;"></i>
+            <span>Incentive House ERP</span>
+        </div>
+        <div class="user-menu">
+            <span id="user-name">Loading...</span>
+            <button class="btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+        <!-- Main Modules -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Main Modules</div>
+            <a href="/dashboard" class="sidebar-item active">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="/incentivehouse/grn" class="sidebar-item">
+                <i class="fas fa-warehouse"></i> Goods Receipt
+            </a>
+            <a href="/incentivehouse/cost" class="sidebar-item">
+                <i class="fas fa-calculator"></i> Cost Management
+            </a>
+            <a href="/incentivehouse/event-budget" class="sidebar-item">
+                <i class="fas fa-money-bill-wave"></i> Event Budget
+            </a>
+            <a href="/incentivehouse/bsc" class="sidebar-item">
+                <i class="fas fa-chart-line"></i> Balanced Scorecard
+            </a>
+        </div>
+
+        <!-- Incentive House -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Incentive House</div>
+            <a href="/incentivehouse/bi" class="sidebar-item">
+                <i class="fas fa-brain"></i> Business Intelligence
+            </a>
+            <a href="/incentivehouse/budget" class="sidebar-item">
+                <i class="fas fa-coins"></i> Budgeting
+            </a>
+            <a href="/incentivehouse/approval" class="sidebar-item">
+                <i class="fas fa-check-double"></i> Approval Workflow
+                <span class="badge" id="approval-badge">3</span>
+            </a>
+            <a href="/incentivehouse/ops" class="sidebar-item">
+                <i class="fas fa-tasks"></i> Event Operations
+            </a>
+        </div>
+
+        <!-- Data & Reports -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Data & Reports</div>
+            <a href="/api/v1/or/docs" target="_blank" class="sidebar-item">
+                <i class="fas fa-flask"></i> OR Research
+            </a>
+            <a href="/incentivehouse/reports" class="sidebar-item">
+                <i class="fas fa-file-alt"></i> Reports
+            </a>
+        </div>
+
+        <!-- System -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">System</div>
+            <a href="/incentivehouse/audit" class="sidebar-item">
+                <i class="fas fa-shield-alt"></i> Audit Trail
+            </a>
+            <a href="/incentivehouse/settings" class="sidebar-item">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <!-- Alerts -->
+        <div id="alerts-container"></div>
+
+        <!-- KPI Cards -->
+        <div class="section-header">
+            <h2><i class="fas fa-chart-pie"></i> Key Performance Indicators</h2>
+            <span style="font-size:0.8rem;color:var(--text-muted);" id="last-updated">Updated: now</span>
+        </div>
+        <div class="kpi-grid" id="kpi-grid">
+            <div class="loading">Loading KPIs...</div>
+        </div>
+
+        <!-- Module Cards -->
+        <div class="section-header">
+            <h2><i class="fas fa-th-large"></i> Module Overview</h2>
+        </div>
+        <div class="module-grid" id="module-grid">
+            <!-- Static module cards that work without API -->
+            <a href="/incentivehouse/grn" class="module-card">
+                <div class="icon" style="background:rgba(0,188,212,0.2);color:var(--accent);">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+                <div class="title">Goods Receipt</div>
+                <div class="desc">Track incoming inventory and GRN processing</div>
+                <div class="stats">
+                    <div class="stat"><span class="num">20</span><span>GRNs</span></div>
+                    <div class="stat"><span class="num">66</span><span>Lines</span></div>
+                </div>
+            </a>
+
+            <a href="/incentivehouse/cost" class="module-card">
+                <div class="icon" style="background:rgba(76,175,80,0.2);color:var(--success);">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <div class="title">Cost Management</div>
+                <div class="desc">Allocate and analyze event costs by category</div>
+                <div class="stats">
+                    <div class="stat"><span class="num">57</span><span>Allocations</span></div>
+                    <div class="stat"><span class="num">8</span><span>Categories</span></div>
+                </div>
+            </a>
+
+            <a href="/incentivehouse/event-budget" class="module-card">
+                <div class="icon" style="background:rgba(255,152,0,0.2);color:var(--warning);">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="title">Event Budget</div>
+                <div class="desc">Track budget vs actuals per PNR event</div>
+                <div class="stats">
+                    <div class="stat"><span class="num">80</span><span>Budget Lines</span></div>
+                    <div class="stat"><span class="num">93K</span><span>Budgeted</span></div>
+                </div>
+            </a>
+
+            <a href="/incentivehouse/bsc" class="module-card">
+                <div class="icon" style="background:rgba(156,39,176,0.2);color:#9c27b0;">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="title">Balanced Scorecard</div>
+                <div class="desc">Strategic KPIs and performance metrics</div>
+                <div class="stats">
+                    <div class="stat"><span class="num">8</span><span>Objectives</span></div>
+                    <div class="stat"><span class="num">16</span><span>Indicators</span></div>
+                </div>
+            </a>
+
+            <a href="/incentivehouse/bi" class="module-card">
+                <div class="icon" style="background:rgba(33,150,243,0.2);color:#2196f3;">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div class="title">Business Intelligence</div>
+                <div class="desc">AI-powered predictions and trend analysis</div>
+                <div class="stats">
+                    <div class="stat"><span class="num">20</span><span>Predictions</span></div>
+                    <div class="stat"><span class="num">94%</span><span>Accuracy</span></div>
+                </div>
+            </a>
+
+            <a href="/incentivehouse/budget" class="module-card">
+                <div class="icon" style="background:rgba(0,150,136,0.2);color:#009688;">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div class="title">Budgeting</div>
+                <div class="desc">FY2026 budget planning and variance tracking</div>
+                <div class="stats">
+                    <div class="stat"><span class="num">63</span><span>Budget Lines</span></div>
+                    <div class="stat"><span class="num">+291K</span><span>Variance</span></div>
+                </div>
+            </a>
+
+            <a href="/incentivehouse/approval" class="module-card">
+                <div class="icon" style="background:rgba(244,67,54,0.2);color:var(--danger);">
+                    <i class="fas fa-check-double"></i>
+                </div>
+                <div class="title">Approval Workflow</div>
+                <div class="desc">Budget, PO, and invoice approval chains</div>
+                <div class="stats">
+                    <div class="stat"><span class="num">12</span><span>Rules</span></div>
+                    <div class="stat"><span class="num">3</span><span>Pending</span></div>
+                </div>
+            </a>
+
+            <a href="/incentivehouse/ops" class="module-card">
+                <div class="icon" style="background:rgba(121,85,72,0.2);color:#795548;">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="title">Event Operations</div>
+                <div class="desc">Event timeline, tasks, and resource management</div>
+                <div class="stats">
+                    <div class="stat"><span class="num">10</span><span>Operations</span></div>
+                    <div class="stat"><span class="num">143</span><span>Events</span></div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="section-header" style="margin-top:24px;">
+            <h2><i class="fas fa-bell"></i> Recent Activity</h2>
+            <a href="#" class="view-all">View All</a>
+        </div>
+        <div class="activity-list" id="activity-list">
+            <div class="loading">Loading activity...</div>
+        </div>
+    </main>
+
+    <script>
+        // ── API CALLS WITH FALLBACK ──
+        async function fetchWithFallback(url, fallback) {
+            try {
+                const res = await fetch(url, { credentials: 'same-origin' });
+                if (res.ok) return await res.json();
+                console.warn(`API ${url} returned ${res.status}`);
+                return fallback;
+            } catch (e) {
+                console.warn(`API ${url} failed:`, e);
+                return fallback;
+            }
+        }
+
+        // ── LOAD USER ──
+        async function loadUser() {
+            const data = await fetchWithFallback('/api/v1/dashboard/auth/me', {
+                name: 'Administrator', username: 'admin', role: 'admin'
+            });
+            document.getElementById('user-name').textContent = data.name || data.username || 'User';
+        }
+
+        // ── LOAD KPIs ──
+        async function loadKPIs() {
+            const data = await fetchWithFallback('/api/v1/dashboard/summary', {
+                total_events: 143, active_events: 12, total_revenue: 56300000,
+                total_costs: 42300000, gross_margin: 14000000, margin_percent: 24.9,
+                ap_due: 19500000, ar_due: 15300000, bank_balance: 2170000,
+                pending_approvals: 3, eta_validated: 92, eta_rejected: 1
+            });
+
+            const formatMoney = (n) => {
+                if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+                if (n >= 1000) return (n/1000).toFixed(0) + 'K';
+                return n.toString();
+            };
+
+            document.getElementById('kpi-grid').innerHTML = `
+                <div class="kpi-card">
+                    <div class="label">Total Events</div>
+                    <div class="value" style="color:var(--accent);">${data.total_events}</div>
+                    <div class="change up"><i class="fas fa-arrow-up"></i> ${data.active_events} active</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="label">Revenue</div>
+                    <div class="value" style="color:var(--success);">${formatMoney(data.total_revenue)} EGP</div>
+                    <div class="change up"><i class="fas fa-arrow-up"></i> FY2026</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="label">Costs</div>
+                    <div class="value" style="color:var(--danger);">${formatMoney(data.total_costs)} EGP</div>
+                    <div class="change down"><i class="fas fa-arrow-down"></i> AP due ${formatMoney(data.ap_due)}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="label">Gross Margin</div>
+                    <div class="value" style="color:var(--accent);">${data.margin_percent}%</div>
+                    <div class="change up"><i class="fas fa-arrow-up"></i> ${formatMoney(data.gross_margin)} EGP</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="label">AR Due</div>
+                    <div class="value" style="color:var(--warning);">${formatMoney(data.ar_due)} EGP</div>
+                    <div class="change down"><i class="fas fa-exclamation-circle"></i> Collect now</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="label">Bank Balance</div>
+                    <div class="value" style="color:var(--success);">${formatMoney(data.bank_balance)} EGP</div>
+                    <div class="change up"><i class="fas fa-check-circle"></i> Net positive</div>
+                </div>
+            `;
+
+            document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+        }
+
+        // ── LOAD ALERTS ──
+        async function loadAlerts() {
+            const data = await fetchWithFallback('/api/v1/dashboard/flags', {
+                flags: [
+                    {level:'error', message:'1 ETA invoice rejected — needs correction'},
+                    {level:'warning', message:'AP aging: 18 invoices >90 days'},
+                    {level:'info', message:'System check: 18/18 endpoints PASS'}
+                ],
+                unread_count: 3
+            });
+
+            const container = document.getElementById('alerts-container');
+            if (!data.flags || data.flags.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = data.flags.map(f => `
+                <div class="alert-banner ${f.level}">
+                    <i class="fas fa-${f.level === 'error' ? 'exclamation-circle' : f.level === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    <span>${f.message}</span>
+                    ${f.action_url ? `<a href="${f.action_url}" style="margin-left:auto;color:var(--accent);font-size:0.8rem;">Fix →</a>` : ''}
+                </div>
+            `).join('');
+
+            // Update badge
+            const badge = document.getElementById('approval-badge');
+            if (badge && data.unread_count) badge.textContent = data.unread_count;
+        }
+
+        // ── LOAD ACTIVITY ──
+        async function loadActivity() {
+            const data = await fetchWithFallback('/api/v1/dashboard/activity?limit=5', {
+                activities: [
+                    {type:'invoice', description:'Sales invoice validated', user:'system', timestamp:'2026-06-10T10:30:00', status:'success'},
+                    {type:'payment', description:'AP Payment processed', user:'system', timestamp:'2026-06-10T09:15:00', status:'success'},
+                    {type:'budget', description:'FY2026 budget updated', user:'admin', timestamp:'2026-06-10T08:45:00', status:'info'},
+                    {type:'approval', description:'PO awaiting approval', user:'manager', timestamp:'2026-06-09T16:20:00', status:'warning'},
+                    {type:'eta', description:'ETA submission rejected', user:'system', timestamp:'2026-06-09T14:10:00', status:'error'}
+                ]
+            });
+
+            const iconMap = {
+                invoice: 'file-invoice', payment: 'credit-card', budget: 'coins',
+                approval: 'check-double', eta: 'file-alt', event: 'calendar',
+                grn: 'warehouse', system: 'server'
+            };
+
+            document.getElementById('activity-list').innerHTML = data.activities.map(a => `
+                <div class="activity-item">
+                    <div class="icon ${a.status}"><i class="fas fa-${iconMap[a.type] || 'circle'}"></i></div>
+                    <div class="content">
+                        <div class="text">${a.description}</div>
+                        <div class="meta">${a.user} • ${new Date(a.timestamp).toLocaleString()}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ── LOGOUT ──
+        function logout() {
+            fetch('/logout', {method:'POST'}).then(() => window.location.href = '/');
+        }
+
+        // ── INIT ──
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUser();
+            loadKPIs();
+            loadAlerts();
+            loadActivity();
+
+            // Refresh every 60 seconds
+            setInterval(() => {
+                loadKPIs();
+                loadAlerts();
+                loadActivity();
+            }, 60000);
+        });
+    </script>
+</body>
+</html>

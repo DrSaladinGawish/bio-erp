@@ -1,4 +1,4 @@
-﻿import httpx
+import httpx
 import json
 import base64
 import hashlib
@@ -39,9 +39,9 @@ class ETAClient:
             resp.raise_for_status()
             data = resp.json()
             ETAClient._token = data["access_token"]
-            ETAClient._expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
-                seconds=data.get("expires_in", 3600) - 60
-            )
+            ETAClient._expires = datetime.now(timezone.utc).replace(
+                tzinfo=None
+            ) + timedelta(seconds=data.get("expires_in", 3600) - 60)
             return ETAClient._token
 
     @staticmethod

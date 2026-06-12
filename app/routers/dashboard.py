@@ -1,11 +1,11 @@
-﻿import asyncio
+import asyncio
 from datetime import datetime
 from datetime import timezone
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.middleware.auth import get_current_user, RequirePermission
+from app.middleware.auth import RequirePermission
 from app.models.auth import User
 from app.models.event import Event
 from app.models.client import Client

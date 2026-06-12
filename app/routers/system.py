@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends
 from app.middleware.auth import get_current_user, RequirePermission
 from app.models.auth import User
 from app.services.cbe_sync import trigger_manual_sync

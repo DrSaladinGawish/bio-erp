@@ -1,7 +1,7 @@
 import yaml
 import json
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Optional, List, Tuple
 
 
 class MappingEngine:
@@ -83,17 +83,25 @@ class MappingEngine:
             return False
         return account.get("status") == "A"
 
-    def route_gl_trnx(self, description: str, account_code: Optional[str] = None) -> str:
+    def route_gl_trnx(
+        self, description: str, account_code: Optional[str] = None
+    ) -> str:
         desc_lower = description.lower()
         router = self.router["gl_trnx_router"]
         for kw in router["route_to_evn"]["description_keywords"]:
             if kw.lower() in desc_lower:
                 return "Evn"
-        if account_code and any(account_code.startswith(p) for p in router["route_to_evn"]["account_code_prefixes"]):
+        if account_code and any(
+            account_code.startswith(p)
+            for p in router["route_to_evn"]["account_code_prefixes"]
+        ):
             return "Evn"
         for kw in router["route_to_env"]["description_keywords"]:
             if kw.lower() in desc_lower:
                 return "Env"
-        if account_code and any(account_code.startswith(p) for p in router["route_to_env"]["account_code_prefixes"]):
+        if account_code and any(
+            account_code.startswith(p)
+            for p in router["route_to_env"]["account_code_prefixes"]
+        ):
             return "Env"
         return router["default_module"]

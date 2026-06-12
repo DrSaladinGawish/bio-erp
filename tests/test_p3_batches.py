@@ -5,7 +5,6 @@ Run: pytest tests/test_p3_batches.py -v
 
 from __future__ import annotations
 
-import pytest
 from httpx import AsyncClient
 
 
@@ -27,8 +26,8 @@ SAMPLE_UPDATE = {
 #  Category 1 — CRUD  (6 tests)
 # ═══════════════════════════════════════════════════════════════════
 
-class TestBatchCRUD:
 
+class TestBatchCRUD:
     async def test_create_returns_201(self, client: AsyncClient, auth_headers: dict):
         resp = await client.post(BASE, json=SAMPLE_PAYLOAD, headers=auth_headers)
         assert resp.status_code == 201
@@ -61,19 +60,27 @@ class TestBatchCRUD:
         assert resp.status_code == 200
         assert resp.json()["id"] == bid
 
-    async def test_get_nonexistent_returns_404(self, client: AsyncClient, auth_headers: dict):
+    async def test_get_nonexistent_returns_404(
+        self, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.get(f"{BASE}/99999", headers=auth_headers)
         assert resp.status_code == 404
 
     async def test_update_returns_200(self, client: AsyncClient, auth_headers: dict):
         created = await client.post(BASE, json=SAMPLE_PAYLOAD, headers=auth_headers)
         bid = created.json()["id"]
-        resp = await client.put(f"{BASE}/{bid}", json=SAMPLE_UPDATE, headers=auth_headers)
+        resp = await client.put(
+            f"{BASE}/{bid}", json=SAMPLE_UPDATE, headers=auth_headers
+        )
         assert resp.status_code == 200
         assert resp.json()["volume_l"] == 200.0
 
-    async def test_update_nonexistent_returns_404(self, client: AsyncClient, auth_headers: dict):
-        resp = await client.put(f"{BASE}/99999", json=SAMPLE_UPDATE, headers=auth_headers)
+    async def test_update_nonexistent_returns_404(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        resp = await client.put(
+            f"{BASE}/99999", json=SAMPLE_UPDATE, headers=auth_headers
+        )
         assert resp.status_code == 404
 
     async def test_delete_returns_200(self, client: AsyncClient, auth_headers: dict):
@@ -83,7 +90,9 @@ class TestBatchCRUD:
         assert resp.status_code == 200
         assert resp.json()["deleted"] is True
 
-    async def test_delete_nonexistent_returns_404(self, client: AsyncClient, auth_headers: dict):
+    async def test_delete_nonexistent_returns_404(
+        self, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.delete(f"{BASE}/99999", headers=auth_headers)
         assert resp.status_code == 404
 
@@ -96,8 +105,8 @@ class TestBatchCRUD:
 #  Category 2 — State Machine  (6 tests)
 # ═══════════════════════════════════════════════════════════════════
 
-class TestBatchStateMachine:
 
+class TestBatchStateMachine:
     async def _create_draft(self, client, auth_headers) -> int:
         resp = await client.post(BASE, json=SAMPLE_PAYLOAD, headers=auth_headers)
         return resp.json()["id"]
@@ -108,18 +117,24 @@ class TestBatchStateMachine:
         assert resp.status_code == 200
         assert resp.json()["status"] == "released"
 
-    async def test_released_to_in_progress(self, client: AsyncClient, auth_headers: dict):
+    async def test_released_to_in_progress(
+        self, client: AsyncClient, auth_headers: dict
+    ):
         bid = await self._create_draft(client, auth_headers)
         await client.post(f"{BASE}/{bid}/release", headers=auth_headers)
         resp = await client.post(f"{BASE}/{bid}/start", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json()["status"] == "in_progress"
 
-    async def test_in_progress_to_completed(self, client: AsyncClient, auth_headers: dict):
+    async def test_in_progress_to_completed(
+        self, client: AsyncClient, auth_headers: dict
+    ):
         bid = await self._create_draft(client, auth_headers)
         await client.post(f"{BASE}/{bid}/release", headers=auth_headers)
         await client.post(f"{BASE}/{bid}/start", headers=auth_headers)
-        resp = await client.post(f"{BASE}/{bid}/complete?actual_biomass_gl=12.5", headers=auth_headers)
+        resp = await client.post(
+            f"{BASE}/{bid}/complete?actual_biomass_gl=12.5", headers=auth_headers
+        )
         assert resp.status_code == 200
         assert resp.json()["status"] == "completed"
         assert resp.json()["actual_biomass_gl"] == 12.5
@@ -139,7 +154,9 @@ class TestBatchStateMachine:
         assert resp.status_code == 200
         assert resp.json()["status"] == "cancelled"
 
-    async def test_invalid_transition_returns_400(self, client: AsyncClient, auth_headers: dict):
+    async def test_invalid_transition_returns_400(
+        self, client: AsyncClient, auth_headers: dict
+    ):
         bid = await self._create_draft(client, auth_headers)
         resp = await client.post(f"{BASE}/{bid}/complete", headers=auth_headers)
         assert resp.status_code == 400
@@ -153,8 +170,8 @@ class TestBatchStateMachine:
 #  Category 3 — Pagination & Filtering  (2 tests)
 # ═══════════════════════════════════════════════════════════════════
 
-class TestBatchPagination:
 
+class TestBatchPagination:
     async def test_pagination_defaults(self, client: AsyncClient, auth_headers: dict):
         resp = await client.get(BASE, headers=auth_headers)
         assert resp.status_code == 200

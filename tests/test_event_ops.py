@@ -1,4 +1,5 @@
 """Tests for Event Lifecycle Operations (v2.5.0)."""
+
 from __future__ import annotations
 
 import os
@@ -192,9 +193,7 @@ async def test_lifecycle_transition_invalid_status(
     assert "detail" in data
 
 
-async def test_lifecycle_transition_not_found(
-    client: AsyncClient, auth_headers: dict
-):
+async def test_lifecycle_transition_not_found(client: AsyncClient, auth_headers: dict):
     resp = await client.post(
         "/api/v1/event-ops/lifecycle/99999",
         headers=auth_headers,

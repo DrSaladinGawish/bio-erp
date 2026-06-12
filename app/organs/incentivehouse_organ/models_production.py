@@ -24,12 +24,24 @@ All tables share ``IncentiveBase`` from ``models.py`` so ``create_all``
 picks them up automatically once this module is imported anywhere in the
 process (the routers, the loader, and main.py all import it).
 """
+
 from __future__ import annotations
 
 from datetime import datetime
 
 from sqlalchemy import (
-    Column, Date, DateTime, Float, ForeignKey, Integer, String, Text, Index,
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    JSON,
+    Numeric,
+    String,
+    Text,
+    Index,
 )
 from sqlalchemy.orm import relationship
 
@@ -40,6 +52,7 @@ from .models import IncentiveBase
 # 0. Master-data tables that were created by the Alembic migration
 #    but were not previously exposed as ORM models
 # ──────────────────────────────────────────────────────────────────────
+
 
 class Client(IncentiveBase):
     __tablename__ = "clients_mtbl"
@@ -81,6 +94,7 @@ class PnrRecord(IncentiveBase):
 # 1. Vendors master
 # ──────────────────────────────────────────────────────────────────────
 
+
 class Vendor(IncentiveBase):
     __tablename__ = "vendors_mtbl"
 
@@ -92,9 +106,9 @@ class Vendor(IncentiveBase):
     phone = Column(String(50))
     email = Column(String(255))
     address = Column(Text)
-    category = Column(String(50))           # SUPPLIER / CONTRACTOR / BOTH
-    payment_terms = Column(String(50))      # NET30 / NET45 / COD / etc.
-    acc_key = Column(Integer)               # sub-ledger key
+    category = Column(String(50))  # SUPPLIER / CONTRACTOR / BOTH
+    payment_terms = Column(String(50))  # NET30 / NET45 / COD / etc.
+    acc_key = Column(Integer)  # sub-ledger key
     active = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -103,13 +117,14 @@ class Vendor(IncentiveBase):
 # 2. Staff / employees master
 # ──────────────────────────────────────────────────────────────────────
 
+
 class Staff(IncentiveBase):
     __tablename__ = "staff_mtbl"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String(20), unique=True, index=True)
     name = Column(String(255), nullable=False)
-    role = Column(String(50))               # EVENT_MGR / ACCOUNTANT / CREW
+    role = Column(String(50))  # EVENT_MGR / ACCOUNTANT / CREW
     department = Column(String(100))
     phone = Column(String(50))
     email = Column(String(255))
@@ -123,6 +138,7 @@ class Staff(IncentiveBase):
 # ──────────────────────────────────────────────────────────────────────
 # 3. Events (header — links to PNR + client)
 # ──────────────────────────────────────────────────────────────────────
+
 
 class Event(IncentiveBase):
     __tablename__ = "events"
@@ -143,11 +159,66 @@ class Event(IncentiveBase):
     currency = Column(String(3), default="EGP")
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # v2.5.0 — Event Lifecycle Operations fields
+    lifecycle_status = Column(String(20), default="DRAFT")
+    ops_team_id = Column(Integer, ForeignKey("staff_mtbl.id"), nullable=True)
+    execution_date = Column(DateTime, nullable=True)
+    actual_pax = Column(Integer, nullable=True)
+    actual_cost = Column(Numeric(15, 2), nullable=True)
+    # Relationships
+    ops_team = relationship("Staff", foreign_keys=[ops_team_id])
+    operations = relationship("EventOperation", back_populates="event", uselist=False)
+
+
+class EventOperation(IncentiveBase):
+    __tablename__ = "event_operations"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False, unique=True)
+    ops_manager_id = Column(Integer, ForeignKey("staff_mtbl.id"), nullable=True)
+    briefing_completed = Column(Boolean, default=False)
+    load_in_time = Column(DateTime, nullable=True)
+    sound_check_done = Column(Boolean, default=False)
+    catering_final_count = Column(Integer, nullable=True)
+    run_sheet = Column(JSON, default=list)
+    post_event_notes = Column(Text, nullable=True)
+    client_signatory_name = Column(String(100), nullable=True)
+    client_signature_path = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Relationships
+    event = relationship("Event", back_populates="operations")
+    ops_manager = relationship("Staff", foreign_keys=[ops_manager_id])
+
+
+class ServiceUOM(IncentiveBase):
+    __tablename__ = "service_uom"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    category_id = Column(Integer, nullable=True)
+    sub_category_id = Column(Integer, nullable=True)
+    uom_code = Column(String(10), nullable=False)
+    uom_name = Column(String(50), nullable=True)
+    default_unit_price = Column(Numeric(12, 2), nullable=True)
+    min_qty = Column(Numeric(10, 2), default=1)
+    max_qty = Column(Numeric(10, 2), nullable=True)
+    is_active = Column(Boolean, default=True)
+
+
+LIFECYCLE_STATUSES = [
+    "DRAFT",
+    "QUOTED",
+    "CONFIRMED",
+    "PLANNING",
+    "IN_PROGRESS",
+    "EXECUTED",
+    "INVOICED",
+    "CLOSED",
+]
 
 
 # ──────────────────────────────────────────────────────────────────────
 # 4. Work orders (operational — under an event)
 # ──────────────────────────────────────────────────────────────────────
+
 
 class WorkOrder(IncentiveBase):
     __tablename__ = "work_orders"
@@ -155,7 +226,7 @@ class WorkOrder(IncentiveBase):
     id = Column(Integer, primary_key=True, autoincrement=True)
     wo_code = Column(String(50), unique=True, index=True, nullable=False)
     event_id = Column(Integer, ForeignKey("events.id"), index=True)
-    department = Column(String(50))         # PRODUCTION / LOGISTICS / etc.
+    department = Column(String(50))  # PRODUCTION / LOGISTICS / etc.
     task = Column(String(255))
     start_date = Column(Date)
     end_date = Column(Date)
@@ -170,6 +241,7 @@ class WorkOrder(IncentiveBase):
 # 5. Staff assignments (staff ↔ work-order)
 # ──────────────────────────────────────────────────────────────────────
 
+
 class StaffAssignment(IncentiveBase):
     __tablename__ = "staff_assignments"
 
@@ -177,7 +249,7 @@ class StaffAssignment(IncentiveBase):
     staff_id = Column(Integer, ForeignKey("staff_mtbl.id"), index=True)
     work_order_id = Column(Integer, ForeignKey("work_orders.id"), index=True)
     event_id = Column(Integer, ForeignKey("events.id"), index=True)
-    role = Column(String(50))                # LEAD / CREW / SUPERVISOR
+    role = Column(String(50))  # LEAD / CREW / SUPERVISOR
     start_date = Column(Date)
     end_date = Column(Date)
     hours_planned = Column(Float, default=0.0)
@@ -191,6 +263,7 @@ class StaffAssignment(IncentiveBase):
 # ──────────────────────────────────────────────────────────────────────
 # 6. Sales invoices (header)
 # ──────────────────────────────────────────────────────────────────────
+
 
 class SalesInvoice(IncentiveBase):
     __tablename__ = "sales_invoices"
@@ -218,6 +291,7 @@ class SalesInvoice(IncentiveBase):
 # 7. Sales line items
 # ──────────────────────────────────────────────────────────────────────
 
+
 class SalesLineItem(IncentiveBase):
     __tablename__ = "sales_line_items"
 
@@ -241,6 +315,7 @@ class SalesLineItem(IncentiveBase):
 # 8. Purchase orders (header)
 # ──────────────────────────────────────────────────────────────────────
 
+
 class PurchaseOrder(IncentiveBase):
     __tablename__ = "purchase_orders"
 
@@ -255,7 +330,9 @@ class PurchaseOrder(IncentiveBase):
     subtotal = Column(Float, default=0.0)
     tax_amount = Column(Float, default=0.0)
     total = Column(Float, default=0.0)
-    status = Column(String(20), default="OPEN")  # DRAFT / OPEN / APPROVED / RECEIVED / CLOSED
+    status = Column(
+        String(20), default="OPEN"
+    )  # DRAFT / OPEN / APPROVED / RECEIVED / CLOSED
     expected_delivery = Column(Date)
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -264,6 +341,7 @@ class PurchaseOrder(IncentiveBase):
 # ──────────────────────────────────────────────────────────────────────
 # 9. Vendor invoices
 # ──────────────────────────────────────────────────────────────────────
+
 
 class VendorInvoice(IncentiveBase):
     __tablename__ = "vendor_invoices"
@@ -288,44 +366,27 @@ class VendorInvoice(IncentiveBase):
 
 
 # ──────────────────────────────────────────────────────────────────────
-# 10. Budget lines
-# ──────────────────────────────────────────────────────────────────────
-
-class BudgetLine(IncentiveBase):
-    __tablename__ = "budget_lines"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    cost_center = Column(String(30), index=True)
-    event_id = Column(Integer, index=True)
-    fiscal_year = Column(Integer, index=True)
-    fiscal_month = Column(Integer)
-    category = Column(String(50))            # REVENUE / COST / CAPEX
-    planned_amount = Column(Float, default=0.0)
-    actual_amount = Column(Float, default=0.0)
-    variance = Column(Float, default=0.0)
-    currency = Column(String(3), default="EGP")
-    notes = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-
-# ──────────────────────────────────────────────────────────────────────
 # Reconciliation-result table (used by recon_router for stored matches)
 # ──────────────────────────────────────────────────────────────────────
 
+
 class ReconMatch(IncentiveBase):
     """Stored reconciliation matches produced by the recon engine."""
+
     __tablename__ = "recon_matches"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    module = Column(String(10), index=True)        # BNK / SAL / PUR / EVN / ENV
+    module = Column(String(10), index=True)  # BNK / SAL / PUR / EVN / ENV
     source_txn_id = Column(String(50), index=True)
     target_txn_id = Column(String(50), index=True)
     source_amount = Column(Float, default=0.0)
     target_amount = Column(Float, default=0.0)
     variance = Column(Float, default=0.0)
-    match_type = Column(String(30))                # exact_amount_date / reference_match / fuzzy
+    match_type = Column(String(30))  # exact_amount_date / reference_match / fuzzy
     confidence = Column(Float, default=0.0)
-    match_status = Column(String(20), default="MATCHED")  # MATCHED / VARIANCE / UNMATCHED
+    match_status = Column(
+        String(20), default="MATCHED"
+    )  # MATCHED / VARIANCE / UNMATCHED
     rule_applied = Column(String(100))
     matched_at = Column(DateTime, default=datetime.utcnow)
     user_id = Column(String(50))
@@ -336,17 +397,89 @@ class ReconMatch(IncentiveBase):
 # Convenience: tuple of all model classes for metadata.create_all
 # ──────────────────────────────────────────────────────────────────────
 
-ALL_PRODUCTION_MODELS = (
-    Client, CostCenter, PnrRecord,
-    Vendor, Staff, Event, WorkOrder, StaffAssignment,
-    SalesInvoice, SalesLineItem, PurchaseOrder,
-    VendorInvoice, BudgetLine, ReconMatch,
-)
+
+class EventCheckpoint(IncentiveBase):
+    __tablename__ = "event_checkpoints"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    event_id = Column(
+        Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    checkpoint_id = Column(String(50), nullable=False)
+    label = Column(String(200), nullable=False)
+    stage = Column(String(20), nullable=False, server_default="ops_assigned")
+    required = Column(Boolean, default=True)
+    completed_at = Column(DateTime, nullable=True)
+    completed_by = Column(String(100), nullable=True)
+    notes = Column(Text, nullable=True)
+    due_date = Column(DateTime, nullable=True)
+    sort_order = Column(Integer, default=0)
+    linked_document_id = Column(Integer, nullable=True)
+    linked_po_id = Column(Integer, nullable=True)
+    linked_invoice_id = Column(Integer, nullable=True)
+    extra_data = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 # ──────────────────────────────────────────────────────────────────────
-# Reverse: production-table → ORM class lookup for the routers
+# 12. Audit Log (Sergey Protocol)
 # ──────────────────────────────────────────────────────────────────────
+
+
+class AuditLog(IncentiveBase):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(100), nullable=False, index=True)
+    user_name = Column(String(200), nullable=True)
+    user_role = Column(String(50), nullable=True)
+    action = Column(String(20), nullable=False, index=True)
+    entity_type = Column(String(100), nullable=False, index=True)
+    entity_id = Column(String(100), nullable=False, index=True)
+    entity_display = Column(String(500), nullable=True)
+    old_values = Column(Text, nullable=True)
+    new_values = Column(Text, nullable=True)
+    changed_fields = Column(String(500), nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(String(500), nullable=True)
+    session_id = Column(String(100), nullable=True)
+    request_id = Column(String(100), nullable=True)
+    record_hash = Column(String(64), nullable=False)
+    previous_hash = Column(String(64), nullable=True)
+    source_module = Column(String(100), nullable=True)
+    source_function = Column(String(200), nullable=True)
+    compliance_flag = Column(String(50), nullable=True)
+    retention_until = Column(DateTime, nullable=True)
+    is_deleted = Column(Boolean, default=False)
+    deleted_by = Column(String(100), nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Production model registry and reverse lookup map
+# ──────────────────────────────────────────────────────────────────────
+
+ALL_PRODUCTION_MODELS = [
+    Client,
+    CostCenter,
+    PnrRecord,
+    Vendor,
+    Staff,
+    Event,
+    WorkOrder,
+    StaffAssignment,
+    SalesInvoice,
+    SalesLineItem,
+    PurchaseOrder,
+    VendorInvoice,
+    ReconMatch,
+    EventOperation,
+    ServiceUOM,
+    EventCheckpoint,
+    AuditLog,
+]
 
 PRODUCTION_MODEL_MAP = {
     "clients_mtbl": Client,
@@ -361,15 +494,66 @@ PRODUCTION_MODEL_MAP = {
     "sales_line_items": SalesLineItem,
     "purchase_orders": PurchaseOrder,
     "vendor_invoices": VendorInvoice,
-    "budget_lines": BudgetLine,
     "recon_matches": ReconMatch,
+    "event_operations": EventOperation,
+    "service_uom": ServiceUOM,
+    "event_checkpoints": EventCheckpoint,
+    "audit_logs": AuditLog,
 }
 
-
 __all__ = [
-    "Client", "CostCenter", "PnrRecord",
-    "Vendor", "Staff", "Event", "WorkOrder", "StaffAssignment",
-    "SalesInvoice", "SalesLineItem", "PurchaseOrder",
-    "VendorInvoice", "BudgetLine", "ReconMatch",
-    "ALL_PRODUCTION_MODELS", "PRODUCTION_MODEL_MAP",
+    "Client",
+    "CostCenter",
+    "PnrRecord",
+    "Vendor",
+    "Staff",
+    "Event",
+    "WorkOrder",
+    "StaffAssignment",
+    "SalesInvoice",
+    "SalesLineItem",
+    "PurchaseOrder",
+    "VendorInvoice",
+    "ReconMatch",
+    "EventOperation",
+    "ServiceUOM",
+    "EventCheckpoint",
+    "AuditLog",
+    "LIFECYCLE_STATUSES",
+    "ALL_PRODUCTION_MODELS",
+    "PRODUCTION_MODEL_MAP",
 ]
+
+
+# AUTO-INJECTED by audit fix 4.8 - SCM staging tables
+from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy.sql import func
+
+
+class ScmStagingCostEstimate(IncentiveBase):
+    __tablename__ = "scm_staging_cost_estimates"
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, index=True)
+    cost_category = Column(String(64))
+    estimated_amount = Column(Float)
+    currency = Column(String(8), default="EGP")
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ScmStagingJobMaterial(IncentiveBase):
+    __tablename__ = "scm_staging_job_materials"
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, index=True)
+    item_code = Column(String(64))
+    qty = Column(Float)
+    unit_cost = Column(Float)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ScmStagingReconRow(IncentiveBase):
+    __tablename__ = "scm_staging_recon_rows"
+    id = Column(Integer, primary_key=True)
+    trnx_id = Column(String(64), index=True)
+    amount = Column(Float)
+    matched = Column(Integer, default=0)
+    created_at = Column(DateTime, server_default=func.now())

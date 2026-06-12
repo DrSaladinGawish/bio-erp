@@ -1,4 +1,4 @@
-﻿from sqlalchemy import Integer, String, Boolean, Float
+from sqlalchemy import Integer, String, Boolean, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 from app.models.base import BaseMixin, BilingualMixin

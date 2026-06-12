@@ -1,0 +1,26 @@
+{
+  "id": 2,
+  "saved_at": "2026-06-07T09:33:29.715493",
+  "event_id": 99,
+  "analysis_type": "target_costing",
+  "input_data": {},
+  "results": {
+    "analysis_type": "target_costing",
+    "event_id": 99,
+    "event_name": "Minimal Event",
+    "market_price": 100000.0,
+    "target_margin_pct": 20.0,
+    "target_cost": 80000.0,
+    "current_cost": 75000.0,
+    "cost_gap": -5000.0,
+    "gap_pct": -6.67,
+    "component_breakdown": [],
+    "actions": [
+      "COST SURPLUS: 5,000.00 EGP. Cost below target \u2014 room for quality enhancement or price reduction."
+    ],
+    "confidence_score": 0.88
+  },
+  "recommendations": [],
+  "confidence_score": 0.88,
+  "created_by": "scm_cost_engine"
+}

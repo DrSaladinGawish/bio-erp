@@ -3,11 +3,11 @@ intelligence/pdf_generator.py
 PDF report generator using reportlab.
 Used by the dashboard export endpoint to produce real PDF files.
 """
+
 from __future__ import annotations
 import logging
 from datetime import datetime
 from io import BytesIO
-from typing import Any
 
 logger = logging.getLogger("incentivehouse_organ.intelligence.pdf_generator")
 
@@ -32,22 +32,31 @@ def generate_dashboard_pdf(data: dict, range_label: str) -> bytes:
         from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.lib.units import inch
         from reportlab.platypus import (
-            Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
+            Paragraph,
+            SimpleDocTemplate,
+            Spacer,
+            Table,
+            TableStyle,
         )
 
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4,
-                                topMargin=0.5 * inch, bottomMargin=0.5 * inch)
+        doc = SimpleDocTemplate(
+            buffer, pagesize=A4, topMargin=0.5 * inch, bottomMargin=0.5 * inch
+        )
         styles = getSampleStyleSheet()
         elements = []
 
         # Title
-        elements.append(Paragraph(
-            f"<b>Incentive House Dashboard Report</b>", styles["Heading1"]))
-        elements.append(Paragraph(
-            f"Range: <b>{range_label}</b> &nbsp;|&nbsp; "
-            f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-            styles["Normal"]))
+        elements.append(
+            Paragraph("<b>Incentive House Dashboard Report</b>", styles["Heading1"])
+        )
+        elements.append(
+            Paragraph(
+                f"Range: <b>{range_label}</b> &nbsp;|&nbsp; "
+                f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                styles["Normal"],
+            )
+        )
         elements.append(Spacer(1, 0.25 * inch))
 
         # KPI table
@@ -61,25 +70,45 @@ def generate_dashboard_pdf(data: dict, range_label: str) -> bytes:
         kpi_rows.append(["Total Vendors", str(data.get("total_vendors", 0))])
         kpi_rows.append(["Total Clients", str(data.get("total_clients", 0))])
         t = Table(kpi_rows, colWidths=[3.5 * inch, 3.5 * inch])
-        t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(BRAND_NAVY)),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 12),
-            ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-            ("GRID", (0, 0), (-1, -1), 1, colors.HexColor(BRAND_TEAL)),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-             [colors.white, colors.HexColor(BRAND_ALT_ROW)]),
-            ("FONTSIZE", (0, 1), (-1, -1), 10),
-        ]))
+        t.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(BRAND_NAVY)),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 12),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.HexColor(BRAND_TEAL)),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.HexColor(BRAND_ALT_ROW)],
+                    ),
+                    ("FONTSIZE", (0, 1), (-1, -1), 10),
+                ]
+            )
+        )
         elements.append(t)
         elements.append(Spacer(1, 0.25 * inch))
 
         # Monthly breakdown
         elements.append(Paragraph("<b>Monthly Breakdown</b>", styles["Heading2"]))
-        months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        months = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+        ]
         monthly_rows = [["Month", "Revenue (EGP)", "Expenses (EGP)", "Net (EGP)"]]
         rev = data.get("revenue_by_month", [0] * 12)
         exp = data.get("expenses_by_month", [0] * 12)
@@ -88,25 +117,35 @@ def generate_dashboard_pdf(data: dict, range_label: str) -> bytes:
             e = exp[i] if i < len(exp) else 0
             monthly_rows.append([mo, f"{r:,.2f}", f"{e:,.2f}", f"{r - e:,.2f}"])
         t2 = Table(monthly_rows, colWidths=[1.4 * inch] * 4)
-        t2.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(BRAND_NAVY)),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("GRID", (0, 0), (-1, -1), 1, colors.HexColor(BRAND_TEAL)),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-             [colors.white, colors.HexColor(BRAND_ALT_ROW)]),
-            ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ]))
+        t2.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(BRAND_NAVY)),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.HexColor(BRAND_TEAL)),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.HexColor(BRAND_ALT_ROW)],
+                    ),
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ]
+            )
+        )
         elements.append(t2)
         elements.append(Spacer(1, 0.3 * inch))
 
         # Footer
-        elements.append(Paragraph(
-            f"<i>Generated by IncentiveHouse ERP v2.3 | IHE Intelligence Layer | "
-            f"Range: {range_label} ({data.get('start_date', '')} to {data.get('end_date', '')})</i>",
-            styles["Italic"],
-        ))
+        elements.append(
+            Paragraph(
+                f"<i>Generated by IncentiveHouse ERP v2.3 | IHE Intelligence Layer | "
+                f"Range: {range_label} ({data.get('start_date', '')} to {data.get('end_date', '')})</i>",
+                styles["Italic"],
+            )
+        )
 
         doc.build(elements)
         buffer.seek(0)
@@ -136,8 +175,11 @@ def _minimal_pdf(data: dict, range_label: str) -> bytes:
         b"1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
         b"2 0 obj<</Type/Pages/Count 1/Kids[3 0 R]>>endobj\n"
         b"3 0 obj<</Type/Page/Parent 2 0 R/Contents 4 0 R>>endobj\n"
-        b"4 0 obj<</Length " + str(len(text)).encode() + b">>stream\n"
-        + text + b"\nendstream endobj\n"
+        b"4 0 obj<</Length "
+        + str(len(text)).encode()
+        + b">>stream\n"
+        + text
+        + b"\nendstream endobj\n"
         b"xref\n0 5\n0000000000 65535 f\n"
         b"trailer<</Size 5/Root 1 0 R>>\nstartxref\n0\n%%EOF"
     )

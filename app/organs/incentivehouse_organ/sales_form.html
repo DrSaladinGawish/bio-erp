@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if invoice else "New" }} Sales Invoice{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>{{ "Edit" if invoice else "New" }} Sales Invoice</h2>
+  <span class="badge {% if invoice and invoice.status == 'approved' %}badge-success{% elif invoice and invoice.status == 'submitted' %}badge-warning{% else %}badge-secondary{% endif %}">
+    {{ invoice.status|title if invoice else "Draft" }}
+  </span>
+</div>
+
+<form method="POST"
+      action="{{ url_for('sal_router.update_invoice', id=invoice.id) if invoice else url_for('sal_router.create_invoice') }}"
+      id="sales-form">
+  {% if invoice %}<input type="hidden" name="id" value="{{ invoice.id }}">{% endif %}
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <!-- SECTION 1: Header -->
+  <div class="form-section">
+    <h3 class="section-title">Invoice details</h3>
+    <div class="form-grid-2">
+
+      <div class="field-group">
+        <label for="invoice_number">Invoice number <span class="required">*</span></label>
+        <input type="text" id="invoice_number" name="invoice_number"
+               value="{{ invoice.invoice_number if invoice else '' }}"
+               placeholder="Auto-generated if blank" />
+      </div>
+
+      <div class="field-group">
+        <label for="invoice_date">Invoice date <span class="required">*</span></label>
+        <input type="date" id="invoice_date" name="invoice_date"
+               value="{{ invoice.invoice_date if invoice else today }}" required
+               onchange="calcDueDate()" />
+      </div>
+
+      <div class="field-group">
+        <label for="client_id">Client <span class="required">*</span></label>
+        <select id="client_id" name="client_id" required onchange="fetchClientDetails(this.value)">
+          <option value="">— Select client —</option>
+          {% for c in clients %}
+          <option value="{{ c.id }}"
+                  data-tax-id="{{ c.tax_id }}"
+                  data-payment-terms="{{ c.payment_terms_days }}"
+                  data-currency="{{ c.currency_code }}"
+                  {{ 'selected' if invoice and invoice.client_id == c.id }}>
+            {{ c.client_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="client_tax_id">Client tax ID</label>
+        <input type="text" id="client_tax_id" name="client_tax_id"
+               value="{{ invoice.client_tax_id if invoice else '' }}"
+               placeholder="Auto-filled from client" readonly />
+      </div>
+
+      <div class="field-group">
+        <label for="po_number">PO / reference number</label>
+        <input type="text" id="po_number" name="po_number"
+               value="{{ invoice.po_number if invoice else '' }}" />
+      </div>
+
+      <div class="field-group">
+        <label for="due_date">Due date</label>
+        <input type="date" id="due_date" name="due_date"
+               value="{{ invoice.due_date if invoice else '' }}"
+               placeholder="Auto-calc from payment terms" />
+      </div>
+
+      <div class="field-group">
+        <label for="event_id">Related event</label>
+        <select id="event_id" name="event_id">
+          <option value="">— None —</option>
+          {% for ev in events %}
+          <option value="{{ ev.id }}" {{ 'selected' if invoice and invoice.event_id == ev.id }}>
+            {{ ev.event_name }} ({{ ev.event_date }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="currency_code">Currency</label>
+        <select id="currency_code" name="currency_code" onchange="updateExchangeRate()">
+          <option value="EGP" {{ 'selected' if not invoice or invoice.currency_code == 'EGP' }}>EGP</option>
+          <option value="USD" {{ 'selected' if invoice and invoice.currency_code == 'USD' }}>USD</option>
+          <option value="EUR" {{ 'selected' if invoice and invoice.currency_code == 'EUR' }}>EUR</option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 2: Line Items -->
+  <div class="form-section">
+    <h3 class="section-title">Line items</h3>
+    <table class="line-items-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Qty</th>
+          <th>Unit price</th>
+          <th>VAT?</th>
+          <th>Line total</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="line-items-body">
+        {% if invoice and invoice.line_items %}
+          {% for item in invoice.line_items %}
+          <tr class="line-item-row">
+            <td><input type="text"     name="line_desc[]"     value="{{ item.description }}" /></td>
+            <td><input type="number"   name="line_qty[]"      value="{{ item.qty }}"        step="0.01" class="line-qty"   onchange="recalcLines()" /></td>
+            <td><input type="number"   name="line_price[]"    value="{{ item.unit_price }}" step="0.01" class="line-price" onchange="recalcLines()" /></td>
+            <td><input type="checkbox" name="line_vatable[]"  value="1" {{ 'checked' if item.vatable }} class="line-vatable" onchange="recalcLines()" /></td>
+            <td><input type="number"   name="line_total[]"    value="{{ item.line_total }}" readonly class="line-total" /></td>
+            <td><button type="button" class="btn-icon" onclick="removeLine(this)">✕</button></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr class="line-item-row">
+            <td><input type="text"     name="line_desc[]"    placeholder="Service / item description" /></td>
+            <td><input type="number"   name="line_qty[]"     value="1"   step="0.01" class="line-qty"     onchange="recalcLines()" /></td>
+            <td><input type="number"   name="line_price[]"   value="0"   step="0.01" class="line-price"   onchange="recalcLines()" /></td>
+            <td><input type="checkbox" name="line_vatable[]" value="1"   checked     class="line-vatable" onchange="recalcLines()" /></td>
+            <td><input type="number"   name="line_total[]"   value="0"   readonly    class="line-total" /></td>
+            <td><button type="button" class="btn-icon" onclick="removeLine(this)">✕</button></td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+    <button type="button" class="btn btn-secondary btn-sm" onclick="addLine()">+ Add line</button>
+  </div>
+
+  <!-- SECTION 3: VAT & Totals -->
+  <div class="form-section">
+    <h3 class="section-title">VAT &amp; totals</h3>
+    <div class="totals-block">
+
+      <div class="total-row">
+        <label>Subtotal (excl. VAT)</label>
+        <input type="number" id="subtotal" name="subtotal"
+               value="{{ '%.2f'|format(invoice.subtotal) if invoice else '0.00' }}"
+               step="0.01" readonly />
+      </div>
+
+      <div class="total-row">
+        <label>VAT rate</label>
+        <select id="vat_rate" name="vat_rate" onchange="calcVAT()">
+          <option value="0"  {{ 'selected' if invoice and invoice.vat_rate == 0 }}>0% — Exempt</option>
+          <option value="14" {{ 'selected' if not invoice or invoice.vat_rate == 14 }}>14% — Standard</option>
+        </select>
+      </div>
+
+      <div class="total-row">
+        <label>VAT amount</label>
+        <input type="number" id="vat_amount" name="vat_amount"
+               value="{{ '%.2f'|format(invoice.vat_amount) if invoice else '0.00' }}"
+               step="0.01" readonly />
+      </div>
+
+      <div class="total-row">
+        <label>Discount</label>
+        <input type="number" id="discount_amount" name="discount_amount"
+               value="{{ '%.2f'|format(invoice.discount_amount) if invoice else '0.00' }}"
+               step="0.01" min="0" onchange="calcVAT()" />
+      </div>
+
+      <div class="total-row total-final">
+        <label><strong>Total amount</strong></label>
+        <input type="number" id="total_amount" name="total_amount"
+               value="{{ '%.2f'|format(invoice.total_amount) if invoice else '0.00' }}"
+               step="0.01" readonly />
+      </div>
+
+      <div class="total-row">
+        <label>Amount paid</label>
+        <input type="number" id="amount_paid" name="amount_paid"
+               value="{{ '%.2f'|format(invoice.amount_paid) if invoice else '0.00' }}"
+               step="0.01" min="0" onchange="calcBalance()" />
+      </div>
+
+      <div class="total-row total-balance">
+        <label>Balance due</label>
+        <input type="number" id="balance_due" name="balance_due"
+               value="{{ '%.2f'|format(invoice.balance_due) if invoice else '0.00' }}"
+               step="0.01" readonly />
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 4: GL & Notes -->
+  <div class="form-section">
+    <h3 class="section-title">GL &amp; notes</h3>
+    <div class="form-grid-2">
+
+      <div class="field-group">
+        <label for="revenue_account_id">Revenue GL account</label>
+        <select id="revenue_account_id" name="revenue_account_id">
+          <option value="">— Select account —</option>
+          {% for acct in gl_accounts %}
+          <option value="{{ acct.id }}" {{ 'selected' if invoice and invoice.revenue_account_id == acct.id }}>
+            {{ acct.account_code }} — {{ acct.account_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="payment_terms_days">Payment terms (days)</label>
+        <input type="number" id="payment_terms_days" name="payment_terms_days"
+               value="{{ invoice.payment_terms_days if invoice else 30 }}"
+               min="0" onchange="calcDueDate()" />
+      </div>
+
+      <div class="field-group" style="grid-column: span 2">
+        <label for="notes">Notes / remarks</label>
+        <textarea id="notes" name="notes" rows="2">{{ invoice.notes if invoice else '' }}</textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="form-actions">
+    <a href="{{ url_for('sal_router.list_invoices') }}" class="btn btn-secondary">Cancel</a>
+    <button type="submit" name="action" value="save_draft" class="btn btn-secondary">Save draft</button>
+    <button type="submit" name="action" value="submit"     class="btn btn-primary">Submit for approval</button>
+    {% if invoice and invoice.status == 'submitted' and current_user.can_approve %}
+    <button type="submit" name="action" value="approve" class="btn btn-success">Approve</button>
+    <button type="submit" name="action" value="reject"  class="btn btn-danger">Reject</button>
+    {% endif %}
+    {% if invoice and invoice.status == 'approved' %}
+    <a href="{{ url_for('sal_router.export_pdf', id=invoice.id) }}" class="btn btn-secondary" target="_blank">Export PDF</a>
+    {% endif %}
+  </div>
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ─── Line Items ──────────────────────────────────────────────────────────────
+function recalcLines() {
+  let subtotal = 0;
+  document.querySelectorAll('.line-item-row').forEach(row => {
+    const qty      = parseFloat(row.querySelector('.line-qty').value)   || 0;
+    const price    = parseFloat(row.querySelector('.line-price').value) || 0;
+    const lineTotal = Math.round(qty * price * 100) / 100;
+    row.querySelector('.line-total').value = lineTotal.toFixed(2);
+    subtotal += lineTotal;
+  });
+  document.getElementById('subtotal').value = subtotal.toFixed(2);
+  calcVAT();
+}
+
+function addLine() {
+  const tbody = document.getElementById('line-items-body');
+  const row   = document.createElement('tr');
+  row.className = 'line-item-row';
+  row.innerHTML = `
+    <td><input type="text"     name="line_desc[]"    placeholder="Service description" /></td>
+    <td><input type="number"   name="line_qty[]"     value="1" step="0.01" class="line-qty"     onchange="recalcLines()" /></td>
+    <td><input type="number"   name="line_price[]"   value="0" step="0.01" class="line-price"   onchange="recalcLines()" /></td>
+    <td><input type="checkbox" name="line_vatable[]" value="1" checked    class="line-vatable" onchange="recalcLines()" /></td>
+    <td><input type="number"   name="line_total[]"   value="0" readonly   class="line-total" /></td>
+    <td><button type="button" class="btn-icon" onclick="removeLine(this)">✕</button></td>`;
+  tbody.appendChild(row);
+}
+
+function removeLine(btn) {
+  const rows = document.querySelectorAll('.line-item-row');
+  if (rows.length > 1) { btn.closest('tr').remove(); recalcLines(); }
+}
+
+// ─── VAT Calculation ─────────────────────────────────────────────────────────
+function calcVAT() {
+  const subtotal  = parseFloat(document.getElementById('subtotal').value)         || 0;
+  const vatRate   = parseFloat(document.getElementById('vat_rate').value)          || 0;
+  const discount  = parseFloat(document.getElementById('discount_amount').value)   || 0;
+  const taxable   = Math.max(subtotal - discount, 0);
+  const vatAmount = Math.round(taxable * vatRate) / 100;
+  const total     = taxable + vatAmount;
+  document.getElementById('vat_amount').value  = vatAmount.toFixed(2);
+  document.getElementById('total_amount').value = total.toFixed(2);
+  calcBalance();
+}
+
+function calcBalance() {
+  const total = parseFloat(document.getElementById('total_amount').value) || 0;
+  const paid  = parseFloat(document.getElementById('amount_paid').value)  || 0;
+  document.getElementById('balance_due').value = Math.max(total - paid, 0).toFixed(2);
+}
+
+// ─── Client Smart Fill ───────────────────────────────────────────────────────
+function fetchClientDetails(clientId) {
+  if (!clientId) return;
+  const opt = document.querySelector(`#client_id option[value="${clientId}"]`);
+  if (opt) {
+    document.getElementById('client_tax_id').value       = opt.dataset.taxId || '';
+    document.getElementById('payment_terms_days').value  = opt.dataset.paymentTerms || 30;
+    if (opt.dataset.currency) document.getElementById('currency_code').value = opt.dataset.currency;
+    calcDueDate();
+  }
+  fetch(`/api/clients/${clientId}`)
+    .then(r => r.json())
+    .then(c => {
+      if (c.tax_id) document.getElementById('client_tax_id').value = c.tax_id;
+    })
+    .catch(() => {});
+}
+
+function calcDueDate() {
+  const invoiceDateVal = document.getElementById('invoice_date').value;
+  const terms          = parseInt(document.getElementById('payment_terms_days').value) || 30;
+  if (!invoiceDateVal) return;
+  const d = new Date(invoiceDateVal);
+  d.setDate(d.getDate() + terms);
+  document.getElementById('due_date').value = d.toISOString().split('T')[0];
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  recalcLines();
+  calcVAT();
+  calcBalance();
+});
+</script>
+{% endblock %}

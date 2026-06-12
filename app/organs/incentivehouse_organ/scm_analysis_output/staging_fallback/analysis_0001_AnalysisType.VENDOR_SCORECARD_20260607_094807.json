@@ -1,0 +1,35 @@
+{
+  "id": 1,
+  "saved_at": "2026-06-07T09:48:07.194902",
+  "event_id": 0,
+  "analysis_type": "vendor_scorecard",
+  "input_data": {},
+  "results": {
+    "analysis_type": "vendor_scorecard",
+    "vendor_id": 1,
+    "vendor_name": "Grand Nile Venue",
+    "quality_score": 88.0,
+    "delivery_score": 92.0,
+    "price_score": 75.0,
+    "service_score": 85.0,
+    "weights": {
+      "quality": 0.3,
+      "delivery": 0.25,
+      "price": 0.25,
+      "service": 0.2
+    },
+    "overall_score": 85.15,
+    "grade": "B",
+    "recommendations": [
+      "Vendor grade: B \u2014 preferred supplier",
+      "Lowest dimension: price"
+    ],
+    "confidence_score": 0.85
+  },
+  "recommendations": [
+    "Vendor grade: B \u2014 preferred supplier",
+    "Lowest dimension: price"
+  ],
+  "confidence_score": 0.85,
+  "created_by": "scm_cost_engine"
+}

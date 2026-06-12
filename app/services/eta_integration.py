@@ -1,4 +1,4 @@
-﻿"""
+"""
 ETA (Egyptian Tax Authority) E-Invoice Integration Service
 Handles: JSON payload generation, submission, QR codes, compliance validation
 """
@@ -85,7 +85,9 @@ class ETAInvoiceHook:
             },
             "documentType": invoice_type,
             "documentTypeVersion": "1.0",
-            "dateTimeIssued": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
+            "dateTimeIssued": datetime.now(timezone.utc)
+            .replace(tzinfo=None)
+            .isoformat(),
             "totalSalesAmount": round(total_amount, 2),
             "totalDiscountAmount": 0.0,
             "netAmount": round(total_amount, 2),
@@ -161,7 +163,9 @@ class ETAInvoiceHook:
 
         submission = {
             "invoice": payload,
-            "submission_timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
+            "submission_timestamp": datetime.now(timezone.utc)
+            .replace(tzinfo=None)
+            .isoformat(),
             "submission_method": "API",
         }
 

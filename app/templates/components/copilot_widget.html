@@ -1,0 +1,39 @@
+<!--
+  Co-Pilot Widget — Include in any form template.
+  Usage:
+    {% include 'components/copilot_widget.html' %}
+    or
+    <div data-form-type="event" data-entity-id="42" id="copilot-mount"></div>
+    <script src="/static/js/copilot-panel.js"></script>
+-->
+
+<div id="copilot-widget-container"
+     data-form-type="{{ form_type|default('dashboard') }}"
+     data-entity-id="{{ entity_id|default('') }}">
+</div>
+
+<script>
+(function() {
+    var container = document.getElementById('copilot-widget-container');
+    if (!container) return;
+
+    var formType = container.dataset.formType || 'dashboard';
+    var entityId = container.dataset.entityId || null;
+
+    // Set global defaults for the JS panel
+    window.COPILOT_API_BASE = window.COPILOT_API_BASE || '/api/v1/copilot';
+    window.CURRENT_USER_ROLE = window.CURRENT_USER_ROLE || '{{ current_user.role|default("user") }}';
+
+    // Auto-init when panel JS loads
+    if (typeof initCoPilotPanel === 'function') {
+        initCoPilotPanel(formType, entityId);
+    } else {
+        // Retry after panel JS loads
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof initCoPilotPanel === 'function') {
+                initCoPilotPanel(formType, entityId);
+            }
+        });
+    }
+})();
+</script>

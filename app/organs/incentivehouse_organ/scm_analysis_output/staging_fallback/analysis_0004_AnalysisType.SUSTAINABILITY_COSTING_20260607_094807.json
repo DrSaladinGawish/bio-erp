@@ -1,0 +1,56 @@
+{
+  "id": 4,
+  "saved_at": "2026-06-07T09:48:07.031813",
+  "event_id": 1,
+  "analysis_type": "sustainability_costing",
+  "input_data": {},
+  "results": {
+    "analysis_type": "sustainability_costing",
+    "event_id": 1,
+    "total_internal_cost": 10000.0,
+    "total_externality": 10000.0,
+    "true_cost": 20000.0,
+    "mitigation_cost": 5000.0,
+    "carbon_cost": 5000.0,
+    "regulatory_high_risk": 0,
+    "regulatory_medium_risk": 1,
+    "cost_breakdown": [
+      {
+        "category": "Carbon Emissions",
+        "internal": 5000.0,
+        "externality": 8000.0,
+        "mitigation": 3000.0,
+        "risk": "medium"
+      },
+      {
+        "category": "Waste Management",
+        "internal": 3000.0,
+        "externality": 2000.0,
+        "mitigation": 1500.0,
+        "risk": "low"
+      },
+      {
+        "category": "Social Impact",
+        "internal": 2000.0,
+        "externality": 0.0,
+        "mitigation": 500.0,
+        "risk": "low"
+      }
+    ],
+    "recommendations": [
+      "True cost is -89.7% higher than reported cost",
+      "Mitigation investment of 5,000.00 EGP reduces regulatory risk",
+      "Consider carbon offsetting for travel-intensive events",
+      "Social costs (local employment) can be marketing assets"
+    ],
+    "confidence_score": 0.75
+  },
+  "recommendations": [
+    "True cost is -89.7% higher than reported cost",
+    "Mitigation investment of 5,000.00 EGP reduces regulatory risk",
+    "Consider carbon offsetting for travel-intensive events",
+    "Social costs (local employment) can be marketing assets"
+  ],
+  "confidence_score": 0.75,
+  "created_by": "scm_cost_engine"
+}

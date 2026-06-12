@@ -2,27 +2,32 @@
 BNK Router — Bank Reconciliation & Transaction API
 IncentiveHouse ERP | Bio-ERP Organ Module
 """
+
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
-from typing import Annotated, Any
+from datetime import date
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import select, func, and_, or_, desc, text
+from sqlalchemy import select, func, and_, or_, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_async_session
 from ..models import BNKTransaction
+from app.models.ihe_models import Bank as IHEBank
 from ..schemas import (
     BNKTransactionCreate,
     BNKTransactionOut,
-    BNKTransactionList,
     BNKDashboardSummary,
     BNKAccountSummary,
     BNKReconciliationStatus,
     PaginatedResponse,
+)
+from app.organs.incentivehouse_organ.admin_permissions_module import (
+    Permission,
+    require_permission,
 )
 
 logger = logging.getLogger(__name__)
@@ -95,9 +100,16 @@ async def list_transactions(
     page_size: Annotated[int, Query(ge=1, le=500)] = 50,
 ):
     stmt = _build_txn_query(
-        account, date_from, date_to, txn_type,
-        min_amount, max_amount, search,
-        sub_ledger_code, pnr_id, is_reconciled,
+        account,
+        date_from,
+        date_to,
+        txn_type,
+        min_amount,
+        max_amount,
+        search,
+        sub_ledger_code,
+        pnr_id,
+        is_reconciled,
     )
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total = (await session.execute(count_stmt)).scalar() or 0
@@ -106,7 +118,9 @@ async def list_transactions(
     rows = (await session.execute(stmt)).scalars().all()
     return PaginatedResponse(
         data=[BNKTransactionOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
@@ -125,10 +139,15 @@ async def get_transaction(
     return BNKTransactionOut.model_validate(txn)
 
 
-@router.post("/transactions", response_model=BNKTransactionOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/transactions",
+    response_model=BNKTransactionOut,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_transaction(
     payload: BNKTransactionCreate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    _=Depends(require_permission(Permission.RECONCILE_BANK)),
 ):
     txn = BNKTransaction(**payload.model_dump(exclude_unset=True))
     session.add(txn)
@@ -141,6 +160,7 @@ async def create_transaction(
 async def delete_transaction(
     transaction_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    _=Depends(require_permission(Permission.RECONCILE_BANK)),
 ):
     result = await session.execute(
         select(BNKTransaction).where(BNKTransaction.id == transaction_id)
@@ -156,16 +176,21 @@ async def delete_transaction(
 async def list_accounts(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    stmt = select(
-        BNKTransaction.account_code,
-        BNKTransaction.currency_code,
-        func.count().label("txn_count"),
-        func.sum(BNKTransaction.debit_amount).label("total_debit"),
-        func.sum(BNKTransaction.credit_amount).label("total_credit"),
-        func.sum(BNKTransaction.credit_amount - BNKTransaction.debit_amount).label("net_balance"),
-        func.max(BNKTransaction.txn_date).label("last_txn_date"),
-    ).group_by(BNKTransaction.account_code, BNKTransaction.currency_code
-    ).order_by(BNKTransaction.account_code)
+    stmt = (
+        select(
+            BNKTransaction.account_code,
+            BNKTransaction.currency_code,
+            func.count().label("txn_count"),
+            func.sum(BNKTransaction.debit_amount).label("total_debit"),
+            func.sum(BNKTransaction.credit_amount).label("total_credit"),
+            func.sum(BNKTransaction.credit_amount - BNKTransaction.debit_amount).label(
+                "net_balance"
+            ),
+            func.max(BNKTransaction.txn_date).label("last_txn_date"),
+        )
+        .group_by(BNKTransaction.account_code, BNKTransaction.currency_code)
+        .order_by(BNKTransaction.account_code)
+    )
     rows = (await session.execute(stmt)).all()
     return [
         BNKAccountSummary(
@@ -176,7 +201,9 @@ async def list_accounts(
             total_credit=round(r.total_credit or 0, 2),
             net_balance=round(r.net_balance or 0, 2),
             last_txn_date=r.last_txn_date,
-        ) for r in rows if r.account_code
+        )
+        for r in rows
+        if r.account_code
     ]
 
 
@@ -188,18 +215,24 @@ async def get_summary(
         func.count().label("total_count"),
         func.sum(BNKTransaction.debit_amount).label("total_debit"),
         func.sum(BNKTransaction.credit_amount).label("total_credit"),
-        func.sum(BNKTransaction.credit_amount - BNKTransaction.debit_amount).label("net"),
-        func.count().filter(BNKTransaction.is_reconciled == 1).label("reconciled_count"),
+        func.sum(BNKTransaction.credit_amount - BNKTransaction.debit_amount).label(
+            "net"
+        ),
+        func.count()
+        .filter(BNKTransaction.is_reconciled == 1)
+        .label("reconciled_count"),
     )
     row = (await session.execute(stmt)).one()
     acct_r = await session.execute(
         select(BNKTransaction.account_code, func.count().label("cnt"))
-        .group_by(BNKTransaction.account_code).order_by(desc("cnt"))
+        .group_by(BNKTransaction.account_code)
+        .order_by(desc("cnt"))
     )
     by_account = {r.account_code: r.cnt for r in acct_r.all() if r.account_code}
     type_r = await session.execute(
         select(BNKTransaction.txn_type, func.count().label("cnt"))
-        .group_by(BNKTransaction.txn_type).order_by(desc("cnt"))
+        .group_by(BNKTransaction.txn_type)
+        .order_by(desc("cnt"))
     )
     by_type = {r.txn_type: r.cnt for r in type_r.all() if r.txn_type}
     return BNKDashboardSummary(
@@ -243,7 +276,9 @@ async def get_reconciliation_status(
             "flagged": r.flagged,
             "debit": round(r.debit or 0, 2),
             "credit": round(r.credit or 0, 2),
-        } for r in rows if r.account_code
+        }
+        for r in rows
+        if r.account_code
     ]
     total = sum(a["total"] for a in accounts)
     matched = sum(a["matched"] for a in accounts)
@@ -255,3 +290,83 @@ async def get_reconciliation_status(
         flagged=sum(a["flagged"] for a in accounts),
         match_rate=round(matched / total * 100, 2) if total else 0.0,
     )
+
+
+# -- Bank CRUD (from dbo.Bank) --
+
+
+class BankOut(BaseModel):
+    BankCode: str
+    BankName: str
+    GLAccount: str | None = None
+    IsActive: bool = True
+
+
+class BankCreate(BaseModel):
+    BankCode: str
+    BankName: str
+    GLAccount: str | None = None
+    IsActive: bool = True
+
+
+@router.get("/banks", response_model=list[BankOut])
+async def list_banks(session: Annotated[AsyncSession, Depends(get_async_session)]):
+    result = await session.execute(select(IHEBank).order_by(IHEBank.BankCode))
+    return result.scalars().all()
+
+
+@router.post("/banks", response_model=BankOut, status_code=201)
+async def create_bank(
+    payload: BankCreate,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _=Depends(require_permission(Permission.RECONCILE_BANK)),
+):
+    bank = IHEBank(**payload.model_dump())
+    session.add(bank)
+    await session.commit()
+    await session.refresh(bank)
+    return bank
+
+
+@router.get("/banks/{bank_code}", response_model=BankOut)
+async def get_bank(
+    bank_code: str,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    result = await session.execute(select(IHEBank).where(IHEBank.BankCode == bank_code))
+    bank = result.scalar_one_or_none()
+    if not bank:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    return bank
+
+
+@router.put("/banks/{bank_code}", response_model=BankOut)
+async def update_bank(
+    bank_code: str,
+    payload: BankCreate,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _=Depends(require_permission(Permission.RECONCILE_BANK)),
+):
+    result = await session.execute(select(IHEBank).where(IHEBank.BankCode == bank_code))
+    bank = result.scalar_one_or_none()
+    if not bank:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    for key, val in payload.model_dump().items():
+        setattr(bank, key, val)
+    await session.commit()
+    await session.refresh(bank)
+    return bank
+
+
+@router.delete("/banks/{bank_code}", status_code=204)
+async def delete_bank(
+    bank_code: str,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _=Depends(require_permission(Permission.RECONCILE_BANK)),
+):
+    result = await session.execute(select(IHEBank).where(IHEBank.BankCode == bank_code))
+    bank = result.scalar_one_or_none()
+    if not bank:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    await session.delete(bank)
+    await session.commit()

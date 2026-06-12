@@ -1,7 +1,6 @@
 import pandas as pd
-import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from app.organs.incentivehouse_organ.mapper import MappingEngine
 
 
@@ -15,7 +14,9 @@ class TransactionExtractor:
         self.validation_errors: List[Dict] = []
         self.mapped_df: Optional[pd.DataFrame] = None
 
-    def load_excel(self, header_row: Optional[int] = None, sheet_name: Optional[str] = None) -> pd.DataFrame:
+    def load_excel(
+        self, header_row: Optional[int] = None, sheet_name: Optional[str] = None
+    ) -> pd.DataFrame:
         xl = pd.ExcelFile(self.file_path)
         if sheet_name:
             sheet = sheet_name
@@ -34,7 +35,10 @@ class TransactionExtractor:
             self.df = pd.read_excel(xl, sheet_name=sheet, header=header_row)
         if self.df is None:
             raise ValueError(f"Could not load data from {self.file_path}")
-        self.df.columns = [str(c).strip().replace(" ", "_").replace(".", "").replace("#", "").upper() for c in self.df.columns]
+        self.df.columns = [
+            str(c).strip().replace(" ", "_").replace(".", "").replace("#", "").upper()
+            for c in self.df.columns
+        ]
         return self.df
 
     def _detect_main_sheet(self, xl: pd.ExcelFile) -> str:
@@ -51,7 +55,9 @@ class TransactionExtractor:
                 continue
         return best_sheet
 
-    def _find_column(self, df: pd.DataFrame, candidates: List[str], contains: bool = False) -> Optional[str]:
+    def _find_column(
+        self, df: pd.DataFrame, candidates: List[str], contains: bool = False
+    ) -> Optional[str]:
         cols = {c.upper(): c for c in df.columns}
         if not contains:
             for cand in candidates:
@@ -65,7 +71,9 @@ class TransactionExtractor:
                     return orig_name
         return None
 
-    def _find_multi_column(self, df: pd.DataFrame, candidate_groups: List[List[str]]) -> Optional[str]:
+    def _find_multi_column(
+        self, df: pd.DataFrame, candidate_groups: List[List[str]]
+    ) -> Optional[str]:
         for group in candidate_groups:
             col = self._find_column(df, group)
             if col:
@@ -76,10 +84,13 @@ class TransactionExtractor:
         if self.df is None:
             raise ValueError("Data not loaded. Call load_excel() first.")
         amt_cols = [
-            c for c in self.df.columns
+            c
+            for c in self.df.columns
             if any(x in c for x in ["AMOUNT", "AMT", "VALUE", "DEBIT", "CREDIT", "EGP"])
         ]
-        date_cols = [c for c in self.df.columns if any(x in c for x in ["DATE", "DT", "TIME"])]
+        date_cols = [
+            c for c in self.df.columns if any(x in c for x in ["DATE", "DT", "TIME"])
+        ]
         profile = {
             "file_name": self.file_path.name,
             "module": self.module,
@@ -121,27 +132,69 @@ class TransactionExtractor:
         df = self.df.copy()
 
         # --- Description ---
-        desc_col = self._find_column(df, [
-            "DESCRIPTION", "DESC", "DETAILS", "NARRATION", "REMARKS", "MEMO",
-            "ENTRY_NARRATION", "ACC_NAME", "SUB_LED_NAME", "LINE_ITEM",
-        ], contains=True)
+        desc_col = self._find_column(
+            df,
+            [
+                "DESCRIPTION",
+                "DESC",
+                "DETAILS",
+                "NARRATION",
+                "REMARKS",
+                "MEMO",
+                "ENTRY_NARRATION",
+                "ACC_NAME",
+                "SUB_LED_NAME",
+                "LINE_ITEM",
+            ],
+            contains=True,
+        )
         if desc_col:
             df["DESCRIPTION_NORM"] = df[desc_col].fillna("").astype(str).str.strip()
         else:
-            remaining = [c for c in df.columns if c not in (
-                self._find_column(df, ["TRANSACTION_DATE", "DATE"], contains=True) or "",
-                self._find_column(df, ["AMOUNT", "AMT", "VALUE", "EGP"], contains=True) or "",
-                self._find_column(df, ["CURRENCY", "CUR"], contains=True) or "",
-                self._find_column(df, ["RATE", "RAT", "CON_RAT", "FX"], contains=True) or "",
-                self._find_column(df, ["ID", "TRANS_ID", "TRANSACTION_ID", "REF", "VOUCHER", "NUM", "TNX", "TRN"], contains=True) or "",
-            )]
+            remaining = [
+                c
+                for c in df.columns
+                if c
+                not in (
+                    self._find_column(df, ["TRANSACTION_DATE", "DATE"], contains=True)
+                    or "",
+                    self._find_column(
+                        df, ["AMOUNT", "AMT", "VALUE", "EGP"], contains=True
+                    )
+                    or "",
+                    self._find_column(df, ["CURRENCY", "CUR"], contains=True) or "",
+                    self._find_column(
+                        df, ["RATE", "RAT", "CON_RAT", "FX"], contains=True
+                    )
+                    or "",
+                    self._find_column(
+                        df,
+                        [
+                            "ID",
+                            "TRANS_ID",
+                            "TRANSACTION_ID",
+                            "REF",
+                            "VOUCHER",
+                            "NUM",
+                            "TNX",
+                            "TRN",
+                        ],
+                        contains=True,
+                    )
+                    or "",
+                )
+            ]
             if remaining:
-                df["DESCRIPTION_NORM"] = df[remaining[0]].fillna("").astype(str).str.strip()
+                df["DESCRIPTION_NORM"] = (
+                    df[remaining[0]].fillna("").astype(str).str.strip()
+                )
             else:
                 df["DESCRIPTION_NORM"] = ""
 
         # --- Sub Led Code: try numeric field first, then map from description ---
-        sub_led_col = self._find_column(df, ["SUB_LED", "DR_SUB_LED", "CR_SUB_LED"], contains=True)
+        sub_led_col = self._find_column(
+            df, ["SUB_LED", "DR_SUB_LED", "CR_SUB_LED"], contains=True
+        )
         if sub_led_col:
             numeric_sub = pd.to_numeric(df[sub_led_col], errors="coerce")
             if numeric_sub.notna().sum() > len(df) * 0.5:
@@ -155,19 +208,29 @@ class TransactionExtractor:
                 lambda d: self.mapper.get_sub_led_code(self.module, d)
             )
 
-        df["PNR_ID"] = df["DESCRIPTION_NORM"].apply(lambda d: self.mapper.get_pnr_id(self.module, d))
+        df["PNR_ID"] = df["DESCRIPTION_NORM"].apply(
+            lambda d: self.mapper.get_pnr_id(self.module, d)
+        )
         df["CLIENT_ID"] = df["DESCRIPTION_NORM"].apply(self.mapper.get_client_id)
 
         # --- Currency ---
-        curr_col = self._find_column(df, ["CURRENCY", "CUR_NMN", "CURR", "CCY", "CUR"], contains=True)
+        curr_col = self._find_column(
+            df, ["CURRENCY", "CUR_NMN", "CURR", "CCY", "CUR"], contains=True
+        )
         if curr_col:
-            df["CURRENCY"] = df[curr_col].fillna("EGP").astype(str).str.upper().str.strip()
+            df["CURRENCY"] = (
+                df[curr_col].fillna("EGP").astype(str).str.upper().str.strip()
+            )
         else:
             df["CURRENCY"] = self._infer_currency(df)
 
         # --- FX Rate ---
-        rate_col = self._find_column(df, ["CON_RAT", "RATE", "FX_RATE", "EXCHANGE", "RAT"], contains=True)
-        date_col = self._find_column(df, ["TRANSACTION_DATE", "DATE", "DT"], contains=True)
+        rate_col = self._find_column(
+            df, ["CON_RAT", "RATE", "FX_RATE", "EXCHANGE", "RAT"], contains=True
+        )
+        date_col = self._find_column(
+            df, ["TRANSACTION_DATE", "DATE", "DT"], contains=True
+        )
         if date_col:
             df["TRANSACTION_DATE"] = pd.to_datetime(df[date_col], errors="coerce")
         if rate_col:
@@ -176,7 +239,9 @@ class TransactionExtractor:
             df["FX_RATE"] = df.apply(
                 lambda r: self.mapper.get_fx_rate(
                     r.get("CURRENCY", "EGP"),
-                    r["TRANSACTION_DATE"].strftime("%Y-%m-%d") if pd.notna(r.get("TRANSACTION_DATE")) else "2026-01-01",
+                    r["TRANSACTION_DATE"].strftime("%Y-%m-%d")
+                    if pd.notna(r.get("TRANSACTION_DATE"))
+                    else "2026-01-01",
                 ),
                 axis=1,
             )
@@ -184,10 +249,20 @@ class TransactionExtractor:
             df["FX_RATE"] = 1.0
 
         # --- Amount in EGP ---
-        amt_col = self._find_column(df, [
-            "ORI_TNX_AMT", "AMOUNT", "VALUE", "EGP_AMOUNT", "LOCAL_AMOUNT",
-            "DR_AMT_EGP", "CR_AMT_EGP", "TNX_AMT",
-        ], contains=True)
+        amt_col = self._find_column(
+            df,
+            [
+                "ORI_TNX_AMT",
+                "AMOUNT",
+                "VALUE",
+                "EGP_AMOUNT",
+                "LOCAL_AMOUNT",
+                "DR_AMT_EGP",
+                "CR_AMT_EGP",
+                "TNX_AMT",
+            ],
+            contains=True,
+        )
         if amt_col:
             numeric_amt = pd.to_numeric(df[amt_col], errors="coerce")
             # If primary amount col is sparse, try DR_AMT_EGP or DR-CR columns
@@ -197,7 +272,7 @@ class TransactionExtractor:
                 if dr_egp and cr_egp:
                     dr = pd.to_numeric(df[dr_egp], errors="coerce").fillna(0)
                     cr = pd.to_numeric(df[cr_egp], errors="coerce").fillna(0)
-                    df["AMOUNT_EGP"] = (dr - cr)
+                    df["AMOUNT_EGP"] = dr - cr
                     df["DEBIT_AMOUNT"] = dr
                     df["CREDIT_AMOUNT"] = cr
                 elif dr_egp:
@@ -210,9 +285,15 @@ class TransactionExtractor:
             debit_col = self._find_column(df, ["DEBIT", "DR", "OUT"], contains=True)
             credit_col = self._find_column(df, ["CREDIT", "CR", "IN"], contains=True)
             if debit_col and credit_col:
-                df["DEBIT_AMOUNT"] = pd.to_numeric(df[debit_col], errors="coerce").fillna(0)
-                df["CREDIT_AMOUNT"] = pd.to_numeric(df[credit_col], errors="coerce").fillna(0)
-                df["AMOUNT_EGP"] = (df["DEBIT_AMOUNT"] - df["CREDIT_AMOUNT"]) * df["FX_RATE"]
+                df["DEBIT_AMOUNT"] = pd.to_numeric(
+                    df[debit_col], errors="coerce"
+                ).fillna(0)
+                df["CREDIT_AMOUNT"] = pd.to_numeric(
+                    df[credit_col], errors="coerce"
+                ).fillna(0)
+                df["AMOUNT_EGP"] = (df["DEBIT_AMOUNT"] - df["CREDIT_AMOUNT"]) * df[
+                    "FX_RATE"
+                ]
             else:
                 df["AMOUNT_EGP"] = 0.0
 
@@ -220,31 +301,54 @@ class TransactionExtractor:
         #     alongside the net EGP amount column. Populate DEBIT_AMOUNT / CREDIT_AMOUNT
         #     from the raw columns so the staging table gets dual-entry amounts
         #     (validator rule 4 needs them, and downstream recon needs them too).
-        if "DEBIT_AMOUNT" not in df.columns or df["DEBIT_AMOUNT"].isna().all() or (df["DEBIT_AMOUNT"] == 0).all():
+        if (
+            "DEBIT_AMOUNT" not in df.columns
+            or df["DEBIT_AMOUNT"].isna().all()
+            or (df["DEBIT_AMOUNT"] == 0).all()
+        ):
             dr_col = self._find_column(df, ["DEBIT"], contains=True)
             cr_col = self._find_column(df, ["CREDIT"], contains=True)
             if dr_col:
-                df["DEBIT_AMOUNT"] = pd.to_numeric(df[dr_col], errors="coerce").fillna(0)
+                df["DEBIT_AMOUNT"] = pd.to_numeric(df[dr_col], errors="coerce").fillna(
+                    0
+                )
             if cr_col:
-                df["CREDIT_AMOUNT"] = pd.to_numeric(df[cr_col], errors="coerce").fillna(0)
+                df["CREDIT_AMOUNT"] = pd.to_numeric(df[cr_col], errors="coerce").fillna(
+                    0
+                )
             if (dr_col or cr_col) and "AMOUNT_EGP" in df.columns:
                 # If net amount was already populated from a net column, leave it.
                 # Otherwise derive net from DR-CR.
                 if df["AMOUNT_EGP"].isna().all() or (df["AMOUNT_EGP"] == 0).all():
-                    df["AMOUNT_EGP"] = (df.get("DEBIT_AMOUNT", 0) - df.get("CREDIT_AMOUNT", 0)) * df.get("FX_RATE", 1.0)
+                    df["AMOUNT_EGP"] = (
+                        df.get("DEBIT_AMOUNT", 0) - df.get("CREDIT_AMOUNT", 0)
+                    ) * df.get("FX_RATE", 1.0)
 
         # --- Transaction / Reference ID ---
-        tid_col = self._find_column(df, [
-            "TRANSACTION_ID", "TRANSACTION_REFERENCE", "REFERENCE", "TNX_NUM",
-            "TRN_NUM", "ID", "TRANS_ID", "VOUCHER", "MANUAL_DOC",
-        ], contains=True)
+        tid_col = self._find_column(
+            df,
+            [
+                "TRANSACTION_ID",
+                "TRANSACTION_REFERENCE",
+                "REFERENCE",
+                "TNX_NUM",
+                "TRN_NUM",
+                "ID",
+                "TRANS_ID",
+                "VOUCHER",
+                "MANUAL_DOC",
+            ],
+            contains=True,
+        )
         if tid_col:
             df["TRANSACTION_ID"] = df[tid_col].astype(str)
         else:
             df["TRANSACTION_ID"] = [f"{self.module}_{i:08d}" for i in range(len(df))]
 
         # --- Cost Center (for routing) ---
-        cost_col = self._find_column(df, ["COST_CENTER", "COST_CENTRE", "CC"], contains=True)
+        cost_col = self._find_column(
+            df, ["COST_CENTER", "COST_CENTRE", "CC"], contains=True
+        )
         if cost_col:
             df["COST_CENTER"] = df[cost_col].astype(str)
 
@@ -261,7 +365,11 @@ class TransactionExtractor:
             df["ORIGINAL_AMOUNT"] = pd.to_numeric(df[amt_col], errors="coerce")
 
         # --- Transaction Type ---
-        trx_type_col = self._find_column(df, ["TRNX_TYPE", "TXN_TYPE", "TRNX TYPE", "TRX_TYPE", "TRX_SOURCE"], contains=True)
+        trx_type_col = self._find_column(
+            df,
+            ["TRNX_TYPE", "TXN_TYPE", "TRNX TYPE", "TRX_TYPE", "TRX_SOURCE"],
+            contains=True,
+        )
         if trx_type_col:
             df["TRANSACTION_TYPE"] = df[trx_type_col].astype(str).str.strip()
         else:
@@ -272,8 +380,12 @@ class TransactionExtractor:
         return df
 
     def _infer_currency(self, df: pd.DataFrame) -> pd.Series:
-        acc_col = self._find_column(df, ["ACCOUNT", "ACC", "BANK", "ACCOUNT_CODE"], contains=True)
+        acc_col = self._find_column(
+            df, ["ACCOUNT", "ACC", "BANK", "ACCOUNT_CODE"], contains=True
+        )
         if acc_col:
             s = df[acc_col].astype(str).str.upper()
-            return s.apply(lambda x: "USD" if "USD" in x else ("EUR" if "EUR" in x else "EGP"))
+            return s.apply(
+                lambda x: "USD" if "USD" in x else ("EUR" if "EUR" in x else "EGP")
+            )
         return pd.Series(["EGP"] * len(df))

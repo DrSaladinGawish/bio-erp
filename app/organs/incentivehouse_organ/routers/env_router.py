@@ -21,6 +21,7 @@ End-points (prefix ``/api/v1/env``):
   GET  /dashboard                   — top-level dashboard rollup
   GET  /search                      — cross-table quick search
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,12 +35,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_async_session
 from ..models_production import (
-    Staff, Vendor, Event,
-    SalesInvoice, PurchaseOrder, VendorInvoice, SalesLineItem,
-    StaffAssignment,
+    Staff,
+    Vendor,
+    Event,
+    SalesInvoice,
+    VendorInvoice,
 )
 from ..models_production import (
-    Client, CostCenter, PnrRecord,
+    Client,
+    CostCenter,
+    PnrRecord,
 )
 from ..schemas import PaginatedResponse
 
@@ -48,6 +53,7 @@ router = APIRouter(prefix="/api/v1/env", tags=["ENV Reference Data"])
 
 
 # ── Pydantic models (Staff) ────────────────────────────────────────────
+
 
 class StaffCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -68,6 +74,7 @@ class StaffOut(StaffCreate):
 
 
 # ── Pydantic models (Vendors) ──────────────────────────────────────────
+
 
 class VendorCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -90,6 +97,7 @@ class VendorOut(VendorCreate):
 
 # ── Pydantic models (Clients) ──────────────────────────────────────────
 
+
 class ClientCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
     code: Optional[str] = None
@@ -106,6 +114,7 @@ class ClientOut(ClientCreate):
 
 # ── Pydantic models (Cost centres) ─────────────────────────────────────
 
+
 class CostCenterCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
     code: str
@@ -120,6 +129,7 @@ class CostCenterOut(CostCenterCreate):
 
 
 # ── Pydantic models (PNR) ──────────────────────────────────────────────
+
 
 class PnrCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -138,6 +148,7 @@ class PnrOut(PnrCreate):
 
 # ── Dashboard model ────────────────────────────────────────────────────
 
+
 class ENVDashboard(BaseModel):
     total_clients: int = 0
     total_vendors: int = 0
@@ -154,6 +165,7 @@ class ENVDashboard(BaseModel):
 
 
 # ── End-points ─────────────────────────────────────────────────────────
+
 
 @router.get("/staff", response_model=PaginatedResponse[StaffOut])
 async def list_staff(
@@ -174,11 +186,13 @@ async def list_staff(
     if active is not None:
         f.append(Staff.active == active)
     if search:
-        f.append(or_(
-            Staff.name.ilike(f"%{search}%"),
-            Staff.code.ilike(f"%{search}%"),
-            Staff.email.ilike(f"%{search}%"),
-        ))
+        f.append(
+            or_(
+                Staff.name.ilike(f"%{search}%"),
+                Staff.code.ilike(f"%{search}%"),
+                Staff.email.ilike(f"%{search}%"),
+            )
+        )
     if f:
         stmt = stmt.where(and_(*f))
     count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -187,7 +201,9 @@ async def list_staff(
     rows = (await session.execute(stmt)).scalars().all()
     return PaginatedResponse(
         data=[StaffOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
@@ -197,9 +213,9 @@ async def get_staff(
     staff_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    s = (await session.execute(
-        select(Staff).where(Staff.id == staff_id)
-    )).scalar_one_or_none()
+    s = (
+        await session.execute(select(Staff).where(Staff.id == staff_id))
+    ).scalar_one_or_none()
     if not s:
         raise HTTPException(404, "Staff not found")
     return StaffOut.model_validate(s)
@@ -225,25 +241,25 @@ async def list_clients(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=500)] = 50,
 ):
-    stmt = select(Client)
-    f = []
-    if acc_key is not None:
-        f.append(Client.acc_key == acc_key)
+    base = "FROM clients WHERE 1=1"
+    params = {}
     if search:
-        f.append(or_(
-            Client.name.ilike(f"%{search}%"),
-            Client.code.ilike(f"%{search}%"),
-            Client.tax_id.ilike(f"%{search}%"),
-        ))
-    if f:
-        stmt = stmt.where(and_(*f))
-    count_stmt = select(func.count()).select_from(stmt.subquery())
-    total = (await session.execute(count_stmt)).scalar() or 0
-    stmt = stmt.order_by(Client.name).offset((page - 1) * page_size).limit(page_size)
-    rows = (await session.execute(stmt)).scalars().all()
+        base += " AND (name_en ILIKE :s OR code ILIKE :s OR tax_id ILIKE :s)"
+        params["s"] = f"%{search}%"
+    if acc_key is not None:
+        base += " AND acc_key = :ak"
+        params["ak"] = acc_key
+    total = (await session.execute(text(f"SELECT COUNT(*) {base}"), params)).scalar() or 0
+    off = (page - 1) * page_size
+    sql = f"SELECT id, code, name_en AS name, tax_id, address_en AS address, acc_key {base} ORDER BY name_en LIMIT :lim OFFSET :off"
+    params["lim"] = page_size
+    params["off"] = off
+    rows = (await session.execute(text(sql), params)).mappings().all()
     return PaginatedResponse(
-        data=[ClientOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        data=[ClientOut.model_validate(dict(r)) for r in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
@@ -253,12 +269,11 @@ async def get_client(
     client_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    c = (await session.execute(
-        select(Client).where(Client.id == client_id)
-    )).scalar_one_or_none()
-    if not c:
+    sql = "SELECT id, code, name_en AS name, tax_id, address_en AS address, acc_key FROM clients WHERE id = :id"
+    row = (await session.execute(text(sql), {"id": client_id})).mappings().first()
+    if not row:
         raise HTTPException(404, "Client not found")
-    return ClientOut.model_validate(c)
+    return ClientOut.model_validate(dict(row))
 
 
 @router.post("/clients", response_model=ClientOut, status_code=status.HTTP_201_CREATED)
@@ -282,27 +297,28 @@ async def list_vendors(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=500)] = 50,
 ):
-    stmt = select(Vendor)
-    f = []
+    base = "FROM suppliers WHERE 1=1"
+    params = {}
     if category:
-        f.append(Vendor.category == category)
+        base += " AND service_category = :cat"
+        params["cat"] = category
     if active is not None:
-        f.append(Vendor.active == active)
+        base += " AND is_active = :act"
+        params["act"] = active
     if search:
-        f.append(or_(
-            Vendor.name.ilike(f"%{search}%"),
-            Vendor.code.ilike(f"%{search}%"),
-            Vendor.tax_id.ilike(f"%{search}%"),
-        ))
-    if f:
-        stmt = stmt.where(and_(*f))
-    count_stmt = select(func.count()).select_from(stmt.subquery())
-    total = (await session.execute(count_stmt)).scalar() or 0
-    stmt = stmt.order_by(Vendor.name).offset((page - 1) * page_size).limit(page_size)
-    rows = (await session.execute(stmt)).scalars().all()
+        base += " AND (name_en ILIKE :s OR code ILIKE :s OR tax_id ILIKE :s)"
+        params["s"] = f"%{search}%"
+    total = (await session.execute(text(f"SELECT COUNT(*) {base}"), params)).scalar() or 0
+    off = (page - 1) * page_size
+    sql = f"SELECT id, code, name_en AS name, tax_id, phone1 AS phone, email, address_en AS address, service_category AS category, acc_key, is_active AS active {base} ORDER BY name_en LIMIT :lim OFFSET :off"
+    params["lim"] = page_size
+    params["off"] = off
+    rows = (await session.execute(text(sql), params)).mappings().all()
     return PaginatedResponse(
-        data=[VendorOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        data=[VendorOut.model_validate(dict(r)) for r in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
@@ -312,12 +328,11 @@ async def get_vendor(
     vendor_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    v = (await session.execute(
-        select(Vendor).where(Vendor.id == vendor_id)
-    )).scalar_one_or_none()
-    if not v:
+    sql = "SELECT id, code, name_en AS name, tax_id, phone1 AS phone, email, address_en AS address, service_category AS category, acc_key, is_active AS active FROM suppliers WHERE id = :id"
+    row = (await session.execute(text(sql), {"id": vendor_id})).mappings().first()
+    if not row:
         raise HTTPException(404, "Vendor not found")
-    return VendorOut.model_validate(v)
+    return VendorOut.model_validate(dict(row))
 
 
 @router.post("/vendors", response_model=VendorOut, status_code=status.HTTP_201_CREATED)
@@ -348,19 +363,25 @@ async def list_cost_centers(
     if parent_id is not None:
         f.append(CostCenter.parent_id == parent_id)
     if search:
-        f.append(or_(
-            CostCenter.code.ilike(f"%{search}%"),
-            CostCenter.name.ilike(f"%{search}%"),
-        ))
+        f.append(
+            or_(
+                CostCenter.code.ilike(f"%{search}%"),
+                CostCenter.name.ilike(f"%{search}%"),
+            )
+        )
     if f:
         stmt = stmt.where(and_(*f))
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total = (await session.execute(count_stmt)).scalar() or 0
-    stmt = stmt.order_by(CostCenter.code).offset((page - 1) * page_size).limit(page_size)
+    stmt = (
+        stmt.order_by(CostCenter.code).offset((page - 1) * page_size).limit(page_size)
+    )
     rows = (await session.execute(stmt)).scalars().all()
     return PaginatedResponse(
         data=[CostCenterOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
@@ -370,15 +391,17 @@ async def get_cost_center(
     cc_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    cc = (await session.execute(
-        select(CostCenter).where(CostCenter.id == cc_id)
-    )).scalar_one_or_none()
+    cc = (
+        await session.execute(select(CostCenter).where(CostCenter.id == cc_id))
+    ).scalar_one_or_none()
     if not cc:
         raise HTTPException(404, "Cost centre not found")
     return CostCenterOut.model_validate(cc)
 
 
-@router.post("/cost-centers", response_model=CostCenterOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/cost-centers", response_model=CostCenterOut, status_code=status.HTTP_201_CREATED
+)
 async def create_cost_center(
     payload: CostCenterCreate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
@@ -412,10 +435,12 @@ async def list_pnr(
     if date_to:
         f.append(PnrRecord.event_date <= date_to)
     if search:
-        f.append(or_(
-            PnrRecord.pnr_code.ilike(f"%{search}%"),
-            PnrRecord.venue.ilike(f"%{search}%"),
-        ))
+        f.append(
+            or_(
+                PnrRecord.pnr_code.ilike(f"%{search}%"),
+                PnrRecord.venue.ilike(f"%{search}%"),
+            )
+        )
     if f:
         stmt = stmt.where(and_(*f))
     count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -425,7 +450,9 @@ async def list_pnr(
     rows = (await session.execute(stmt)).scalars().all()
     return PaginatedResponse(
         data=[PnrOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
@@ -435,9 +462,9 @@ async def get_pnr(
     pnr_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    p = (await session.execute(
-        select(PnrRecord).where(PnrRecord.id == pnr_id)
-    )).scalar_one_or_none()
+    p = (
+        await session.execute(select(PnrRecord).where(PnrRecord.id == pnr_id))
+    ).scalar_one_or_none()
     if not p:
         raise HTTPException(404, "PNR not found")
     return PnrOut.model_validate(p)
@@ -459,31 +486,50 @@ async def create_pnr(
 async def get_dashboard(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    cli = (await session.execute(select(func.count()).select_from(Client))).scalar() or 0
-    ven = (await session.execute(select(func.count()).select_from(Vendor))).scalar() or 0
-    st_total = (await session.execute(select(func.count()).select_from(Staff))).scalar() or 0
-    st_active = (await session.execute(
-        select(func.count()).select_from(Staff).where(Staff.active == 1)
-    )).scalar() or 0
-    cc = (await session.execute(select(func.count()).select_from(CostCenter))).scalar() or 0
-    pnr = (await session.execute(select(func.count()).select_from(PnrRecord))).scalar() or 0
-    pnr_open = (await session.execute(
-        select(func.count()).select_from(PnrRecord).where(PnrRecord.status == "OPEN")
-    )).scalar() or 0
+    cli = (
+        await session.execute(select(func.count()).select_from(Client))
+    ).scalar() or 0
+    ven = (
+        await session.execute(select(func.count()).select_from(Vendor))
+    ).scalar() or 0
+    st_total = (
+        await session.execute(select(func.count()).select_from(Staff))
+    ).scalar() or 0
+    st_active = (
+        await session.execute(
+            select(func.count()).select_from(Staff).where(Staff.active == 1)
+        )
+    ).scalar() or 0
+    cc = (
+        await session.execute(select(func.count()).select_from(CostCenter))
+    ).scalar() or 0
+    pnr = (
+        await session.execute(select(func.count()).select_from(PnrRecord))
+    ).scalar() or 0
+    pnr_open = (
+        await session.execute(
+            select(func.count())
+            .select_from(PnrRecord)
+            .where(PnrRecord.status == "OPEN")
+        )
+    ).scalar() or 0
     ev = (await session.execute(select(func.count()).select_from(Event))).scalar() or 0
-    ev_open = (await session.execute(
-        select(func.count()).select_from(Event).where(Event.status == "OPEN")
-    )).scalar() or 0
-    sales = (await session.execute(
-        select(func.coalesce(func.sum(SalesInvoice.total), 0))
-    )).scalar() or 0
-    pur = (await session.execute(
-        select(func.coalesce(func.sum(VendorInvoice.total), 0))
-    )).scalar() or 0
-    ev_status_rows = (await session.execute(
-        select(Event.status, func.count().label("cnt"))
-        .group_by(Event.status)
-    )).all()
+    ev_open = (
+        await session.execute(
+            select(func.count()).select_from(Event).where(Event.status == "OPEN")
+        )
+    ).scalar() or 0
+    sales = (
+        await session.execute(select(func.coalesce(func.sum(SalesInvoice.total), 0)))
+    ).scalar() or 0
+    pur = (
+        await session.execute(select(func.coalesce(func.sum(VendorInvoice.total), 0)))
+    ).scalar() or 0
+    ev_status_rows = (
+        await session.execute(
+            select(Event.status, func.count().label("cnt")).group_by(Event.status)
+        )
+    ).all()
     by_status = {r.status: r.cnt for r in ev_status_rows if r.status}
     return ENVDashboard(
         total_clients=cli,
@@ -510,61 +556,136 @@ async def cross_search(
     """Cross-table quick search across clients, vendors, staff, PNR, events."""
     pattern = f"%{q}%"
     out: List[dict] = []
-    rows = (await session.execute(
-        select(Client).where(or_(
-            Client.name.ilike(pattern),
-            Client.code.ilike(pattern),
-            Client.tax_id.ilike(pattern),
-        )).limit(limit)
-    )).scalars().all()
+    rows = (
+        (
+            await session.execute(
+                select(Client)
+                .where(
+                    or_(
+                        Client.name.ilike(pattern),
+                        Client.code.ilike(pattern),
+                        Client.tax_id.ilike(pattern),
+                    )
+                )
+                .limit(limit)
+            )
+        )
+        .scalars()
+        .all()
+    )
     for c in rows:
-        out.append({
-            "type": "client", "id": c.id, "code": c.code,
-            "name": c.name, "extra": c.tax_id or "",
-        })
-    rows = (await session.execute(
-        select(Vendor).where(or_(
-            Vendor.name.ilike(pattern),
-            Vendor.code.ilike(pattern),
-        )).limit(limit)
-    )).scalars().all()
+        out.append(
+            {
+                "type": "client",
+                "id": c.id,
+                "code": c.code,
+                "name": c.name,
+                "extra": c.tax_id or "",
+            }
+        )
+    rows = (
+        (
+            await session.execute(
+                select(Vendor)
+                .where(
+                    or_(
+                        Vendor.name.ilike(pattern),
+                        Vendor.code.ilike(pattern),
+                    )
+                )
+                .limit(limit)
+            )
+        )
+        .scalars()
+        .all()
+    )
     for v in rows:
-        out.append({
-            "type": "vendor", "id": v.id, "code": v.code,
-            "name": v.name, "extra": v.category or "",
-        })
-    rows = (await session.execute(
-        select(Staff).where(or_(
-            Staff.name.ilike(pattern),
-            Staff.code.ilike(pattern),
-        )).limit(limit)
-    )).scalars().all()
+        out.append(
+            {
+                "type": "vendor",
+                "id": v.id,
+                "code": v.code,
+                "name": v.name,
+                "extra": v.category or "",
+            }
+        )
+    rows = (
+        (
+            await session.execute(
+                select(Staff)
+                .where(
+                    or_(
+                        Staff.name.ilike(pattern),
+                        Staff.code.ilike(pattern),
+                    )
+                )
+                .limit(limit)
+            )
+        )
+        .scalars()
+        .all()
+    )
     for s in rows:
-        out.append({
-            "type": "staff", "id": s.id, "code": s.code,
-            "name": s.name, "extra": s.role or "",
-        })
-    rows = (await session.execute(
-        select(PnrRecord).where(or_(
-            PnrRecord.pnr_code.ilike(pattern),
-            PnrRecord.venue.ilike(pattern),
-        )).limit(limit)
-    )).scalars().all()
+        out.append(
+            {
+                "type": "staff",
+                "id": s.id,
+                "code": s.code,
+                "name": s.name,
+                "extra": s.role or "",
+            }
+        )
+    rows = (
+        (
+            await session.execute(
+                select(PnrRecord)
+                .where(
+                    or_(
+                        PnrRecord.pnr_code.ilike(pattern),
+                        PnrRecord.venue.ilike(pattern),
+                    )
+                )
+                .limit(limit)
+            )
+        )
+        .scalars()
+        .all()
+    )
     for p in rows:
-        out.append({
-            "type": "pnr", "id": p.id, "code": p.pnr_code,
-            "name": p.venue or "", "extra": p.status or "",
-        })
-    rows = (await session.execute(
-        select(Event).where(or_(
-            Event.event_code.ilike(pattern),
-            Event.event_name.ilike(pattern),
-            Event.venue.ilike(pattern),
-        )).limit(limit)
-    )).scalars().all()
+        out.append(
+            {
+                "type": "pnr",
+                "id": p.id,
+                "code": p.pnr_code,
+                "name": p.venue or "",
+                "extra": p.status or "",
+            }
+        )
+    rows = (
+        (
+            await session.execute(
+                select(Event)
+                .where(
+                    or_(
+                        Event.event_code.ilike(pattern),
+                        Event.event_name.ilike(pattern),
+                        Event.venue.ilike(pattern),
+                    )
+                )
+                .limit(limit)
+            )
+        )
+        .scalars()
+        .all()
+    )
     for e in rows:
-        out.append({
-            "type": "event", "id": e.id, "code": e.event_code,
-            "name": e.event_name or "", "extra": e.status or "",
-        })
+        out.append(
+            {
+                "type": "event",
+                "id": e.id,
+                "code": e.event_code,
+                "name": e.event_name or "",
+                "extra": e.status or "",
+            }
+        )
     return out

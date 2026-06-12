@@ -4,16 +4,14 @@ Follows OR module pattern: dataclass models + class-based stateless engines
 Source: Arabic accounting curriculum — 36 files verified
 """
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Literal, Any
-from enum import Enum
+from dataclasses import dataclass
+from typing import Optional
 from datetime import datetime
-from decimal import Decimal, ROUND_HALF_UP
-import math
 
 # =============================================================================
 # DATA MODELS — TDABC (P0)
 # =============================================================================
+
 
 @dataclass
 class TDABCResourcePool:
@@ -24,11 +22,13 @@ class TDABCResourcePool:
     hours_per_day: int = 8
     efficiency_pct: float = 85.0
 
+
 @dataclass
 class TDABCProduct:
     product_name: str
     volume: int
     time_per_unit_minutes: float
+
 
 @dataclass
 class TradCostPool:
@@ -37,14 +37,17 @@ class TradCostPool:
     allocation_base: str
     base_quantity: float
 
+
 @dataclass
 class TradProductAllocation:
     product_name: str
     actual_base_consumption: float
 
+
 # =============================================================================
 # DATA MODELS — ABC / RCA / TARGET (P1)
 # =============================================================================
+
 
 @dataclass
 class ABCActivityPool:
@@ -53,20 +56,24 @@ class ABCActivityPool:
     cost_category: str
     description: str = ""
 
+
 @dataclass
 class ABCCostDriver:
     driver_name: str
     driver_type: str
     measurement_unit: str
 
+
 @dataclass
 class ABCAllocation:
     driver_quantity: float
+
 
 @dataclass
 class ABCProductCost:
     product_name: str
     consumption_quantity: float
+
 
 @dataclass
 class RCAResource:
@@ -75,10 +82,12 @@ class RCAResource:
     proportional_cost: float = 0.0
     measurable_output_unit: str = "units"
 
+
 @dataclass
 class RCAResourceOutput:
     planned_quantity: float
     actual_quantity: float
+
 
 @dataclass
 class TargetMarketModel:
@@ -86,11 +95,13 @@ class TargetMarketModel:
     market_price: float
     target_profit_pct: float
 
+
 @dataclass
 class TargetCostSheet:
     cost_component: str
     as_is_cost: float
     target_cost: float
+
 
 @dataclass
 class TargetVEAction:
@@ -98,20 +109,24 @@ class TargetVEAction:
     estimated_savings: float
     implementation_cost: float
 
+
 # =============================================================================
 # DATA MODELS — BSC / RESPONSIBILITY / ROI-EVA (P2)
 # =============================================================================
+
 
 @dataclass
 class BSCPerspective:
     perspective_name: str
     weight_pct: float = 25.0
 
+
 @dataclass
 class BSCStrategicObjective:
     objective_name: str
     perspective_id: int
     target_value: Optional[float] = None
+
 
 @dataclass
 class BSCKPI:
@@ -120,10 +135,12 @@ class BSCKPI:
     objective_id: int
     measurement_unit: str = ""
 
+
 @dataclass
 class BSCKPIMeasurement:
     actual_value: float
     target_value: float
+
 
 @dataclass
 class ResponsibilityCenter:
@@ -133,10 +150,12 @@ class ResponsibilityCenter:
     parent_center_code: Optional[str] = None
     manager_name: str = ""
 
+
 @dataclass
 class ResponsibilityBudget:
     budgeted_amount: float
     actual_amount: float = 0.0
+
 
 @dataclass
 class ROI_EVABaseline:
@@ -146,21 +165,26 @@ class ROI_EVABaseline:
     total_assets: float
     current_liabilities: float = 0.0
 
+
 @dataclass
 class ROI_EVACalculation:
     nopat: float
     wacc_pct: float
 
+
 # =============================================================================
 # ENGINE 1: TDABC + Traditional Costing (P0)
 # =============================================================================
+
 
 class TDABCCostingEngine:
     """Time-Driven Activity-Based Costing + Traditional Costing computations"""
 
     @staticmethod
     def calculate_practical_capacity(pool: TDABCResourcePool) -> dict:
-        theoretical = pool.resources_count * pool.days_per_year * pool.hours_per_day * 60
+        theoretical = (
+            pool.resources_count * pool.days_per_year * pool.hours_per_day * 60
+        )
         practical = int(theoretical * pool.efficiency_pct / 100.0)
         cost_per_min = pool.total_cost / practical if practical > 0 else 0
         return {
@@ -172,7 +196,9 @@ class TDABCCostingEngine:
     @staticmethod
     def calculate_product_cost(pool: TDABCResourcePool, product: TDABCProduct) -> float:
         metrics = TDABCCostingEngine.calculate_practical_capacity(pool)
-        cost = product.volume * product.time_per_unit_minutes * metrics["cost_per_minute"]
+        cost = (
+            product.volume * product.time_per_unit_minutes * metrics["cost_per_minute"]
+        )
         return round(cost, 4)
 
     @staticmethod
@@ -206,17 +232,29 @@ class TDABCCostingEngine:
         return round(pool.total_overhead / pool.base_quantity, 4)
 
     @staticmethod
-    def calculate_traditional_allocation(pool: TradCostPool, allocation: TradProductAllocation) -> float:
+    def calculate_traditional_allocation(
+        pool: TradCostPool, allocation: TradProductAllocation
+    ) -> float:
         rate = TDABCCostingEngine.calculate_traditional_rate(pool)
         return round(allocation.actual_base_consumption * rate, 4)
 
     @staticmethod
-    def compare_costing(tdabc_pool: TDABCResourcePool, tdabc_product: TDABCProduct,
-                        trad_pool: TradCostPool, trad_allocation: TradProductAllocation) -> dict:
-        tdabc_cost = TDABCCostingEngine.calculate_product_cost(tdabc_pool, tdabc_product)
-        trad_cost = TDABCCostingEngine.calculate_traditional_allocation(trad_pool, trad_allocation)
+    def compare_costing(
+        tdabc_pool: TDABCResourcePool,
+        tdabc_product: TDABCProduct,
+        trad_pool: TradCostPool,
+        trad_allocation: TradProductAllocation,
+    ) -> dict:
+        tdabc_cost = TDABCCostingEngine.calculate_product_cost(
+            tdabc_pool, tdabc_product
+        )
+        trad_cost = TDABCCostingEngine.calculate_traditional_allocation(
+            trad_pool, trad_allocation
+        )
         distortion = abs(tdabc_cost - trad_cost)
-        distortion_pct = round((distortion / trad_cost) * 100, 2) if trad_cost > 0 else 100.0
+        distortion_pct = (
+            round((distortion / trad_cost) * 100, 2) if trad_cost > 0 else 100.0
+        )
         if tdabc_cost > trad_cost:
             interp = f"Traditional system UNDER-costs by {distortion:.2f} ({distortion_pct:.2f}%)"
         elif tdabc_cost < trad_cost:
@@ -231,9 +269,11 @@ class TDABCCostingEngine:
             "interpretation": interp,
         }
 
+
 # =============================================================================
 # ENGINE 2: ABC + RCA + Target Costing (P1)
 # =============================================================================
+
 
 class ABCRCATargetEngine:
     """Activity-Based Costing, Resource Consumption Accounting, Target Costing"""
@@ -246,7 +286,9 @@ class ABCRCATargetEngine:
         return round(pool.total_cost / driver_quantity, 4)
 
     @staticmethod
-    def calculate_abc_product_cost(pool: ABCActivityPool, driver_quantity: float, consumption: float) -> float:
+    def calculate_abc_product_cost(
+        pool: ABCActivityPool, driver_quantity: float, consumption: float
+    ) -> float:
         rate = ABCRCATargetEngine.calculate_activity_rate(pool, driver_quantity)
         return round(consumption * rate, 4)
 
@@ -255,19 +297,55 @@ class ABCRCATargetEngine:
         """Seed data for the classic Pump A vs Pump B ABC exercise"""
         return {
             "pools": [
-                {"pool_name": "Machine Setup", "total_cost": 10000.0, "cost_category": "BATCH_LEVEL"},
-                {"pool_name": "Quality Inspection", "total_cost": 8000.0, "cost_category": "BATCH_LEVEL"},
-                {"pool_name": "Machine Hours", "total_cost": 40000.0, "cost_category": "UNIT_LEVEL"},
+                {
+                    "pool_name": "Machine Setup",
+                    "total_cost": 10000.0,
+                    "cost_category": "BATCH_LEVEL",
+                },
+                {
+                    "pool_name": "Quality Inspection",
+                    "total_cost": 8000.0,
+                    "cost_category": "BATCH_LEVEL",
+                },
+                {
+                    "pool_name": "Machine Hours",
+                    "total_cost": 40000.0,
+                    "cost_category": "UNIT_LEVEL",
+                },
             ],
             "drivers": [
-                {"driver_name": "Number of Setups", "driver_type": "TRANSACTION", "measurement_unit": "setups"},
-                {"driver_name": "Number of Inspections", "driver_type": "TRANSACTION", "measurement_unit": "inspections"},
-                {"driver_name": "Machine Hours", "driver_type": "DURATION", "measurement_unit": "hours"},
+                {
+                    "driver_name": "Number of Setups",
+                    "driver_type": "TRANSACTION",
+                    "measurement_unit": "setups",
+                },
+                {
+                    "driver_name": "Number of Inspections",
+                    "driver_type": "TRANSACTION",
+                    "measurement_unit": "inspections",
+                },
+                {
+                    "driver_name": "Machine Hours",
+                    "driver_type": "DURATION",
+                    "measurement_unit": "hours",
+                },
             ],
             "allocations": [
-                {"pool": "Machine Setup", "driver": "Number of Setups", "quantity": 20.0},
-                {"pool": "Quality Inspection", "driver": "Number of Inspections", "quantity": 20.0},
-                {"pool": "Machine Hours", "driver": "Machine Hours", "quantity": 5000.0},
+                {
+                    "pool": "Machine Setup",
+                    "driver": "Number of Setups",
+                    "quantity": 20.0,
+                },
+                {
+                    "pool": "Quality Inspection",
+                    "driver": "Number of Inspections",
+                    "quantity": 20.0,
+                },
+                {
+                    "pool": "Machine Hours",
+                    "driver": "Machine Hours",
+                    "quantity": 5000.0,
+                },
             ],
             "pump_a_costs": [
                 {"pool": "Machine Setup", "consumption": 10.0},
@@ -296,7 +374,9 @@ class ABCRCATargetEngine:
                 pool = pools[c["pool"]]
                 rate = pool["total_cost"] / allocs[c["pool"]]
                 cost = c["consumption"] * rate
-                details.append({"pool": c["pool"], "rate": round(rate, 4), "cost": round(cost, 4)})
+                details.append(
+                    {"pool": c["pool"], "rate": round(rate, 4), "cost": round(cost, 4)}
+                )
                 total += cost
             return {"details": details, "total_cost": round(total, 4)}
 
@@ -316,10 +396,16 @@ class ABCRCATargetEngine:
             "pump_a_traditional": pump_a_trad,
             "pump_b_traditional": pump_b_trad,
             "abc_vs_traditional": {
-                "pump_a": {"abc": pump_a["total_cost"], "traditional": pump_a_trad,
-                           "distortion": round(pump_a_trad - pump_a["total_cost"], 4)},
-                "pump_b": {"abc": pump_b["total_cost"], "traditional": pump_b_trad,
-                           "distortion": round(pump_b_trad - pump_b["total_cost"], 4)},
+                "pump_a": {
+                    "abc": pump_a["total_cost"],
+                    "traditional": pump_a_trad,
+                    "distortion": round(pump_a_trad - pump_a["total_cost"], 4),
+                },
+                "pump_b": {
+                    "abc": pump_b["total_cost"],
+                    "traditional": pump_b_trad,
+                    "distortion": round(pump_b_trad - pump_b["total_cost"], 4),
+                },
             },
         }
 
@@ -351,12 +437,15 @@ class ABCRCATargetEngine:
         return round(as_is_cost - target_cost, 4)
 
     @staticmethod
-    def calculate_target_summary(sheets: list, ve_actions: list, target_cost: float) -> dict:
+    def calculate_target_summary(
+        sheets: list, ve_actions: list, target_cost: float
+    ) -> dict:
         total_as_is = sum(s["as_is_cost"] for s in sheets)
         total_gap = sum(s["as_is_cost"] - s["target_cost"] for s in sheets)
         ve_savings = sum(
             a["estimated_savings"] - a["implementation_cost"]
-            for a in ve_actions if a.get("status") in ("APPROVED", "IMPLEMENTED")
+            for a in ve_actions
+            if a.get("status") in ("APPROVED", "IMPLEMENTED")
         )
         achievable = round(total_as_is - ve_savings, 4)
         gap_pct = round(total_gap / target_cost * 100, 2) if target_cost > 0 else 0.0
@@ -375,9 +464,11 @@ class ABCRCATargetEngine:
             "status": status,
         }
 
+
 # =============================================================================
 # ENGINE 3: BSC + Responsibility Accounting + ROI/EVA (P2)
 # =============================================================================
+
 
 class BSCResponsibilityROIEngine:
     """Balanced Scorecard, Responsibility Accounting, ROI/EVA"""
@@ -410,8 +501,10 @@ class BSCResponsibilityROIEngine:
     @staticmethod
     def calculate_bsc_scorecard(measurements: list, perspectives: list) -> dict:
         """Aggregate KPI measurements into perspective scores and overall BSC score"""
-        pers_scores = {p["perspective_name"]: {"total": 0.0, "count": 0, "weight": p["weight_pct"]}
-                       for p in perspectives}
+        pers_scores = {
+            p["perspective_name"]: {"total": 0.0, "count": 0, "weight": p["weight_pct"]}
+            for p in perspectives
+        }
         for m in measurements:
             pname = m.get("perspective_name")
             if pname in pers_scores:
@@ -427,24 +520,60 @@ class BSCResponsibilityROIEngine:
             avg = round(ps["total"] / ps["count"], 2) if ps["count"] > 0 else 0.0
             weighted = round(avg * ps["weight"] / 100, 2)
             weighted_sum += weighted
-            summaries.append({"perspective": pname, "avg_performance": avg, "weight": ps["weight"],
-                              "weighted_contribution": weighted})
+            summaries.append(
+                {
+                    "perspective": pname,
+                    "avg_performance": avg,
+                    "weight": ps["weight"],
+                    "weighted_contribution": weighted,
+                }
+            )
         overall = round(weighted_sum, 2)
-        status = "EXCELLENT" if overall >= 90 else "GOOD" if overall >= 75 else "NEEDS_IMPROVEMENT"
-        return {"perspective_summaries": summaries, "overall_score": overall, "status": status}
+        status = (
+            "EXCELLENT"
+            if overall >= 90
+            else "GOOD"
+            if overall >= 75
+            else "NEEDS_IMPROVEMENT"
+        )
+        return {
+            "perspective_summaries": summaries,
+            "overall_score": overall,
+            "status": status,
+        }
 
     # --- Responsibility Accounting ---
     @staticmethod
     def seed_responsibility_hierarchy() -> list:
         return [
-            {"center_code": "CORP", "center_name": "Corporate HQ", "center_type": "INVESTMENT_CENTER",
-             "parent_center_code": None, "manager_name": "CEO"},
-            {"center_code": "MFG", "center_name": "Manufacturing Division", "center_type": "PROFIT_CENTER",
-             "parent_center_code": "CORP", "manager_name": "VP Manufacturing"},
-            {"center_code": "SALES", "center_name": "Sales Division", "center_type": "REVENUE_CENTER",
-             "parent_center_code": "CORP", "manager_name": "VP Sales"},
-            {"center_code": "ASSY", "center_name": "Assembly Department", "center_type": "COST_CENTER",
-             "parent_center_code": "MFG", "manager_name": "Assembly Manager"},
+            {
+                "center_code": "CORP",
+                "center_name": "Corporate HQ",
+                "center_type": "INVESTMENT_CENTER",
+                "parent_center_code": None,
+                "manager_name": "CEO",
+            },
+            {
+                "center_code": "MFG",
+                "center_name": "Manufacturing Division",
+                "center_type": "PROFIT_CENTER",
+                "parent_center_code": "CORP",
+                "manager_name": "VP Manufacturing",
+            },
+            {
+                "center_code": "SALES",
+                "center_name": "Sales Division",
+                "center_type": "REVENUE_CENTER",
+                "parent_center_code": "CORP",
+                "manager_name": "VP Sales",
+            },
+            {
+                "center_code": "ASSY",
+                "center_name": "Assembly Department",
+                "center_type": "COST_CENTER",
+                "parent_center_code": "MFG",
+                "manager_name": "Assembly Manager",
+            },
         ]
 
     @staticmethod
@@ -459,7 +588,9 @@ class BSCResponsibilityROIEngine:
 
     # --- ROI/EVA ---
     @staticmethod
-    def calculate_capital_employed(total_assets: float, current_liabilities: float) -> float:
+    def calculate_capital_employed(
+        total_assets: float, current_liabilities: float
+    ) -> float:
         return round(total_assets - current_liabilities, 4)
 
     @staticmethod
@@ -468,7 +599,9 @@ class BSCResponsibilityROIEngine:
 
     @staticmethod
     def calculate_eva(nopat: float, capital_employed: float, wacc_pct: float) -> float:
-        charge = BSCResponsibilityROIEngine.calculate_capital_charge(capital_employed, wacc_pct)
+        charge = BSCResponsibilityROIEngine.calculate_capital_charge(
+            capital_employed, wacc_pct
+        )
         return round(nopat - charge, 2)
 
     @staticmethod
@@ -478,8 +611,12 @@ class BSCResponsibilityROIEngine:
         return round(nopat / capital_employed * 100, 2)
 
     @staticmethod
-    def full_roi_eva_analysis(baseline: ROI_EVABaseline, calc: ROI_EVACalculation) -> dict:
-        ce = BSCResponsibilityROIEngine.calculate_capital_employed(baseline.total_assets, baseline.current_liabilities)
+    def full_roi_eva_analysis(
+        baseline: ROI_EVABaseline, calc: ROI_EVACalculation
+    ) -> dict:
+        ce = BSCResponsibilityROIEngine.calculate_capital_employed(
+            baseline.total_assets, baseline.current_liabilities
+        )
         charge = BSCResponsibilityROIEngine.calculate_capital_charge(ce, calc.wacc_pct)
         eva = BSCResponsibilityROIEngine.calculate_eva(calc.nopat, ce, calc.wacc_pct)
         roi = BSCResponsibilityROIEngine.calculate_roi(calc.nopat, ce)
@@ -494,9 +631,11 @@ class BSCResponsibilityROIEngine:
             "interpretation": f"EVA={eva:.2f} (positive=value created), ROI={roi:.2f}%",
         }
 
+
 # =============================================================================
 # MASTER SCM MODULE — exposes all engines
 # =============================================================================
+
 
 class SCMERPModule:
     """Master SCM ERP module — aggregates all costing & performance engines"""
@@ -508,11 +647,13 @@ class SCMERPModule:
         self._audit_trail: list = []
 
     def _log(self, action: str, data: dict):
-        self._audit_trail.append({
-            "timestamp": datetime.now().isoformat(),
-            "action": action,
-            "data_summary": {k: str(v)[:80] for k, v in data.items()},
-        })
+        self._audit_trail.append(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "action": action,
+                "data_summary": {k: str(v)[:80] for k, v in data.items()},
+            }
+        )
 
     def get_audit_trail(self) -> list:
         return self._audit_trail
@@ -521,7 +662,15 @@ class SCMERPModule:
         return {
             "module": "SCM ERP",
             "version": "1.0.0",
-            "engines": ["TDABC_Costing", "Traditional_Costing", "ABC", "RCA",
-                        "Target_Costing", "BSC", "Responsibility_Accounting", "ROI_EVA"],
+            "engines": [
+                "TDABC_Costing",
+                "Traditional_Costing",
+                "ABC",
+                "RCA",
+                "Target_Costing",
+                "BSC",
+                "Responsibility_Accounting",
+                "ROI_EVA",
+            ],
             "audit_entries": len(self._audit_trail),
         }

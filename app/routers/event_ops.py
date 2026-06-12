@@ -5,15 +5,41 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
 from app.database import get_db
 from app.middleware.auth import RequirePermission
-from app.models import Event, EventOperation, LifecycleStatus, Staff
+from app.models import Event, EventOperation, LifecycleStatus
 from app.models.auth import User
 from app.services.event_recognition_service import EventRecognitionService
 
 router = APIRouter(prefix="/api/v1/event-ops", tags=["Event Operations"])
+
+
+# ── Summary & List ──────────────────────────────────────────────────
+
+
+@router.get("/summary")
+async def ops_summary(db: AsyncSession = Depends(get_db)):
+    total = (await db.scalar(select(func.count(Event.id)))) or 0
+    active = (await db.scalar(
+        select(func.count(Event.id)).where(Event.lifecycle_status.notin_(["CLOSED", "DRAFT"]))
+    )) or 0
+    return {"total_operations": total, "active_operations": active}
+
+
+@router.get("/list")
+async def ops_list(db: AsyncSession = Depends(get_db)):
+    rows = (await db.execute(
+        select(Event.id, Event.name_en, Event.venue, Event.lifecycle_status, Event.start_date)
+        .order_by(Event.start_date.desc())
+        .limit(100)
+    )).all()
+    return {
+        "data": [
+            {"event_id": r.id, "task_name": r.name_en, "assigned_to": r.venue or "-", "status": r.lifecycle_status or "DRAFT"}
+            for r in rows
+        ]
+    }
 
 
 # ── Ops Dashboard ──────────────────────────────────────────────────
@@ -24,35 +50,47 @@ async def ops_dashboard(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(RequirePermission("event.read")),
 ):
-    today_count = await db.scalar(
-        select(func.count(Event.id)).where(
-            Event.lifecycle_status.in_(
-                [LifecycleStatus.IN_PROGRESS.value, LifecycleStatus.EXECUTED.value]
-            ),
-            Event.execution_date.isnot(None),
-            func.date(Event.execution_date) == func.current_date(),
+    today_count = (
+        await db.scalar(
+            select(func.count(Event.id)).where(
+                Event.lifecycle_status.in_(
+                    [LifecycleStatus.IN_PROGRESS.value, LifecycleStatus.EXECUTED.value]
+                ),
+                Event.execution_date.isnot(None),
+                func.date(Event.execution_date) == func.current_date(),
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    week_count = await db.scalar(
-        select(func.count(Event.id)).where(
-            Event.lifecycle_status == LifecycleStatus.CONFIRMED.value,
-            Event.execution_date.isnot(None),
+    week_count = (
+        await db.scalar(
+            select(func.count(Event.id)).where(
+                Event.lifecycle_status == LifecycleStatus.CONFIRMED.value,
+                Event.execution_date.isnot(None),
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    pending_briefings = await db.scalar(
-        select(func.count(EventOperation.id)).where(
-            EventOperation.briefing_completed == False
+    pending_briefings = (
+        await db.scalar(
+            select(func.count(EventOperation.id)).where(
+                not EventOperation.briefing_completed
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    missing_briefings = await db.scalar(
-        select(func.count(Event.id)).where(
-            Event.lifecycle_status == LifecycleStatus.CONFIRMED.value,
-            ~Event.id.in_(select(EventOperation.event_id)),
+    missing_briefings = (
+        await db.scalar(
+            select(func.count(Event.id)).where(
+                Event.lifecycle_status == LifecycleStatus.CONFIRMED.value,
+                ~Event.id.in_(select(EventOperation.event_id)),
+            )
         )
-    ) or 0
+        or 0
+    )
 
     resource_conflicts = 0
 
@@ -78,7 +116,9 @@ async def ops_dashboard(
                 "event_code": e.event_code,
                 "name_en": e.name_en,
                 "venue": e.venue,
-                "execution_date": e.execution_date.isoformat() if e.execution_date else None,
+                "execution_date": e.execution_date.isoformat()
+                if e.execution_date
+                else None,
                 "lifecycle_status": e.lifecycle_status,
                 "actual_pax": e.actual_pax,
             }
@@ -107,7 +147,9 @@ async def get_ops_briefing(
         "event_id": briefing.event_id,
         "ops_manager_id": briefing.ops_manager_id,
         "briefing_completed": briefing.briefing_completed,
-        "load_in_time": briefing.load_in_time.isoformat() if briefing.load_in_time else None,
+        "load_in_time": briefing.load_in_time.isoformat()
+        if briefing.load_in_time
+        else None,
         "sound_check_done": briefing.sound_check_done,
         "catering_final_count": briefing.catering_final_count,
         "run_sheet": briefing.run_sheet,
@@ -137,14 +179,26 @@ async def create_or_update_briefing(
         db.add(briefing)
 
     briefing.ops_manager_id = payload.get("ops_manager_id", briefing.ops_manager_id)
-    briefing.briefing_completed = payload.get("briefing_completed", briefing.briefing_completed)
+    briefing.briefing_completed = payload.get(
+        "briefing_completed", briefing.briefing_completed
+    )
     briefing.load_in_time = payload.get("load_in_time", briefing.load_in_time)
-    briefing.sound_check_done = payload.get("sound_check_done", briefing.sound_check_done)
-    briefing.catering_final_count = payload.get("catering_final_count", briefing.catering_final_count)
+    briefing.sound_check_done = payload.get(
+        "sound_check_done", briefing.sound_check_done
+    )
+    briefing.catering_final_count = payload.get(
+        "catering_final_count", briefing.catering_final_count
+    )
     briefing.run_sheet = payload.get("run_sheet", briefing.run_sheet)
-    briefing.post_event_notes = payload.get("post_event_notes", briefing.post_event_notes)
-    briefing.client_signatory_name = payload.get("client_signatory_name", briefing.client_signatory_name)
-    briefing.client_signature_path = payload.get("client_signature_path", briefing.client_signature_path)
+    briefing.post_event_notes = payload.get(
+        "post_event_notes", briefing.post_event_notes
+    )
+    briefing.client_signatory_name = payload.get(
+        "client_signatory_name", briefing.client_signatory_name
+    )
+    briefing.client_signature_path = payload.get(
+        "client_signature_path", briefing.client_signature_path
+    )
 
     await db.commit()
     await db.refresh(briefing)
@@ -212,9 +266,15 @@ async def submit_post_event_report(
         briefing = EventOperation(event_id=event_id)
         db.add(briefing)
 
-    briefing.post_event_notes = payload.get("post_event_notes", briefing.post_event_notes)
-    briefing.client_signatory_name = payload.get("client_signatory_name", briefing.client_signatory_name)
-    briefing.client_signature_path = payload.get("client_signature_path", briefing.client_signature_path)
+    briefing.post_event_notes = payload.get(
+        "post_event_notes", briefing.post_event_notes
+    )
+    briefing.client_signatory_name = payload.get(
+        "client_signatory_name", briefing.client_signatory_name
+    )
+    briefing.client_signature_path = payload.get(
+        "client_signature_path", briefing.client_signature_path
+    )
 
     event.actual_pax = payload.get("actual_pax", event.actual_pax)
     event.actual_cost = payload.get("actual_cost", event.actual_cost)
@@ -244,7 +304,10 @@ async def transition_lifecycle(
     new_status = payload.get("lifecycle_status", "")
     valid_statuses = [s.value for s in LifecycleStatus]
     if new_status not in valid_statuses:
-        raise HTTPException(400, detail=f"Invalid lifecycle status. Must be one of: {', '.join(valid_statuses)}")
+        raise HTTPException(
+            400,
+            detail=f"Invalid lifecycle status. Must be one of: {', '.join(valid_statuses)}",
+        )
 
     event.lifecycle_status = new_status
     if new_status == LifecycleStatus.IN_PROGRESS.value:

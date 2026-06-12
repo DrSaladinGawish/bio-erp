@@ -5,6 +5,7 @@ endpoints (extraction -> validation -> staging -> reconcile -> approve
 -> promote -> observe).  All methods take a sync DB session via
 ``Depends(get_db)`` and a token-based ``_get_current_user`` dep.
 """
+
 from __future__ import annotations
 
 import logging
@@ -22,17 +23,32 @@ from app.organs.incentivehouse_organ.db import get_db
 logger = logging.getLogger("incentivehouse_organ.legacy")
 
 # Legacy dev users for /v2/* routes (separate from JWT auth in sub_app.py)
+# NOTE: These routes are currently UNMOUNTED — mount_legacy_v2_routes() is never called.
+# REQUIRE env vars — no fallback passwords in source code.
 AUTH_USERS = {
-    "admin": {"password": os.getenv("IH_LEGACY_ADMIN_PASSWORD", "admin2026"), "role": "Admin"},
-    "accountant": {"password": "acc123", "role": "Accountant"},
-    "event_mgr": {"password": "evn123", "role": "EventManager"},
-    "viewer": {"password": "view123", "role": "Viewer"},
+    "admin": {
+        "password": os.environ["IH_LEGACY_ADMIN_PASSWORD"],
+        "role": "Admin",
+    },
+    "accountant": {
+        "password": os.environ["IH_LEGACY_ACCOUNTANT_PASSWORD"],
+        "role": "Accountant",
+    },
+    "event_mgr": {
+        "password": os.environ["IH_LEGACY_EVENTMGR_PASSWORD"],
+        "role": "EventManager",
+    },
+    "viewer": {
+        "password": os.environ["IH_LEGACY_VIEWER_PASSWORD"],
+        "role": "Viewer",
+    },
 }
 
 
 # ============================================================================
 # Pydantic request models
 # ============================================================================
+
 
 class LoginRequest(BaseModel):
     username: str
@@ -81,6 +97,7 @@ class ObserveRequest(BaseModel):
 # Auth dependency
 # ============================================================================
 
+
 def _get_current_user(token: str = Query(...)):
     for username, info in AUTH_USERS.items():
         if username in token:
@@ -91,6 +108,7 @@ def _get_current_user(token: str = Query(...)):
 # ============================================================================
 # Mount points
 # ============================================================================
+
 
 def mount_legacy_v2_routes(app: FastAPI) -> None:
 
@@ -112,15 +130,22 @@ def mount_legacy_v2_routes(app: FastAPI) -> None:
             from app.organs.incentivehouse_organ.extraction_engine import (
                 extract_module_data,
             )
+
             result = extract_module_data(req.module, req.source_file, req.dry_run)
         except Exception as exc:
             result = {"status": "ERROR", "error": str(exc)}
         try:
             row = db.execute(
-                text("INSERT INTO extraction_log (module, source_file, user_id, status, extracted_at) VALUES (:m, :sf, :u, :s, :ts)"),
-                {"m": req.module, "sf": req.source_file or "default",
-                 "u": user["username"], "s": result.get("status", "UNKNOWN"),
-                 "ts": datetime.now().isoformat()},
+                text(
+                    "INSERT INTO extraction_log (module, source_file, user_id, status, extracted_at) VALUES (:m, :sf, :u, :s, :ts)"
+                ),
+                {
+                    "m": req.module,
+                    "sf": req.source_file or "default",
+                    "u": user["username"],
+                    "s": result.get("status", "UNKNOWN"),
+                    "ts": datetime.now().isoformat(),
+                },
             )
             db.commit()
             result["extract_id"] = row.lastrowid or 0
@@ -143,6 +168,7 @@ def mount_legacy_v2_routes(app: FastAPI) -> None:
             from app.organs.incentivehouse_organ.extraction_engine import (
                 extract_master_data,
             )
+
             result = extract_master_data(req.source_file or "Data_Base_Mtbls.xlsx")
         except Exception as exc:
             result = {"status": "ERROR", "error": str(exc)}
@@ -163,14 +189,26 @@ def mount_legacy_v2_routes(app: FastAPI) -> None:
             if not row:
                 raise HTTPException(status_code=404, detail="Extract record not found")
             cursor = db.execute(
-                text("INSERT INTO validation_log (extract_id, user_id, status, quality_score, validated_at) VALUES (:e, :u, :s, :q, :t)"),
-                {"e": req.extract_id, "u": user["username"], "s": "VALIDATED",
-                 "q": 95.5, "t": datetime.now().isoformat()},
+                text(
+                    "INSERT INTO validation_log (extract_id, user_id, status, quality_score, validated_at) VALUES (:e, :u, :s, :q, :t)"
+                ),
+                {
+                    "e": req.extract_id,
+                    "u": user["username"],
+                    "s": "VALIDATED",
+                    "q": 95.5,
+                    "t": datetime.now().isoformat(),
+                },
             )
             db.commit()
-            return {"stage": "VALIDATE", "status": "SUCCESS",
-                    "validate_id": cursor.lastrowid, "extract_id": req.extract_id,
-                    "quality_score": 95.5, "user": user["username"]}
+            return {
+                "stage": "VALIDATE",
+                "status": "SUCCESS",
+                "validate_id": cursor.lastrowid,
+                "extract_id": req.extract_id,
+                "quality_score": 95.5,
+                "user": user["username"],
+            }
         except HTTPException:
             raise
         except Exception as exc:
@@ -192,18 +230,35 @@ def mount_legacy_v2_routes(app: FastAPI) -> None:
                 {"id": req.validate_id},
             ).fetchone()
             if not row:
-                raise HTTPException(status_code=404, detail="Validation record not found")
-            snapshot_id = f"snap_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{req.validate_id}"
+                raise HTTPException(
+                    status_code=404, detail="Validation record not found"
+                )
+            snapshot_id = (
+                f"snap_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{req.validate_id}"
+            )
             cursor = db.execute(
-                text("INSERT INTO staging_log (validate_id, target_table, user_id, snapshot_id, status, staged_at) VALUES (:v, :t, :u, :s, :st, :ts)"),
-                {"v": req.validate_id, "t": req.target_table, "u": user["username"],
-                 "s": snapshot_id, "st": "STAGED", "ts": datetime.now().isoformat()},
+                text(
+                    "INSERT INTO staging_log (validate_id, target_table, user_id, snapshot_id, status, staged_at) VALUES (:v, :t, :u, :s, :st, :ts)"
+                ),
+                {
+                    "v": req.validate_id,
+                    "t": req.target_table,
+                    "u": user["username"],
+                    "s": snapshot_id,
+                    "st": "STAGED",
+                    "ts": datetime.now().isoformat(),
+                },
             )
             db.commit()
-            return {"stage": "STAGE", "status": "SUCCESS",
-                    "stage_id": cursor.lastrowid, "validate_id": req.validate_id,
-                    "snapshot_id": snapshot_id, "target_table": req.target_table,
-                    "user": user["username"]}
+            return {
+                "stage": "STAGE",
+                "status": "SUCCESS",
+                "stage_id": cursor.lastrowid,
+                "validate_id": req.validate_id,
+                "snapshot_id": snapshot_id,
+                "target_table": req.target_table,
+                "user": user["username"],
+            }
         except HTTPException:
             raise
         except Exception as exc:
@@ -226,24 +281,43 @@ def mount_legacy_v2_routes(app: FastAPI) -> None:
             except Exception:
                 total = 0
             try:
-                reconciled = db.execute(
-                    text(f"SELECT COUNT(*) FROM {table} WHERE _module = :m"),
-                    {"m": req.module},
-                ).scalar() or 0
+                reconciled = (
+                    db.execute(
+                        text(f"SELECT COUNT(*) FROM {table} WHERE _module = :m"),
+                        {"m": req.module},
+                    ).scalar()
+                    or 0
+                )
             except Exception:
                 reconciled = 0
             cursor = db.execute(
-                text("INSERT INTO reconcile_log (stage_id, module, user_id, status, total_records, reconciled_count, mismatch_count, unmatched_count, reconciled_at) VALUES (:s, :m, :u, :st, :tr, :rc, :mm, :um, :ts)"),
-                {"s": req.stage_id, "m": req.module, "u": user["username"],
-                 "st": "RECONCILED", "tr": total, "rc": reconciled, "mm": 14,
-                 "um": max(0, total - reconciled), "ts": datetime.now().isoformat()},
+                text(
+                    "INSERT INTO reconcile_log (stage_id, module, user_id, status, total_records, reconciled_count, mismatch_count, unmatched_count, reconciled_at) VALUES (:s, :m, :u, :st, :tr, :rc, :mm, :um, :ts)"
+                ),
+                {
+                    "s": req.stage_id,
+                    "m": req.module,
+                    "u": user["username"],
+                    "st": "RECONCILED",
+                    "tr": total,
+                    "rc": reconciled,
+                    "mm": 14,
+                    "um": max(0, total - reconciled),
+                    "ts": datetime.now().isoformat(),
+                },
             )
             db.commit()
-            return {"stage": "RECONCILE", "status": "SUCCESS",
-                    "recon_id": cursor.lastrowid, "stage_id": req.stage_id,
-                    "total_records": total, "reconciled_count": reconciled,
-                    "mismatch_count": 14, "unmatched_count": max(0, total - reconciled),
-                    "user": user["username"]}
+            return {
+                "stage": "RECONCILE",
+                "status": "SUCCESS",
+                "recon_id": cursor.lastrowid,
+                "stage_id": req.stage_id,
+                "total_records": total,
+                "reconciled_count": reconciled,
+                "mismatch_count": 14,
+                "unmatched_count": max(0, total - reconciled),
+                "user": user["username"],
+            }
         except Exception as exc:
             try:
                 db.rollback()
@@ -259,15 +333,27 @@ def mount_legacy_v2_routes(app: FastAPI) -> None:
     ):
         try:
             cursor = db.execute(
-                text("INSERT INTO approval_log (recon_id, approver_id, approval_level, status, approved_at) VALUES (:r, :a, :l, :s, :t)"),
-                {"r": req.recon_id, "a": user["username"], "l": req.approval_level,
-                 "s": "APPROVED", "t": datetime.now().isoformat()},
+                text(
+                    "INSERT INTO approval_log (recon_id, approver_id, approval_level, status, approved_at) VALUES (:r, :a, :l, :s, :t)"
+                ),
+                {
+                    "r": req.recon_id,
+                    "a": user["username"],
+                    "l": req.approval_level,
+                    "s": "APPROVED",
+                    "t": datetime.now().isoformat(),
+                },
             )
             db.commit()
-            return {"stage": "APPROVE", "status": "SUCCESS",
-                    "approve_id": cursor.lastrowid, "recon_id": req.recon_id,
-                    "approval_level": req.approval_level, "approver": user["username"],
-                    "auto_approved": req.approval_level == "auto"}
+            return {
+                "stage": "APPROVE",
+                "status": "SUCCESS",
+                "approve_id": cursor.lastrowid,
+                "recon_id": req.recon_id,
+                "approval_level": req.approval_level,
+                "approver": user["username"],
+                "auto_approved": req.approval_level == "auto",
+            }
         except Exception as exc:
             try:
                 db.rollback()
@@ -282,17 +368,32 @@ def mount_legacy_v2_routes(app: FastAPI) -> None:
         db: Session = Depends(get_db),
     ):
         try:
-            rb = req.rollback_token or f"rb_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{req.approve_id}"
+            rb = (
+                req.rollback_token
+                or f"rb_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{req.approve_id}"
+            )
             cursor = db.execute(
-                text("INSERT INTO promotion_log (approve_id, user_id, rollback_token, status, promoted_at) VALUES (:a, :u, :r, :s, :t)"),
-                {"a": req.approve_id, "u": user["username"], "r": rb,
-                 "s": "PROMOTED", "t": datetime.now().isoformat()},
+                text(
+                    "INSERT INTO promotion_log (approve_id, user_id, rollback_token, status, promoted_at) VALUES (:a, :u, :r, :s, :t)"
+                ),
+                {
+                    "a": req.approve_id,
+                    "u": user["username"],
+                    "r": rb,
+                    "s": "PROMOTED",
+                    "t": datetime.now().isoformat(),
+                },
             )
             db.commit()
-            return {"stage": "PROMOTE", "status": "SUCCESS",
-                    "promote_id": cursor.lastrowid, "approve_id": req.approve_id,
-                    "rollback_token": rb, "user": user["username"],
-                    "verification_status": "VERIFIED"}
+            return {
+                "stage": "PROMOTE",
+                "status": "SUCCESS",
+                "promote_id": cursor.lastrowid,
+                "approve_id": req.approve_id,
+                "rollback_token": rb,
+                "user": user["username"],
+                "verification_status": "VERIFIED",
+            }
         except Exception as exc:
             try:
                 db.rollback()
@@ -309,15 +410,27 @@ def mount_legacy_v2_routes(app: FastAPI) -> None:
         try:
             metrics = '["latency","throughput","error_rate"]'
             cursor = db.execute(
-                text("INSERT INTO observe_log (promote_id, user_id, status, metrics, observed_at) VALUES (:p, :u, :s, :m, :t)"),
-                {"p": req.promote_id, "u": user["username"], "s": "OBSERVED",
-                 "m": metrics, "t": datetime.now().isoformat()},
+                text(
+                    "INSERT INTO observe_log (promote_id, user_id, status, metrics, observed_at) VALUES (:p, :u, :s, :m, :t)"
+                ),
+                {
+                    "p": req.promote_id,
+                    "u": user["username"],
+                    "s": "OBSERVED",
+                    "m": metrics,
+                    "t": datetime.now().isoformat(),
+                },
             )
             db.commit()
-            return {"stage": "OBSERVE", "status": "SUCCESS",
-                    "observe_id": cursor.lastrowid, "promote_id": req.promote_id,
-                    "metrics": ["latency", "throughput", "error_rate"],
-                    "user": user["username"], "alert_count": 0}
+            return {
+                "stage": "OBSERVE",
+                "status": "SUCCESS",
+                "observe_id": cursor.lastrowid,
+                "promote_id": req.promote_id,
+                "metrics": ["latency", "throughput", "error_rate"],
+                "user": user["username"],
+                "alert_count": 0,
+            }
         except Exception as exc:
             try:
                 db.rollback()
@@ -328,12 +441,23 @@ def mount_legacy_v2_routes(app: FastAPI) -> None:
     @app.get("/v2/status")
     def v2_status(user: dict = Depends(_get_current_user)):
         try:
-            from app.organs.incentivehouse_organ.extraction_engine import get_table_counts
+            from app.organs.incentivehouse_organ.extraction_engine import (
+                get_table_counts,
+            )
+
             counts = get_table_counts()
         except Exception:
             counts = {}
-        return {"status": "OPERATIONAL", "version": "2.2.2",
-                "user": user["username"], "role": user["role"],
-                "timestamp": datetime.now().isoformat(), "records": counts,
-                "server": {"port": 8001, "auth_method": "query_param",
-                           "protocol_version": "2.1"}}
+        return {
+            "status": "OPERATIONAL",
+            "version": "2.2.2",
+            "user": user["username"],
+            "role": user["role"],
+            "timestamp": datetime.now().isoformat(),
+            "records": counts,
+            "server": {
+                "port": 8001,
+                "auth_method": "query_param",
+                "protocol_version": "2.1",
+            },
+        }

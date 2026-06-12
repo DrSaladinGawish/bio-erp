@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 from sqlalchemy import select, func
 from app.database import AsyncSessionLocal
 from app.models.eta_queue import ETASubmissionQueue

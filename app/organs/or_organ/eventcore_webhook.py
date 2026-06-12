@@ -8,12 +8,11 @@ and returns results. Prescriptions are pushed via the P2 sender endpoint.
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.database import get_db, get_async_session_factory
+from app.database import get_async_session_factory
 from app.organs.or_organ.auto_trigger import AutoTriggerEngine
 from app.organs.or_organ.prescription_sender import push_to_eventcore, PushRequest
 
@@ -42,9 +41,13 @@ class TriggerResult(BaseModel):
 
 
 @router.post("/job", response_model=TriggerResult)
-async def on_job_created(event: JobEvent, x_bridge_token: str = Header(alias="X-Bridge-Token")):
+async def on_job_created(
+    event: JobEvent, x_bridge_token: str = Header(alias="X-Bridge-Token")
+):
     if x_bridge_token != settings.BIO_ERP_BRIDGE_TOKEN:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid bridge token")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid bridge token"
+        )
 
     logger.info("P4 webhook: job %s created — triggering OR analysis", event.job_id)
 

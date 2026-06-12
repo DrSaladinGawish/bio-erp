@@ -23,7 +23,9 @@ class ERPMigrator:
             json_type = "TEXT"
             ts_type = "TEXT"
             default_ts = "CURRENT_TIMESTAMP"
-            idx_exists = "SELECT name FROM sqlite_master WHERE type='index' AND name=:name"
+            idx_exists = (
+                "SELECT name FROM sqlite_master WHERE type='index' AND name=:name"
+            )
         else:
             pk = "SERIAL PRIMARY KEY"
             varchar = "VARCHAR"
@@ -34,147 +36,156 @@ class ERPMigrator:
             idx_exists = "SELECT 1 FROM pg_indexes WHERE indexname=:name"
 
         def col(t: str) -> str:
-            if t == "pk": return pk
-            if t == "v50": return f"{varchar}(50)"
-            if t == "v20": return f"{varchar}(20)"
-            if t == "v30": return f"{varchar}(30)"
-            if t == "v10": return f"{varchar}(10)"
-            if t == "v3": return f"{varchar}(3)"
-            if t == "num": return numeric
-            if t == "json": return json_type
-            if t == "ts": return ts_type
+            if t == "pk":
+                return pk
+            if t == "v50":
+                return f"{varchar}(50)"
+            if t == "v20":
+                return f"{varchar}(20)"
+            if t == "v30":
+                return f"{varchar}(30)"
+            if t == "v10":
+                return f"{varchar}(10)"
+            if t == "v3":
+                return f"{varchar}(3)"
+            if t == "num":
+                return numeric
+            if t == "json":
+                return json_type
+            if t == "ts":
+                return ts_type
             return t
 
         tables_sql = {
             "bnk_staging": f"""
                 CREATE TABLE IF NOT EXISTS bnk_staging (
-                    id {col('pk')},
+                    id {col("pk")},
                     source_row_number INTEGER,
-                    transaction_id {col('v50')},
+                    transaction_id {col("v50")},
                     transaction_date TEXT,
-                    account_code {col('v20')},
+                    account_code {col("v20")},
                     description TEXT,
-                    debit_amount {col('num')},
-                    credit_amount {col('num')},
-                    currency {col('v3')},
-                    exchange_rate {col('num')},
-                    amount_egp {col('num')},
+                    debit_amount {col("num")},
+                    credit_amount {col("num")},
+                    currency {col("v3")},
+                    exchange_rate {col("num")},
+                    amount_egp {col("num")},
                     sub_led_code INTEGER,
                     pnr_id INTEGER,
                     client_id INTEGER,
-                    transaction_type {col('v30')},
-                    cost_center {col('v50')},
-                    reference_number {col('v50')},
-                    validation_status {col('v20')},
-                    validation_errors {col('json')},
-                    migrated_at {col('ts')},
-                    created_at {col('ts')} DEFAULT {default_ts}
+                    transaction_type {col("v30")},
+                    cost_center {col("v50")},
+                    reference_number {col("v50")},
+                    validation_status {col("v20")},
+                    validation_errors {col("json")},
+                    migrated_at {col("ts")},
+                    created_at {col("ts")} DEFAULT {default_ts}
                 );
             """,
             "sal_staging": f"""
                 CREATE TABLE IF NOT EXISTS sal_staging (
-                    id {col('pk')},
+                    id {col("pk")},
                     source_row_number INTEGER,
-                    transaction_id {col('v50')},
+                    transaction_id {col("v50")},
                     transaction_date TEXT,
-                    account_code {col('v20')},
+                    account_code {col("v20")},
                     description TEXT,
-                    debit_amount {col('num')},
-                    credit_amount {col('num')},
-                    currency {col('v3')},
-                    exchange_rate {col('num')},
-                    amount_egp {col('num')},
+                    debit_amount {col("num")},
+                    credit_amount {col("num")},
+                    currency {col("v3")},
+                    exchange_rate {col("num")},
+                    amount_egp {col("num")},
                     sub_led_code INTEGER,
                     pnr_id INTEGER,
                     client_id INTEGER,
-                    tax_code {col('v10')},
-                    tax_amount {col('num')},
-                    net_amount {col('num')},
-                    cost_center {col('v50')},
-                    transaction_type {col('v20')},
-                    validation_status {col('v20')},
-                    validation_errors {col('json')},
-                    migrated_at {col('ts')},
-                    created_at {col('ts')} DEFAULT {default_ts}
+                    tax_code {col("v10")},
+                    tax_amount {col("num")},
+                    net_amount {col("num")},
+                    cost_center {col("v50")},
+                    transaction_type {col("v20")},
+                    validation_status {col("v20")},
+                    validation_errors {col("json")},
+                    migrated_at {col("ts")},
+                    created_at {col("ts")} DEFAULT {default_ts}
                 );
             """,
             "pur_staging": f"""
                 CREATE TABLE IF NOT EXISTS pur_staging (
-                    id {col('pk')},
+                    id {col("pk")},
                     source_row_number INTEGER,
-                    transaction_id {col('v50')},
+                    transaction_id {col("v50")},
                     transaction_date TEXT,
                     due_date TEXT,
-                    account_code {col('v20')},
+                    account_code {col("v20")},
                     description TEXT,
-                    debit_amount {col('num')},
-                    credit_amount {col('num')},
-                    currency {col('v3')},
-                    exchange_rate {col('num')},
-                    amount_egp {col('num')},
+                    debit_amount {col("num")},
+                    credit_amount {col("num")},
+                    currency {col("v3")},
+                    exchange_rate {col("num")},
+                    amount_egp {col("num")},
                     sub_led_code INTEGER,
                     pnr_id INTEGER,
                     client_id INTEGER,
                     supplier_id INTEGER,
-                    payment_terms {col('v20')},
-                    cost_center {col('v50')},
-                    transaction_type {col('v20')},
-                    validation_status {col('v20')},
-                    validation_errors {col('json')},
-                    migrated_at {col('ts')},
-                    created_at {col('ts')} DEFAULT {default_ts}
+                    payment_terms {col("v20")},
+                    cost_center {col("v50")},
+                    transaction_type {col("v20")},
+                    validation_status {col("v20")},
+                    validation_errors {col("json")},
+                    migrated_at {col("ts")},
+                    created_at {col("ts")} DEFAULT {default_ts}
                 );
             """,
             "evn_staging": f"""
                 CREATE TABLE IF NOT EXISTS evn_staging (
-                    id {col('pk')},
+                    id {col("pk")},
                     source_row_number INTEGER,
-                    transaction_id {col('v50')},
+                    transaction_id {col("v50")},
                     transaction_date TEXT,
-                    event_id {col('v50')},
-                    account_code {col('v20')},
+                    event_id {col("v50")},
+                    account_code {col("v20")},
                     description TEXT,
-                    debit_amount {col('num')},
-                    credit_amount {col('num')},
-                    currency {col('v3')},
-                    exchange_rate {col('num')},
-                    amount_egp {col('num')},
+                    debit_amount {col("num")},
+                    credit_amount {col("num")},
+                    currency {col("v3")},
+                    exchange_rate {col("num")},
+                    amount_egp {col("num")},
                     sub_led_code INTEGER,
                     pnr_id INTEGER,
                     client_id INTEGER,
-                    cost_center {col('v50')},
-                    transaction_type {col('v20')},
-                    project_id {col('v50')},
-                    reference_number {col('v50')},
-                    validation_status {col('v20')},
-                    validation_errors {col('json')},
-                    migrated_at {col('ts')},
-                    created_at {col('ts')} DEFAULT {default_ts}
+                    cost_center {col("v50")},
+                    transaction_type {col("v20")},
+                    project_id {col("v50")},
+                    reference_number {col("v50")},
+                    validation_status {col("v20")},
+                    validation_errors {col("json")},
+                    migrated_at {col("ts")},
+                    created_at {col("ts")} DEFAULT {default_ts}
                 );
             """,
             "env_staging": f"""
                 CREATE TABLE IF NOT EXISTS env_staging (
-                    id {col('pk')},
+                    id {col("pk")},
                     source_row_number INTEGER,
-                    transaction_id {col('v50')},
+                    transaction_id {col("v50")},
                     transaction_date TEXT,
-                    account_code {col('v20')},
+                    account_code {col("v20")},
                     description TEXT,
-                    debit_amount {col('num')},
-                    credit_amount {col('num')},
-                    currency {col('v3')},
-                    exchange_rate {col('num')},
-                    amount_egp {col('num')},
+                    debit_amount {col("num")},
+                    credit_amount {col("num")},
+                    currency {col("v3")},
+                    exchange_rate {col("num")},
+                    amount_egp {col("num")},
                     sub_led_code INTEGER,
                     pnr_id INTEGER,
                     client_id INTEGER,
-                    cost_center {col('v50')},
-                    transaction_type {col('v20')},
-                    reference_number {col('v50')},
-                    validation_status {col('v20')},
-                    validation_errors {col('json')},
-                    migrated_at {col('ts')},
-                    created_at {col('ts')} DEFAULT {default_ts}
+                    cost_center {col("v50")},
+                    transaction_type {col("v20")},
+                    reference_number {col("v50")},
+                    validation_status {col("v20")},
+                    validation_errors {col("json")},
+                    migrated_at {col("ts")},
+                    created_at {col("ts")} DEFAULT {default_ts}
                 );
             """,
         }
@@ -182,16 +193,24 @@ class ERPMigrator:
             for table_name, ddl in tables_sql.items():
                 conn.execute(text(ddl.strip()))
                 index_defs = {
-                    "bnk_staging": [("idx_bnk_tid", "transaction_id"), ("idx_bnk_date", "transaction_date")],
+                    "bnk_staging": [
+                        ("idx_bnk_tid", "transaction_id"),
+                        ("idx_bnk_date", "transaction_date"),
+                    ],
                     "sal_staging": [("idx_sal_tid", "transaction_id")],
                     "pur_staging": [("idx_pur_tid", "transaction_id")],
-                    "evn_staging": [("idx_evn_tid", "transaction_id"), ("idx_evn_event", "event_id")],
+                    "evn_staging": [
+                        ("idx_evn_tid", "transaction_id"),
+                        ("idx_evn_event", "event_id"),
+                    ],
                     "env_staging": [("idx_env_tid", "transaction_id")],
                 }
                 for idx_name, idx_col in index_defs.get(table_name, []):
                     result = conn.execute(text(idx_exists), {"name": idx_name})
                     if result.fetchone() is None:
-                        conn.execute(text(f"CREATE INDEX {idx_name} ON {table_name}({idx_col})"))
+                        conn.execute(
+                            text(f"CREATE INDEX {idx_name} ON {table_name}({idx_col})")
+                        )
             conn.commit()
 
     def stage_data(self, df: pd.DataFrame, module: str, errors: list) -> Dict[str, Any]:
@@ -211,7 +230,11 @@ class ERPMigrator:
         error_rows = {e["row_index"] for e in errors if e["severity"] == "ERROR"}
         warning_rows = {e["row_index"] for e in errors}
         df_out["validation_status"] = df_out.index.to_series().apply(
-            lambda i: "FAIL" if i in error_rows else ("WARNING" if i in warning_rows else "PASS")
+            lambda i: (
+                "FAIL"
+                if i in error_rows
+                else ("WARNING" if i in warning_rows else "PASS")
+            )
         )
         df_out["validation_errors"] = df_out.index.to_series().apply(
             lambda i: json.dumps([e for e in errors if e["row_index"] == i])
@@ -273,7 +296,9 @@ class ERPMigrator:
         mapped_columns = [v for k, v in col_map.items() if k in df_out.columns]
         placeholders = ",".join([f":{c}" for c in mapped_columns])
         col_list = ",".join(mapped_columns)
-        insert_sql = text(f"INSERT INTO {table_name} ({col_list}) VALUES ({placeholders})")
+        insert_sql = text(
+            f"INSERT INTO {table_name} ({col_list}) VALUES ({placeholders})"
+        )
         with self.engine.connect() as conn:
             for start in range(0, total_rows, self.batch_size):
                 end = min(start + self.batch_size, total_rows)
@@ -312,8 +337,11 @@ class ERPMigrator:
 
     def check_existing_ids(self, df: pd.DataFrame, module: str) -> bool:
         table_map = {
-            "Bnk": "bnk_staging", "Sal": "sal_staging", "Pur": "pur_staging",
-            "Evn": "evn_staging", "Env": "env_staging",
+            "Bnk": "bnk_staging",
+            "Sal": "sal_staging",
+            "Pur": "pur_staging",
+            "Evn": "evn_staging",
+            "Env": "env_staging",
         }
         table_name = table_map.get(module)
         if not table_name:
@@ -327,7 +355,9 @@ class ERPMigrator:
             placeholders = ",".join([f":id{i}" for i in range(len(ids))])
             params = {f"id{i}": v for i, v in enumerate(ids)}
             result = conn.execute(
-                text(f"SELECT DISTINCT transaction_id FROM {table_name} WHERE transaction_id IN ({placeholders})"),
+                text(
+                    f"SELECT DISTINCT transaction_id FROM {table_name} WHERE transaction_id IN ({placeholders})"
+                ),
                 params,
             )
             existing = {r[0] for r in result.fetchall()}
@@ -335,14 +365,19 @@ class ERPMigrator:
 
     def count_existing(self, module: str) -> set:
         table_map = {
-            "Bnk": "bnk_staging", "Sal": "sal_staging", "Pur": "pur_staging",
-            "Evn": "evn_staging", "Env": "env_staging",
+            "Bnk": "bnk_staging",
+            "Sal": "sal_staging",
+            "Pur": "pur_staging",
+            "Evn": "evn_staging",
+            "Env": "env_staging",
         }
         table_name = table_map.get(module)
         if not table_name:
             return set()
         with self.engine.connect() as conn:
-            result = conn.execute(text(f"SELECT DISTINCT transaction_id FROM {table_name}"))
+            result = conn.execute(
+                text(f"SELECT DISTINCT transaction_id FROM {table_name}")
+            )
             return {r[0] for r in result.fetchall()}
 
     def generate_audit_report(self) -> Dict[str, Any]:

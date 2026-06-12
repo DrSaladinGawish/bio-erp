@@ -1,4 +1,4 @@
-﻿import os
+import os
 import time
 from functools import wraps
 from fastapi import HTTPException, Request

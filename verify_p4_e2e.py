@@ -3,6 +3,7 @@
 P4 + P2 End-to-End Verification Script
 Tests: P4 webhook, OR engines, P2 reverse flow, EventCore storage
 """
+
 import json
 import sys
 import time
@@ -15,6 +16,7 @@ TOKEN = "ec-bridge-token-dev"
 PASS = 0
 FAIL = 0
 
+
 def check(label, ok, detail=""):
     global PASS, FAIL
     status = "PASS" if ok else "FAIL"
@@ -24,6 +26,7 @@ def check(label, ok, detail=""):
         FAIL += 1
     print(f"  [{status}] {label}" + (f" — {detail}" if detail else ""))
 
+
 def json_req(url, method="GET", data=None, headers=None, timeout=15):
     h = {"Content-Type": "application/json"}
     if headers:
@@ -32,6 +35,7 @@ def json_req(url, method="GET", data=None, headers=None, timeout=15):
     req = urllib.request.Request(url, data=body, headers=h, method=method)
     resp = urllib.request.urlopen(req, timeout=timeout)
     return json.loads(resp.read())
+
 
 print("=" * 60)
 print("  P4+P2 END-TO-END VERIFICATION REPORT")
@@ -49,9 +53,12 @@ except Exception as e:
 
 # 1.2 Bad token → 403
 try:
-    json_req(f"{BIO_BASE}/api/v1/or/auto-trigger/job", "POST",
-             {"job_id": 1, "title": "x"},
-             {"X-Bridge-Token": "wrong-token"})
+    json_req(
+        f"{BIO_BASE}/api/v1/or/auto-trigger/job",
+        "POST",
+        {"job_id": 1, "title": "x"},
+        {"X-Bridge-Token": "wrong-token"},
+    )
     check("Auth: bad token", False, "Should have been 403")
 except urllib.error.HTTPError as e:
     check("Auth: bad token", e.code == 403, f"Got {e.code}")
@@ -61,14 +68,21 @@ except Exception as e:
 # 1.3 Trigger OR analysis (non-existent event)
 t0 = time.time()
 try:
-    d = json_req(f"{BIO_BASE}/api/v1/or/auto-trigger/job", "POST",
-                 {"job_id": 999999, "title": "Verify", "client_id": 1},
-                 {"X-Bridge-Token": TOKEN}, timeout=30)
+    d = json_req(
+        f"{BIO_BASE}/api/v1/or/auto-trigger/job",
+        "POST",
+        {"job_id": 999999, "title": "Verify", "client_id": 1},
+        {"X-Bridge-Token": TOKEN},
+        timeout=30,
+    )
     elapsed = time.time() - t0
     ok = d.get("status") == "completed"
     check("POST /auto-trigger/job", ok, f"status={d['status']}, {elapsed:.2f}s")
-    check("Prescriptions pushed", d.get("prescriptions_pushed", -1) >= 0,
-          f"pushed={d['prescriptions_pushed']}")
+    check(
+        "Prescriptions pushed",
+        d.get("prescriptions_pushed", -1) >= 0,
+        f"pushed={d['prescriptions_pushed']}",
+    )
 except Exception as e:
     check("POST /auto-trigger/job", False, str(e))
 
@@ -77,17 +91,22 @@ print("\n--- PART 2: P2 Reverse Flow (Bio-ERP -> EventCore) ---")
 
 # 2.1 Push OR results
 try:
-    d = json_req(f"{BIO_BASE}/api/v1/reverse-flow/push/e2e-test", "POST", {
-        "job_id": "e2e-test",
-        "analysis_type": "lp_optimization",
-        "or_score": 0.912,
-        "sensitivity_min": 0.88,
-        "sensitivity_max": 0.94,
-        "recommendations": ["Optimal allocation", "Reduce waste"],
-        "generated_at": "2026-05-30T12:00:00",
-        "source_module": "or_erp",
-        "source_url": "http://localhost:8000/api/v1/or/"
-    }, timeout=30)
+    d = json_req(
+        f"{BIO_BASE}/api/v1/reverse-flow/push/e2e-test",
+        "POST",
+        {
+            "job_id": "e2e-test",
+            "analysis_type": "lp_optimization",
+            "or_score": 0.912,
+            "sensitivity_min": 0.88,
+            "sensitivity_max": 0.94,
+            "recommendations": ["Optimal allocation", "Reduce waste"],
+            "generated_at": "2026-05-30T12:00:00",
+            "source_module": "or_erp",
+            "source_url": "http://localhost:8000/api/v1/or/",
+        },
+        timeout=30,
+    )
     ok = d.get("success") and d.get("eventcore_status") == 200
     check("Push OR results to EventCore", ok, f"eventcore={d.get('eventcore_status')}")
 except Exception as e:
@@ -97,8 +116,11 @@ except Exception as e:
 try:
     d = json_req(f"{EC_BASE}/api/v1/jobs/e2e-test/or-insights")
     ok = d.get("has_data") and d.get("insights_count", 0) > 0
-    check("EventCore stored OR insight", ok,
-          f"count={d.get('insights_count')}, score={d.get('latest',{}).get('or_score')}")
+    check(
+        "EventCore stored OR insight",
+        ok,
+        f"count={d.get('insights_count')}, score={d.get('latest', {}).get('or_score')}",
+    )
 except Exception as e:
     check("EventCore stored OR insight", False, str(e))
 

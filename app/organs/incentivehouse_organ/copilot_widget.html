@@ -1,0 +1,67 @@
+<!--
+  Co-Pilot Widget — IncentiveHouse ERP
+
+  Include this in any form template:
+  {% include 'components/copilot_widget.html' %}
+
+  The panel auto-detects form type from data attributes and
+  provides contextual smart assistance.
+-->
+
+<div id="copilot-widget-anchor"></div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ── Configuration ──────────────────────────────────────────────
+    window.COPILOT_CONFIG = window.COPILOT_CONFIG || {};
+
+    var CONFIG = {
+        apiBase: window.COPILOT_CONFIG.apiBase || '/api/v1/copilot',
+        userRole: window.COPILOT_CONFIG.userRole || 'user',
+        formType: document.body.dataset.formType || 'dashboard',
+        entityId: document.body.dataset.entityId || null,
+        theme: window.COPILOT_CONFIG.theme || 'dark',
+        position: window.COPILOT_CONFIG.position || 'bottom-right',
+        autoRefresh: window.COPILOT_CONFIG.autoRefresh !== false,
+        refreshInterval: window.COPILOT_CONFIG.refreshInterval || 30000,
+    };
+
+    // ── Detect form type from URL if not set ──────────────────────
+    if (!CONFIG.formType || CONFIG.formType === 'dashboard') {
+        var path = window.location.pathname;
+        if (path.includes('/event') || path.includes('/events')) {
+            CONFIG.formType = 'event';
+        } else if (path.includes('/po') || path.includes('/purchase')) {
+            CONFIG.formType = 'po';
+        } else if (path.includes('/recon') || path.includes('/bank')) {
+            CONFIG.formType = 'recon';
+        } else if (path.includes('/invoice') || path.includes('/billing')) {
+            CONFIG.formType = 'invoice';
+        } else if (path.includes('/staff') || path.includes('/employee')) {
+            CONFIG.formType = 'staff';
+        } else if (path.includes('/report') || path.includes('/analysis')) {
+            CONFIG.formType = 'report';
+        }
+    }
+
+    // ── Detect entity ID from URL ─────────────────────────────────
+    if (!CONFIG.entityId) {
+        var match = window.location.pathname.match(/\/(\d+)(?:\/|$)/);
+        if (match) {
+            CONFIG.entityId = match[1];
+        }
+    }
+
+    // ── Expose config globally ────────────────────────────────────
+    window.COPILOT_CONFIG = CONFIG;
+
+    // ── Log initialization ──────────────────────────────────────────
+    console.log('🤖 Co-Pilot Widget initialized:', {
+        formType: CONFIG.formType,
+        entityId: CONFIG.entityId,
+        userRole: CONFIG.userRole,
+    });
+})();
+</script>

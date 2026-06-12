@@ -2,24 +2,26 @@
 Protocol Runner — Incentive House ERP
 Orchestrates Gate 1 (Agent) → Gate 2 (OR Evaluation) → Gate 3 (Surgery).
 """
+
 import logging
-from dataclasses import asdict
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai_ingest.protocols.agent_protocol import (
-    AIAgentProtocol, HallucinationError, IncitationError, OmissionError,
+    AIAgentProtocol,
+    HallucinationError,
+    IncitationError,
+    OmissionError,
 )
 from app.ai_ingest.protocols.or_evaluation import OREvaluationProtocol
-from app.ai_ingest.protocols.surgery_protocol import SurgeryProtocol, surgical_post_transaction
+from app.ai_ingest.protocols.surgery_protocol import surgical_post_transaction
 from app.ai_ingest.models import AISuggestedTransaction
 
 logger = logging.getLogger(__name__)
 
 
 class ProtocolRunner:
-
     def __init__(self, db: AsyncSession, performed_by: int = 0):
         self.db = db
         self.performed_by = performed_by
@@ -27,7 +29,10 @@ class ProtocolRunner:
         self.or_eval = OREvaluationProtocol(db)
 
     async def run_full_pipeline(
-        self, doc_id: int, use_openai: bool = False, api_key: str | None = None,
+        self,
+        doc_id: int,
+        use_openai: bool = False,
+        api_key: str | None = None,
     ) -> dict:
         result: dict[str, Any] = {
             "document_id": doc_id,
@@ -42,11 +47,18 @@ class ProtocolRunner:
 
         # ===== GATE 1: AI AGENT PROTOCOL =====
         try:
-            agent_result = await self.agent.execute(doc_id, use_openai=use_openai, api_key=api_key)
+            agent_result = await self.agent.execute(
+                doc_id, use_openai=use_openai, api_key=api_key
+            )
             if not agent_result["success"]:
-                result["gate_1_agent"] = {"status": "failed", "error": agent_result.get("error")}
+                result["gate_1_agent"] = {
+                    "status": "failed",
+                    "error": agent_result.get("error"),
+                }
                 result["final_status"] = "agent_failed"
-                result["errors"].append(f"Gate 1: {agent_result.get('error', 'unknown error')}")
+                result["errors"].append(
+                    f"Gate 1: {agent_result.get('error', 'unknown error')}"
+                )
                 return result
 
             ar = agent_result.get("agent_response", {})
@@ -54,7 +66,9 @@ class ProtocolRunner:
                 "status": "passed",
                 "vendor_source": ar.get("vendor_source"),
                 "amount_source": ar.get("amount_source"),
-                "confidence_score": agent_result.get("suggestion", {}).get("confidence_score", 0),
+                "confidence_score": agent_result.get("suggestion", {}).get(
+                    "confidence_score", 0
+                ),
                 "requires_human_review": ar.get("requires_human_review", False),
                 "warnings": ar.get("warnings", []),
             }
@@ -83,7 +97,9 @@ class ProtocolRunner:
                 raise ValueError(f"Suggestion {suggestion_id} not found")
 
             analysis_data = agent_result.get("analysis", {})
-            extracted_entities = (analysis_data.get("entities") or {}) if analysis_data else {}
+            extracted_entities = (
+                (analysis_data.get("entities") or {}) if analysis_data else {}
+            )
 
             score_card = await self.or_eval.evaluate(
                 sug,
@@ -120,13 +136,19 @@ class ProtocolRunner:
         result["final_status"] = "awaiting_user_decision"
         result["audit_trail"] = [
             {"gate": 1, "protocol": "AI Agent", "status": "passed"},
-            {"gate": 2, "protocol": "OR Evaluation", "status": "scored",
-             "recommendation": result["gate_2_or"]["recommendation"]},
+            {
+                "gate": 2,
+                "protocol": "OR Evaluation",
+                "status": "scored",
+                "recommendation": result["gate_2_or"]["recommendation"],
+            },
         ]
         return result
 
     async def execute_approved_suggestion(
-        self, suggestion_id: int, user_id: int,
+        self,
+        suggestion_id: int,
+        user_id: int,
         amended: bool = False,
         amendment_data: dict | None = None,
     ) -> dict:
@@ -135,7 +157,9 @@ class ProtocolRunner:
             return {"success": False, "error": "Suggestion not found"}
 
         if amended and amendment_data:
-            sug.review_notes = amendment_data.get("amended_description", sug.review_notes)
+            sug.review_notes = amendment_data.get(
+                "amended_description", sug.review_notes
+            )
             await self.db.commit()
 
         try:
@@ -160,7 +184,15 @@ class ProtocolRunner:
         try:
             agent_result = await self.agent.execute(doc_id)
             if agent_result["success"]:
-                return {"status": "analyzed", "message": "Agent analysis completed", "results": agent_result}
-            return {"status": "agent_failed", "message": agent_result.get("error", ""), "results": agent_result}
+                return {
+                    "status": "analyzed",
+                    "message": "Agent analysis completed",
+                    "results": agent_result,
+                }
+            return {
+                "status": "agent_failed",
+                "message": agent_result.get("error", ""),
+                "results": agent_result,
+            }
         except (HallucinationError, IncitationError, OmissionError) as e:
             return {"status": "rejected_by_agent", "message": str(e), "results": None}

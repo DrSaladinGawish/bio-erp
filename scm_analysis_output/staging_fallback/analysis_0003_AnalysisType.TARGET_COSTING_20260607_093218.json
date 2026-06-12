@@ -1,0 +1,62 @@
+{
+  "id": 3,
+  "saved_at": "2026-06-07T09:32:18.168880",
+  "event_id": 1,
+  "analysis_type": "target_costing",
+  "input_data": {},
+  "results": {
+    "analysis_type": "target_costing",
+    "event_id": 1,
+    "event_name": "Cisco Annual Meeting",
+    "market_price": 250000.0,
+    "target_margin_pct": 20.0,
+    "target_cost": 200000.0,
+    "current_cost": 195000.0,
+    "cost_gap": -5000.0,
+    "gap_pct": -2.56,
+    "component_breakdown": [
+      {
+        "activity": "Venue & Setup",
+        "current_cost": 45000.0,
+        "target_allocation": 64285.71,
+        "component_gap": -19285.71,
+        "status": "under"
+      },
+      {
+        "activity": "Catering",
+        "current_cost": 35000.0,
+        "target_allocation": 50000.0,
+        "component_gap": -15000.0,
+        "status": "under"
+      },
+      {
+        "activity": "AV & Entertainment",
+        "current_cost": 25000.0,
+        "target_allocation": 35714.29,
+        "component_gap": -10714.29,
+        "status": "under"
+      },
+      {
+        "activity": "Transport & Logistics",
+        "current_cost": 20000.0,
+        "target_allocation": 28571.43,
+        "component_gap": -8571.43,
+        "status": "under"
+      },
+      {
+        "activity": "Guest Services",
+        "current_cost": 15000.0,
+        "target_allocation": 21428.57,
+        "component_gap": -6428.57,
+        "status": "under"
+      }
+    ],
+    "actions": [
+      "COST SURPLUS: 5,000.00 EGP. Cost below target \u2014 room for quality enhancement or price reduction."
+    ],
+    "confidence_score": 0.88
+  },
+  "recommendations": [],
+  "confidence_score": 0.88,
+  "created_by": "scm_cost_engine"
+}

@@ -1,0 +1,37 @@
+{
+  "id": 2,
+  "saved_at": "2026-06-07T10:05:55.224708",
+  "event_id": 0,
+  "analysis_type": "cost_driver_analysis",
+  "input_data": {},
+  "results": {
+    "analysis_type": "cost_driver_analysis",
+    "structural_drivers": 1,
+    "executional_drivers": 0,
+    "gap_analysis": [
+      {
+        "driver": "Scale",
+        "type": "structural",
+        "current": 150.0,
+        "optimal": 200.0,
+        "gap": 50.0,
+        "gap_pct": 25.0,
+        "unit": "attendees",
+        "impact_on_cost_pct": 15.0,
+        "priority": "high"
+      }
+    ],
+    "recommendations": [
+      "Focus on 1 high-priority cost drivers",
+      "Structural drivers require long-term strategic decisions (scale, technology)",
+      "Executional drivers can be improved through operational excellence"
+    ]
+  },
+  "recommendations": [
+    "Focus on 1 high-priority cost drivers",
+    "Structural drivers require long-term strategic decisions (scale, technology)",
+    "Executional drivers can be improved through operational excellence"
+  ],
+  "confidence_score": 0.0,
+  "created_by": "scm_cost_engine"
+}

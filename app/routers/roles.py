@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.database import get_db
 from app.middleware.auth import RequirePermission, get_current_user
-from app.models.auth import User, Role, Permission
+from app.models.auth import User, Role
 
 router = APIRouter(prefix="/api/v1/roles", tags=["Roles"])
 
@@ -38,11 +38,13 @@ async def my_permissions(
     role_list = []
     for role in user.roles:
         role_perms = [{"code": p.code, "name": p.name_en} for p in role.permissions]
-        role_list.append({
-            "id": role.id,
-            "name": role.name,
-            "permissions": role_perms,
-        })
+        role_list.append(
+            {
+                "id": role.id,
+                "name": role.name,
+                "permissions": role_perms,
+            }
+        )
         for p in role.permissions:
             perms.add(p.code)
     return {
@@ -61,9 +63,7 @@ async def get_role(
     user: User = Depends(RequirePermission("user:read")),
 ):
     result = await db.execute(
-        select(Role)
-        .options(joinedload(Role.permissions))
-        .where(Role.id == role_id)
+        select(Role).options(joinedload(Role.permissions)).where(Role.id == role_id)
     )
     role = result.unique().scalar_one_or_none()
     if not role:
@@ -96,7 +96,9 @@ async def assign_role(
 
     for r in target.roles:
         if r.id == role_id:
-            return {"message": f"Role '{role.name}' already assigned to user '{target.username}'"}
+            return {
+                "message": f"Role '{role.name}' already assigned to user '{target.username}'"
+            }
     target.roles.append(role)
     await db.commit()
     return {"message": f"Role '{role.name}' assigned to user '{target.username}'"}

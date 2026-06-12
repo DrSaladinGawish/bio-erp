@@ -1,0 +1,112 @@
+{
+  "timestamp": "2026-06-08T10:18:01.331021",
+  "summary": {
+    "total": 11,
+    "passed": 4,
+    "failed": 1,
+    "warnings": 4,
+    "score": 36.4,
+    "ready": false
+  },
+  "results": [
+    {
+      "gate": "A",
+      "check": "A1",
+      "status": "WARN",
+      "score": 50,
+      "threshold": "0 errors",
+      "actual": "rc=1",
+      "details": "F841 Local variable `inv_num` is assigned to but never used\n   --> app\\ai_ingest\\protocols\\agent_protocol.py:133:9\n    |\n131 |         amount = raw.get(\"amount\")\n132 |         gl_id = raw.get(\"gl_acco"
+    },
+    {
+      "gate": "A",
+      "check": "A2",
+      "status": "WARN",
+      "score": 50,
+      "threshold": "Formatted",
+      "actual": "rc=2",
+      "details": ""
+    },
+    {
+      "gate": "A",
+      "check": "A3",
+      "status": "WARN",
+      "score": 70,
+      "threshold": "<=10",
+      "actual": "9 high",
+      "details": "analyze_pnr2022.py:main=15, bulk_ingest_pnr2022.py:main=13, extraction_engine.py:extract_module_data=14"
+    },
+    {
+      "gate": "B",
+      "check": "B1",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "0 secrets",
+      "actual": "0 files",
+      "details": ""
+    },
+    {
+      "gate": "B",
+      "check": "B2",
+      "status": "WARN",
+      "score": 80,
+      "threshold": "0 vectors",
+      "actual": "122 potential",
+      "details": ""
+    },
+    {
+      "gate": "C",
+      "check": "C1",
+      "status": "FAIL",
+      "score": 0.0,
+      "threshold": ">=85.0%",
+      "actual": "0.0%",
+      "details": ""
+    },
+    {
+      "gate": "D",
+      "check": "D1",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "Valid schema",
+      "actual": "rc=0",
+      "details": ""
+    },
+    {
+      "gate": "E",
+      "check": "E1",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "DB accessible",
+      "actual": "rc=0",
+      "details": "TABLES: 0\n"
+    },
+    {
+      "gate": "F",
+      "check": "F1",
+      "status": "SKIP",
+      "score": 0,
+      "threshold": "<500ms",
+      "actual": "Server down",
+      "details": "<urlopen error [WinError 10061] No connection could be made because the target machine actively refu"
+    },
+    {
+      "gate": "G",
+      "check": "G1",
+      "status": "SKIP",
+      "score": 0,
+      "threshold": "Built",
+      "actual": "Not built",
+      "details": ""
+    },
+    {
+      "gate": "H",
+      "check": "H1",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "All docs",
+      "actual": "OK",
+      "details": ""
+    }
+  ]
+}

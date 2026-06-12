@@ -1,8 +1,9 @@
-﻿"""
+"""
 Production Transaction Agent â€” Incentive House ERP
 Wraps the Protocell extraction â†’ mapping â†’ validation â†’ staging pipeline
 as a callable agent for batch Excel transaction processing.
 """
+
 import json
 import logging
 import uuid
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 # â”€â”€ Agent Domain Types â”€â”€
 
+
 @dataclass
 class ExtractionContext:
     file_path: str
@@ -27,6 +29,7 @@ class ExtractionContext:
     header_row: int | None = None
     batch_size: int = 500
     dry_run: bool = True
+
 
 @dataclass
 class AgentManifest:
@@ -42,6 +45,7 @@ class AgentManifest:
     errors: list = field(default_factory=list)
     summary: str = ""
 
+
 class ProductionTrxAgent:
     """
     Production Transaction Agent for bulk Excel extraction.
@@ -51,7 +55,9 @@ class ProductionTrxAgent:
 
     def __init__(self, db: Session, config_dir: str | Path = None):
         self.db = db
-        self.config_dir = Path(config_dir) if config_dir else Path(__file__).parent / "config"
+        self.config_dir = (
+            Path(config_dir) if config_dir else Path(__file__).parent / "config"
+        )
         self.manifest: AgentManifest | None = None
         self._engine = None
         self._load_config()
@@ -60,6 +66,7 @@ class ProductionTrxAgent:
         """Lazy-load Protocell engines from config files."""
         try:
             from app.organs.incentivehouse_organ.mapper import MappingEngine
+
             self._mapper = MappingEngine(str(self.config_dir))
         except ImportError:
             logger.warning("MappingEngine not available, using inline fallback")
@@ -69,6 +76,7 @@ class ProductionTrxAgent:
     def mapper(self):
         if self._mapper is None:
             from app.organs.incentivehouse_organ.mapper import MappingEngine
+
             self._mapper = MappingEngine(str(self.config_dir))
         return self._mapper
 
@@ -129,11 +137,13 @@ class ProductionTrxAgent:
 
         except Exception as exc:
             logger.exception("ProductionTrxAgent execution failed")
-            manifest.errors.append({
-                "rule": "AGENT_ERROR",
-                "severity": "CRITICAL",
-                "message": str(exc),
-            })
+            manifest.errors.append(
+                {
+                    "rule": "AGENT_ERROR",
+                    "severity": "CRITICAL",
+                    "message": str(exc),
+                }
+            )
             manifest.summary = f"FAILED: {exc}"
 
         self.manifest = manifest
@@ -141,18 +151,22 @@ class ProductionTrxAgent:
 
     def _get_extractor(self, ctx: ExtractionContext):
         from app.organs.incentivehouse_organ.extractor import TransactionExtractor
+
         return TransactionExtractor(ctx.file_path, ctx.module, self.mapper)
 
     def _get_validator(self):
         from app.organs.incentivehouse_organ.validator import ProtocellValidator
+
         return ProtocellValidator(self.mapper)
 
-    def _stage_batch(self, df: pd.DataFrame, module: str, agent_id: str, batch_size: int) -> int:
+    def _stage_batch(
+        self, df: pd.DataFrame, module: str, agent_id: str, batch_size: int
+    ) -> int:
         staged = 0
         table = f"{module.lower()}_staging"
 
         for start in range(0, len(df), batch_size):
-            batch = df.iloc[start:start + batch_size]
+            batch = df.iloc[start : start + batch_size]
             for _, row in batch.iterrows():
                 try:
                     self.db.execute(
@@ -187,7 +201,9 @@ class ProductionTrxAgent:
                             "cost_center": str(row.get("COST_CENTER", "")),
                             "val_status": str(row.get("VALIDATION_STATUS", "PASS")),
                             "val_errors": json.dumps(row.get("VALIDATION_ERRORS", [])),
-                            "src_file": Path(self.manifest.source_file).name if self.manifest else "",
+                            "src_file": Path(self.manifest.source_file).name
+                            if self.manifest
+                            else "",
                             "src_row": int(row.get("SOURCE_ROW", 0)),
                         },
                     )
@@ -198,7 +214,9 @@ class ProductionTrxAgent:
 
         return staged
 
-    def _write_audit_log(self, agent_id: str, ctx: ExtractionContext, manifest: AgentManifest):
+    def _write_audit_log(
+        self, agent_id: str, ctx: ExtractionContext, manifest: AgentManifest
+    ):
         try:
             self.db.execute(
                 text("""

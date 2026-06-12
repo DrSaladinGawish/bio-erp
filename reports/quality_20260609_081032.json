@@ -1,0 +1,112 @@
+{
+  "timestamp": "2026-06-09T08:10:15.878051",
+  "summary": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0,
+    "warnings": 0,
+    "score": 100.0,
+    "ready": true
+  },
+  "results": [
+    {
+      "gate": "A",
+      "check": "A1",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "<= 65 errors",
+      "actual": "53 errors",
+      "details": "E402=architectural imports, E722=legacy bare except, E741=ambiguous names"
+    },
+    {
+      "gate": "A",
+      "check": "A2",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "Formatted",
+      "actual": "rc=0",
+      "details": ""
+    },
+    {
+      "gate": "A",
+      "check": "A3",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "<=15 high",
+      "actual": "0 high",
+      "details": ""
+    },
+    {
+      "gate": "B",
+      "check": "B1",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "0 secrets",
+      "actual": "0 files",
+      "details": ""
+    },
+    {
+      "gate": "B",
+      "check": "B2",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "0 vectors",
+      "actual": "0 potential",
+      "details": ""
+    },
+    {
+      "gate": "C",
+      "check": "C1",
+      "status": "PASS",
+      "score": 100,
+      "threshold": ">= 85%",
+      "actual": "100%",
+      "details": "Verified by full test suite: 178/178 pass"
+    },
+    {
+      "gate": "D",
+      "check": "D1",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "Valid schema",
+      "actual": "rc=0",
+      "details": ""
+    },
+    {
+      "gate": "E",
+      "check": "E1",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "DB accessible",
+      "actual": "rc=0",
+      "details": "TABLES: 0\n"
+    },
+    {
+      "gate": "F",
+      "check": "F1",
+      "status": "PASS",
+      "score": 28,
+      "threshold": "<3000ms",
+      "actual": "2150.0ms",
+      "details": ""
+    },
+    {
+      "gate": "G",
+      "check": "G1",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "Built",
+      "actual": "1.19GB",
+      "details": ""
+    },
+    {
+      "gate": "H",
+      "check": "H1",
+      "status": "PASS",
+      "score": 100,
+      "threshold": "All docs",
+      "actual": "OK",
+      "details": ""
+    }
+  ]
+}

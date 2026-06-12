@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Business Intelligence - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Business Intelligence</div>
+<div class="page-header"><h1>Business Intelligence</h1></div>
+<div class="kpi-grid">
+  <div class="kpi-card kpi-active"><div class="kpi-label">Predictions</div><div class="kpi-value" id="kpiTotal">-</div></div>
+  <div class="kpi-card kpi-revenue"><div class="kpi-label">Models</div><div class="kpi-value" id="kpiModels">-</div></div>
+</div>
+<div class="content-card"><h3>Neural Predictions</h3><div id="biTableWrap">Loading...</div></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function loadBi(){ try{
+  var s = await fetch('/api/v1/bi/summary').then(r=>r.json());
+  document.getElementById('kpiTotal').textContent = s.total_predictions;
+  document.getElementById('kpiModels').textContent = (s.active_models||[]).length;
+  var r = await fetch('/api/v1/bi/predictions').then(r=>r.json());
+  var rows = r.data||[];
+  if(!rows.length){ document.getElementById('biTableWrap').innerHTML='<div class="alert alert-info">No predictions yet.</div>'; return; }
+  var html='<table class="data-table"><thead><tr><th>Model</th><th>Type</th><th>Value</th><th>Confidence</th></tr></thead><tbody>';
+  rows.forEach(function(r){ html+='<tr><td>'+r.model_name+'</td><td>'+r.prediction_type+'</td><td>'+(r.predicted_value||0).toLocaleString()+'</td><td>'+(r.confidence*100||0).toFixed(1)+'%</td></tr>'; });
+  html+='</tbody></table>'; document.getElementById('biTableWrap').innerHTML=html;
+}catch(e){ document.getElementById('biTableWrap').innerHTML='<div class="alert alert-error">Error: '+e+'</div>'; }}
+loadBi();
+</script>
+{% endblock %}

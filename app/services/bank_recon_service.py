@@ -10,7 +10,6 @@ from app.models import (
     BankStaging,
     BankImportSession,
     JVLine,
-    JVHeader,
     RCTHeader,
     PMTHeader,
 )
@@ -30,7 +29,7 @@ class BankReconService:
             select(BankStaging).where(
                 and_(
                     BankStaging.session_id == session_id,
-                    BankStaging.is_matched == False,
+                    not BankStaging.is_matched,
                 )
             )
         )
@@ -47,43 +46,47 @@ class BankReconService:
 
         gl_candidates: list[dict] = []
 
-        jv_result = await db.execute(
-            select(JVLine).options(joinedload(JVLine.jv))
-        )
+        jv_result = await db.execute(select(JVLine).options(joinedload(JVLine.jv)))
         for jv_line in jv_result.scalars().unique().all():
-            gl_candidates.append({
-                "source": "jv_line",
-                "id": jv_line.id,
-                "debit": jv_line.debit_amount,
-                "credit": jv_line.credit_amount,
-                "date": jv_line.jv.jv_date if jv_line.jv else None,
-                "reference": jv_line.jv.reference if jv_line.jv else None,
-                "description": jv_line.description,
-            })
+            gl_candidates.append(
+                {
+                    "source": "jv_line",
+                    "id": jv_line.id,
+                    "debit": jv_line.debit_amount,
+                    "credit": jv_line.credit_amount,
+                    "date": jv_line.jv.jv_date if jv_line.jv else None,
+                    "reference": jv_line.jv.reference if jv_line.jv else None,
+                    "description": jv_line.description,
+                }
+            )
 
         rct_result = await db.execute(select(RCTHeader))
         for rct in rct_result.scalars().all():
-            gl_candidates.append({
-                "source": "receipt",
-                "id": rct.id,
-                "debit": 0.0,
-                "credit": rct.amount,
-                "date": rct.receipt_date,
-                "reference": rct.bank_reference or rct.receipt_number,
-                "description": rct.received_from or rct.notes,
-            })
+            gl_candidates.append(
+                {
+                    "source": "receipt",
+                    "id": rct.id,
+                    "debit": 0.0,
+                    "credit": rct.amount,
+                    "date": rct.receipt_date,
+                    "reference": rct.bank_reference or rct.receipt_number,
+                    "description": rct.received_from or rct.notes,
+                }
+            )
 
         pmt_result = await db.execute(select(PMTHeader))
         for pmt in pmt_result.scalars().all():
-            gl_candidates.append({
-                "source": "payment",
-                "id": pmt.id,
-                "debit": pmt.amount,
-                "credit": 0.0,
-                "date": pmt.payment_date,
-                "reference": pmt.bank_reference or pmt.payment_number,
-                "description": pmt.paid_to or pmt.notes,
-            })
+            gl_candidates.append(
+                {
+                    "source": "payment",
+                    "id": pmt.id,
+                    "debit": pmt.amount,
+                    "credit": 0.0,
+                    "date": pmt.payment_date,
+                    "reference": pmt.bank_reference or pmt.payment_number,
+                    "description": pmt.paid_to or pmt.notes,
+                }
+            )
 
         matches = []
         matched_staging_ids: set[int] = set()
@@ -113,14 +116,16 @@ class BankReconService:
                 staging.is_matched = True
                 matched_staging_ids.add(staging.id)
                 matched_candidate_indices.add(best_idx)
-                matches.append({
-                    "staging_id": staging.id,
-                    "gl_source": best_candidate["source"],
-                    "gl_id": best_candidate["id"],
-                    "debit": best_candidate["debit"],
-                    "credit": best_candidate["credit"],
-                    "score": round(best_score, 1),
-                })
+                matches.append(
+                    {
+                        "staging_id": staging.id,
+                        "gl_source": best_candidate["source"],
+                        "gl_id": best_candidate["id"],
+                        "debit": best_candidate["debit"],
+                        "credit": best_candidate["credit"],
+                        "score": round(best_score, 1),
+                    }
+                )
 
         sess = await db.get(BankImportSession, session_id)
         if sess:

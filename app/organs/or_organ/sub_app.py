@@ -12,17 +12,21 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 import warnings
+
 warnings.filterwarnings("ignore", message=".*protected namespace.*")
 
 from app.organs.or_organ.or_erp_module import (
     ORERPModule,
-    DecisionState, DecisionAlternative, DecisionAnalysisEngine,
-    LPObjective, LPConstraint,
+    DecisionState,
+    DecisionAlternative,
+    DecisionAnalysisEngine,
+    LPObjective,
+    LPConstraint,
     InventoryItem,
-    TransportNode, TransportRoute,
+    TransportNode,
+    TransportRoute,
     TOCResource,
-    BreakEvenPoint,
-    TransportationEngine
+    TransportationEngine,
 )
 from app.organs.or_organ.planning_api import router as planning_router
 from app.organs.or_organ.or_trigger_endpoint import router as trigger_router
@@ -35,7 +39,7 @@ or_app = FastAPI(
     description="Operations Research Module for ERP Systems - Al-Azhar University Textbook Implementation",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 or_app.add_middleware(
@@ -52,11 +56,13 @@ or_module = ORERPModule()
 # PYDANTIC SCHEMAS
 # =============================================================================
 
+
 class DecisionStateSchema(BaseModel):
     id: str
     name: str
     probability: float = Field(default=0.0, ge=0.0, le=1.0)
     description: Optional[str] = ""
+
 
 class DecisionAlternativeSchema(BaseModel):
     id: str
@@ -64,17 +70,23 @@ class DecisionAlternativeSchema(BaseModel):
     payoffs: Dict[str, float]
     costs: Optional[Dict[str, float]] = None
 
+
 class DecisionAnalysisRequest(BaseModel):
     model_name: str = "Decision Analysis Model"
     states: List[DecisionStateSchema]
     alternatives: List[DecisionAlternativeSchema]
-    criterion: str = Field(default="emv", pattern="^(maximax|maximin|hurwicz|laplace|minimax_regret|emv|eol)$")
+    criterion: str = Field(
+        default="emv",
+        pattern="^(maximax|maximin|hurwicz|laplace|minimax_regret|emv|eol)$",
+    )
     alpha: float = Field(default=0.5, ge=0.0, le=1.0)
+
 
 class LPObjectiveSchema(BaseModel):
     name: str
     coefficients: List[float]
     sense: str = Field(default="maximize", pattern="^(maximize|minimize)$")
+
 
 class LPConstraintSchema(BaseModel):
     name: str
@@ -82,11 +94,13 @@ class LPConstraintSchema(BaseModel):
     rhs: float
     operator: str = Field(default="<=", pattern="^(<=|>=|==)$")
 
+
 class LPRequest(BaseModel):
     model_name: str = "LP Model"
     objective: LPObjectiveSchema
     constraints: List[LPConstraintSchema]
     run_sensitivity: bool = False
+
 
 class GameTheoryRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
@@ -94,6 +108,7 @@ class GameTheoryRequest(BaseModel):
     payoff_matrix: List[List[float]]
     player_a_strategies: Optional[List[str]] = None
     player_b_strategies: Optional[List[str]] = None
+
 
 class ActivitySchema(BaseModel):
     id: str
@@ -104,15 +119,18 @@ class ActivitySchema(BaseModel):
     most_likely: Optional[float] = None
     pessimistic: Optional[float] = None
 
+
 class PERTCPMRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
     model_name: str = "PERT/CPM Network"
     activities: List[ActivitySchema]
 
+
 class KnapsackItemSchema(BaseModel):
     id: str
     weight: float = Field(..., gt=0)
     value: float = Field(..., gt=0)
+
 
 class KnapsackRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
@@ -120,12 +138,14 @@ class KnapsackRequest(BaseModel):
     capacity: float = Field(..., gt=0)
     items: List[KnapsackItemSchema]
 
+
 class GoalSchema(BaseModel):
     name: str
     coefficients: List[float]
     target: float
     priority: int = Field(..., ge=1)
     type: str = Field(default="minimize_deviation")
+
 
 class GoalProgrammingRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
@@ -135,11 +155,13 @@ class GoalProgrammingRequest(BaseModel):
     variables: List[str]
     method: str = Field(default="preemptive", pattern="^(preemptive|weighted)$")
 
+
 class GraphicalLPRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
     model_name: str = "Graphical LP"
     objective: LPObjectiveSchema
     constraints: List[LPConstraintSchema]
+
 
 class InventoryItemSchema(BaseModel):
     sku: str
@@ -153,14 +175,19 @@ class InventoryItemSchema(BaseModel):
     stockout_cost: Optional[float] = None
     production_rate: Optional[float] = None
 
+
 class InventoryOptimizeRequest(BaseModel):
     items: List[InventoryItemSchema]
-    model_type: str = Field(default="all", pattern="^(all|eoq|epq|abc|quantity_discount|probabilistic)$")
+    model_type: str = Field(
+        default="all", pattern="^(all|eoq|epq|abc|quantity_discount|probabilistic)$"
+    )
+
 
 class ABCItemSchema(BaseModel):
     sku: str
     annual_demand: float
     unit_cost: float
+
 
 class TransportNodeSchema(BaseModel):
     id: str
@@ -169,10 +196,12 @@ class TransportNodeSchema(BaseModel):
     demand: float = Field(default=0.0, ge=0.0)
     is_source: bool = True
 
+
 class TransportRouteSchema(BaseModel):
     from_id: str
     to_id: str
     cost_per_unit: float = Field(..., gt=0)
+
 
 class TransportRequest(BaseModel):
     model_name: str = "Transport Model"
@@ -181,9 +210,11 @@ class TransportRequest(BaseModel):
     routes: List[TransportRouteSchema]
     method: str = Field(default="vogel", pattern="^(nw_corner|least_cost|vogel|modi)$")
 
+
 class AssignmentRequest(BaseModel):
     model_name: str = "Assignment Model"
     cost_matrix: List[List[float]]
+
 
 class TOCResourceSchema(BaseModel):
     id: str
@@ -194,6 +225,7 @@ class TOCResourceSchema(BaseModel):
     operating_expense: float = Field(default=0.0)
     is_bottleneck: bool = False
 
+
 class TOCProductSchema(BaseModel):
     id: str
     name: str
@@ -202,10 +234,12 @@ class TOCProductSchema(BaseModel):
     demand: float = Field(..., gt=0)
     processing_times: Dict[str, float]
 
+
 class TOCRequest(BaseModel):
     model_name: str = "TOC Analysis"
     resources: List[TOCResourceSchema]
     products: List[TOCProductSchema]
+
 
 class CVPRequest(BaseModel):
     model_name: str = "CVP Analysis"
@@ -215,18 +249,22 @@ class CVPRequest(BaseModel):
     target_profit: float = Field(default=0.0)
     scenarios: Optional[List[Dict[str, Any]]] = None
 
+
 class QuantityDiscountTierSchema(BaseModel):
     min_qty: float
     max_qty: Optional[float] = None
     unit_cost: float
 
+
 class QuantityDiscountRequest(BaseModel):
     item: InventoryItemSchema
     tiers: List[QuantityDiscountTierSchema]
 
+
 # =============================================================================
 # API ENDPOINTS
 # =============================================================================
+
 
 @or_app.get("/")
 def root():
@@ -236,8 +274,9 @@ def root():
         "source": "البحوث الإلكترونية في المحاسبة - Al-Azhar University 2025",
         "chapters": 11,
         "docs": "/docs",
-        "health": "/health"
+        "health": "/health",
     }
+
 
 @or_app.get("/health")
 def health_check():
@@ -247,12 +286,21 @@ def health_check():
         "version": "1.0.0",
         "timestamp": datetime.now().isoformat(),
         "engines_ready_11_chapters": [
-            "decision_analysis", "linear_programming", "graphical_lp",
-            "inventory_optimization", "transportation", "assignment",
-            "game_theory", "pert_cpm", "dynamic_programming", "goal_programming",
-            "theory_of_constraints", "cvp_analysis"
-        ]
+            "decision_analysis",
+            "linear_programming",
+            "graphical_lp",
+            "inventory_optimization",
+            "transportation",
+            "assignment",
+            "game_theory",
+            "pert_cpm",
+            "dynamic_programming",
+            "goal_programming",
+            "theory_of_constraints",
+            "cvp_analysis",
+        ],
     }
+
 
 @or_app.post("/decision-analysis")
 def decision_analysis(req: DecisionAnalysisRequest):
@@ -260,10 +308,9 @@ def decision_analysis(req: DecisionAnalysisRequest):
         states = [DecisionState(**s.model_dump()) for s in req.states]
         alternatives = [
             DecisionAlternative(
-                id=a.id, name=a.name,
-                payoffs=a.payoffs,
-                costs=a.costs or {}
-            ) for a in req.alternatives
+                id=a.id, name=a.name, payoffs=a.payoffs, costs=a.costs or {}
+            )
+            for a in req.alternatives
         ]
         or_module.decision_engine = DecisionAnalysisEngine(states, alternatives)
         result = or_module.run_decision_analysis(req.criterion, req.alpha)
@@ -272,17 +319,20 @@ def decision_analysis(req: DecisionAnalysisRequest):
             "model_name": req.model_name,
             "criterion": req.criterion,
             "result": result,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @or_app.post("/linear-programming")
 def linear_programming(req: LPRequest):
     try:
-        objective = LPObjective(**req.objective.model_dump())
-        constraints = [LPConstraint(**c.model_dump()) for c in req.constraints]
-        result = or_module.solve_linear_program(req.objective.model_dump(), [c.model_dump() for c in req.constraints])
+        LPObjective(**req.objective.model_dump())
+        [LPConstraint(**c.model_dump()) for c in req.constraints]
+        result = or_module.solve_linear_program(
+            req.objective.model_dump(), [c.model_dump() for c in req.constraints]
+        )
         response = {
             "success": result.get("success", False),
             "model_name": req.model_name,
@@ -290,7 +340,7 @@ def linear_programming(req: LPRequest):
             "solution": result.get("solution"),
             "shadow_prices": result.get("shadow_prices"),
             "status": result.get("status"),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
         if req.run_sensitivity and result.get("success"):
             sens = or_module.lp_engine.sensitivity_analysis()
@@ -299,21 +349,25 @@ def linear_programming(req: LPRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @or_app.post("/inventory/optimize")
 def inventory_optimize(req: InventoryOptimizeRequest):
     try:
-        items = [InventoryItem(**i.model_dump()) for i in req.items]
-        results = or_module.optimize_inventory([i.model_dump() for i in req.items], req.model_type)
+        [InventoryItem(**i.model_dump()) for i in req.items]
+        results = or_module.optimize_inventory(
+            [i.model_dump() for i in req.items], req.model_type
+        )
         return {
             "success": True,
             "model_name": "Inventory Optimization",
             "model_type": req.model_type,
             "items_analyzed": len(results),
             "results": results,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @or_app.post("/inventory/abc-analysis")
 def abc_analysis(items: List[ABCItemSchema]):
@@ -323,17 +377,18 @@ def abc_analysis(items: List[ABCItemSchema]):
         return {
             "success": True,
             "items_count": len(items),
-            "classification": df.to_dict('records'),
+            "classification": df.to_dict("records"),
             "summary": {
-                "class_a_count": int((df['class'] == 'A').sum()),
-                "class_b_count": int((df['class'] == 'B').sum()),
-                "class_c_count": int((df['class'] == 'C').sum()),
-                "total_value": float(df['annual_consumption_value'].sum())
+                "class_a_count": int((df["class"] == "A").sum()),
+                "class_b_count": int((df["class"] == "B").sum()),
+                "class_c_count": int((df["class"] == "C").sum()),
+                "total_value": float(df["annual_consumption_value"].sum()),
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @or_app.post("/inventory/quantity-discount")
 def quantity_discount(req: QuantityDiscountRequest):
@@ -347,10 +402,11 @@ def quantity_discount(req: QuantityDiscountRequest):
             "sku": item.sku,
             "optimal_tier": result["optimal_tier"],
             "all_tiers": result["all_tiers"],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @or_app.post("/transportation")
 def transportation(req: TransportRequest):
@@ -375,16 +431,18 @@ def transportation(req: TransportRequest):
             "allocation": result["allocation"],
             "sources": [s.id for s in sources],
             "destinations": [d.id for d in destinations],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @or_app.post("/assignment")
 def assignment(req: AssignmentRequest):
     try:
         import numpy as np
         from app.organs.or_organ.or_erp_module import AssignmentEngine
+
         matrix = np.array(req.cost_matrix)
         engine = AssignmentEngine(matrix)
         result = engine.hungarian_algorithm()
@@ -394,74 +452,84 @@ def assignment(req: AssignmentRequest):
             "matrix_size": matrix.shape,
             "assignments": result["assignments"],
             "total_cost": result["total_cost"],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @or_app.post("/theory-of-constraints")
 def theory_of_constraints(req: TOCRequest):
     try:
-        resources = [TOCResource(**r.model_dump()) for r in req.resources]
+        [TOCResource(**r.model_dump()) for r in req.resources]
         products = [p.model_dump() for p in req.products]
-        result = or_module.analyze_constraints([r.model_dump() for r in req.resources], products)
+        result = or_module.analyze_constraints(
+            [r.model_dump() for r in req.resources], products
+        )
         return {
             "success": True,
             "model_name": req.model_name,
             "bottleneck": result["bottleneck_analysis"],
             "throughput_accounting": result["throughput_accounting"],
             "optimal_product_mix": result["optimal_product_mix"],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @or_app.post("/cvp-analysis")
 def cvp_analysis(req: CVPRequest):
     try:
         result = or_module.analyze_cost_profit(
-            req.fixed_costs, req.variable_cost, req.selling_price,
-            req.target_profit, req.scenarios
+            req.fixed_costs,
+            req.variable_cost,
+            req.selling_price,
+            req.target_profit,
+            req.scenarios,
         )
         return {
             "success": True,
             "model_name": req.model_name,
             "basic_analysis": result["basic_analysis"],
             "scenarios": result["scenarios"],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @or_app.post("/graphical-lp")
 def graphical_lp(req: GraphicalLPRequest):
     try:
-        result = or_module.solve_graphical_lp(req.objective.model_dump(), [c.model_dump() for c in req.constraints])
-        return {
-            "success": True,
-            "model_name": req.model_name,
-            "result": result,
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@or_app.post("/game-theory")
-def game_theory(req: GameTheoryRequest):
-    try:
-        result = or_module.analyze_game(
-            req.payoff_matrix,
-            req.player_a_strategies,
-            req.player_b_strategies
+        result = or_module.solve_graphical_lp(
+            req.objective.model_dump(), [c.model_dump() for c in req.constraints]
         )
         return {
             "success": True,
             "model_name": req.model_name,
             "result": result,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@or_app.post("/game-theory")
+def game_theory(req: GameTheoryRequest):
+    try:
+        result = or_module.analyze_game(
+            req.payoff_matrix, req.player_a_strategies, req.player_b_strategies
+        )
+        return {
+            "success": True,
+            "model_name": req.model_name,
+            "result": result,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 @or_app.post("/pert-cpm")
 def pert_cpm(req: PERTCPMRequest):
@@ -472,10 +540,11 @@ def pert_cpm(req: PERTCPMRequest):
             "success": True,
             "model_name": req.model_name,
             "result": result,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @or_app.post("/knapsack")
 def knapsack(req: KnapsackRequest):
@@ -486,10 +555,11 @@ def knapsack(req: KnapsackRequest):
             "success": True,
             "model_name": req.model_name,
             "result": result,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @or_app.post("/goal-programming")
 def goal_programming(req: GoalProgrammingRequest):
@@ -498,16 +568,17 @@ def goal_programming(req: GoalProgrammingRequest):
             [g.model_dump() for g in req.goals],
             [c.model_dump() for c in req.constraints],
             req.variables,
-            req.method
+            req.method,
         )
         return {
             "success": True,
             "model_name": req.model_name,
             "result": result,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @or_app.get("/audit-trail")
 def audit_trail(limit: int = 100):
@@ -515,12 +586,14 @@ def audit_trail(limit: int = 100):
     return {
         "operations_count": len(trail),
         "operations": trail[-limit:] if limit else trail,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
+
 
 @or_app.get("/report")
 def module_report():
     return or_module.export_report()
+
 
 @or_app.post("/batch")
 def batch_process(requests: List[Dict[str, Any]]):
@@ -541,6 +614,7 @@ def batch_process(requests: List[Dict[str, Any]]):
         except Exception as e:
             results.append({"type": req_type, "status": "error", "error": str(e)})
     return {"batch_results": results, "timestamp": datetime.now().isoformat()}
+
 
 # Planning & Analysis Router (Read-Only Sandbox)
 or_app.include_router(planning_router)

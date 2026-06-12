@@ -1,0 +1,20 @@
+ImportError while loading conftest 'D:\ERP System\BIO_ERP\app\organs\incentivehouse_organ\conftest.py'.
+conftest.py:19: in <module>
+    from app.main import app
+..\..\main.py:30: in <module>
+    from app.organs.or_organ.sub_app import or_app
+..\or_organ\sub_app.py:32: in <module>
+    from app.organs.or_organ.or_trigger_endpoint import router as trigger_router
+..\or_organ\or_trigger_endpoint.py:28: in <module>
+    session_factory = get_async_session_factory()
+..\..\database.py:42: in get_async_session_factory
+    get_async_engine(),
+..\..\database.py:29: in get_async_engine
+    async_engine = create_async_engine(
+C:\Users\dell\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\ext\asyncio\engine.py:120: in create_async_engine
+    sync_engine = _create_engine(url, **kw)
+C:\Users\dell\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\util\deprecations.py:281: in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+C:\Users\dell\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\create.py:697: in create_engine
+    raise TypeError(
+E   TypeError: Invalid argument(s) 'pool_size','max_overflow' sent to create_engine(), using configuration SQLiteDialect_aiosqlite/NullPool/Engine.  Please check that the keyword arguments are appropriate for this combination of components.

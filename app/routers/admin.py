@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -124,10 +124,7 @@ async def list_audit_log(
     _: User = Depends(_require_admin),
 ):
     result = await db.execute(
-        select(AuditLog)
-        .order_by(desc(AuditLog.timestamp))
-        .offset(offset)
-        .limit(limit)
+        select(AuditLog).order_by(desc(AuditLog.timestamp)).offset(offset).limit(limit)
     )
     return [
         {
@@ -152,9 +149,7 @@ async def verify_audit_chain(
     _: User = Depends(_require_admin),
 ):
     """Verify the SHA-256 hash chain integrity of the audit log."""
-    result = await db.execute(
-        select(AuditLog).order_by(AuditLog.id)
-    )
+    result = await db.execute(select(AuditLog).order_by(AuditLog.id))
     entries = result.scalars().all()
     broken = []
     previous_hash = None
@@ -164,23 +159,31 @@ async def verify_audit_chain(
             entry.action,
             entry.target_type,
             entry.target_id,
-            json.dumps(json.loads(entry.old_value), cls=AuditJSONEncoder) if entry.old_value else None,
-            json.dumps(json.loads(entry.new_value), cls=AuditJSONEncoder) if entry.new_value else None,
+            json.dumps(json.loads(entry.old_value), cls=AuditJSONEncoder)
+            if entry.old_value
+            else None,
+            json.dumps(json.loads(entry.new_value), cls=AuditJSONEncoder)
+            if entry.new_value
+            else None,
             previous_hash,
         )
         if entry.row_hash != expected:
-            broken.append({
-                "id": entry.id,
-                "expected_hash": expected,
-                "stored_hash": entry.row_hash,
-            })
+            broken.append(
+                {
+                    "id": entry.id,
+                    "expected_hash": expected,
+                    "stored_hash": entry.row_hash,
+                }
+            )
         if entry.previous_hash != previous_hash:
-            broken.append({
-                "id": entry.id,
-                "detail": "previous_hash mismatch",
-                "expected_prev": previous_hash,
-                "stored_prev": entry.previous_hash,
-            })
+            broken.append(
+                {
+                    "id": entry.id,
+                    "detail": "previous_hash mismatch",
+                    "expected_prev": previous_hash,
+                    "stored_prev": entry.previous_hash,
+                }
+            )
         previous_hash = entry.row_hash
     return {
         "total_entries": len(entries),

@@ -1,4 +1,4 @@
-﻿import aiosmtplib
+import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from app.config import get_settings
@@ -138,12 +138,14 @@ class EmailService:
 class EmailScheduler:
     def __init__(self):
         from apscheduler.schedulers.background import BackgroundScheduler
+
         self.scheduler = BackgroundScheduler()
         self._setup_jobs()
         self.scheduler.start()
 
     def _setup_jobs(self):
         from apscheduler.triggers.cron import CronTrigger
+
         self.scheduler.add_job(
             self._send_daily_report,
             CronTrigger(hour=8, minute=0, timezone="Africa/Cairo"),
@@ -162,6 +164,7 @@ class EmailScheduler:
     async def _send_daily_report(self):
         print("[EmailScheduler] Daily report job triggered")
         from app.services.dashboard_service import get_dashboard_data
+
         try:
             data = await get_dashboard_data()
             summary = {

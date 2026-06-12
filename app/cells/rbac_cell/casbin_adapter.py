@@ -45,8 +45,7 @@ def casbin_enforce(resource: str, action: str) -> callable:
             allowed = True
         else:
             allowed = any(
-                enforcer.enforce(role, resource, action, tenant)
-                for role in role_names
+                enforcer.enforce(role, resource, action, tenant) for role in role_names
             )
 
         logger.info(

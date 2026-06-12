@@ -3,87 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login — IncentiveHouse ERP</title>
-    <link rel="stylesheet" href="/static/css/erp-theme.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔷</text></svg>">
+    <title>IncentiveHouse ERP — Login</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="icon" href="/static/logo.ico">
+    <link rel="stylesheet" href="/static/vendor/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/vendor/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .login-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            padding: 3rem;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #c9a961, #1a237e, #c9a961);
+        }
+        .login-logo {
+            width: 120px;
+            margin-bottom: 1.5rem;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .login-title {
+            text-align: center;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 1.4rem;
+            color: #1a237e;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        .login-subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+        }
+        .form-floating { margin-bottom: 1rem; }
+        .form-control:focus { border-color: #1a237e; box-shadow: 0 0 0 0.2rem rgba(26,35,126,0.15); }
+        .btn-login {
+            background: linear-gradient(135deg, #1a237e, #283593);
+            color: white;
+            font-weight: 600;
+            letter-spacing: 1px;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 10px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26,35,126,0.3); }
+        .footer-links {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        .erp-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #c9a961;
+            color: #1a1a2e;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            letter-spacing: 1px;
+        }
+        .version-info {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+    </style>
 </head>
 <body>
-    <div class="login-page">
-        <div class="login-card">
-            <div class="login-logo">
-                <div class="brand-icon">🔷</div>
-                <h1>IncentiveHouse ERP</h1>
-                <p>Event Management & Financial Operations</p>
+    <div class="login-card">
+        <div class="erp-badge">ERP v2.5.3</div>
+        <svg class="login-logo" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="200" rx="40" fill="url(#g1)"/>
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="200" y2="200"><stop stop-color="#1a237e"/><stop offset="1" stop-color="#c9a961"/></linearGradient></defs>
+            <text x="100" y="125" text-anchor="middle" fill="white" font-size="80" font-weight="bold" font-family="Georgia">IH</text>
+        </svg>
+        <div class="login-title">Incentive House</div>
+        <div class="login-subtitle">Enterprise Resource Planning System</div>
+
+        <form id="loginForm">
+            <div class="form-floating">
+                <input type="text" class="form-control" id="username" placeholder="Username" value="admin" required>
+                <label><i class="bi bi-person"></i> Username</label>
             </div>
-            
-            <div class="login-error" id="login-error"></div>
-            
-            <form id="login-form" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label class="form-label">Username</label>
-                    <input type="text" class="form-input" id="username" placeholder="Enter username" required autofocus>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" class="form-input" id="password" placeholder="Enter password" required>
-                </div>
-                
-                <div class="form-group" style="display:flex;align-items:center;gap:8px">
-                    <input type="checkbox" id="remember" style="width:auto">
-                    <label for="remember" style="font-size:0.85rem;color:var(--text-secondary);cursor:pointer">Remember me</label>
-                </div>
-                
-                <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px">
-                    <span id="login-btn-text">Sign In</span>
-                    <span class="loading" id="login-spinner" style="display:none"></span>
-                </button>
-            </form>
-            
-            <div style="text-align:center;margin-top:20px;font-size:0.8rem;color:var(--text-muted)">
-                <p>Default: admin / admin123</p>
-                <p style="margin-top:8px">v2.2.2 | Port 9001 | SSL Active</p>
+            <div class="form-floating">
+                <input type="password" class="form-control" id="password" placeholder="Password" autocomplete="current-password" required>
+                <label><i class="bi bi-lock"></i> Password</label>
             </div>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="remember">
+                    <label class="form-check-label" style="font-size:0.85rem">Remember me</label>
+                </div>
+                <a style="font-size:0.85rem; color:#1a237e; cursor:pointer">Forgot password?</a>
+            </div>
+            <button type="submit" class="btn-login" id="btnLogin">
+                <i class="bi bi-box-arrow-in-right"></i> SIGN IN
+            </button>
+        </form>
+        <div id="loginError" class="text-danger text-center mt-2" style="font-size:0.85rem;min-height:24px"></div>
+
+        <div class="footer-links">
+            Meeting | Incentives | Conferences | Exhibitions
+        </div>
+        <div class="version-info">
+            <span>Port 9001 | 2,501 Bank Transactions | BIO-ERP Integration</span>
         </div>
     </div>
-    
+
+    <script src="/static/vendor/bootstrap.bundle.min.js"></script>
     <script>
-    async function handleLogin(e) {
-        e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const btnText = document.getElementById('login-btn-text');
-        const spinner = document.getElementById('login-spinner');
-        const errorDiv = document.getElementById('login-error');
-        
-        btnText.style.display = 'none';
-        spinner.style.display = 'inline-block';
-        errorDiv.classList.remove('show');
-        
-        try {
-            const res = await fetch('/api/v1/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            
-            const data = await res.json();
-            
-            if (res.ok && data.access_token) {
-                localStorage.setItem('incentivehouse_token', data.access_token);
-                window.location.href = '/dashboard';
-            } else {
-                errorDiv.textContent = data.detail || 'Invalid username or password';
-                errorDiv.classList.add('show');
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnLogin');
+            const err = document.getElementById('loginError');
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Authenticating...';
+            err.textContent = '';
+            try {
+                const res = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({username: user, password: pass})
+                });
+                const data = await res.json();
+                if (res.ok && data.access_token) {
+                    localStorage.setItem('incentivehouse_token', data.access_token);
+                    document.cookie = 'access_token=' + data.access_token + '; path=/; max-age=86400';
+                    window.location.href = '/api/v1/incentivehouse/dashboard';
+                } else {
+                    err.textContent = data.detail || 'Invalid credentials';
+                }
+            } catch(e) {
+                err.textContent = 'Server error. Try again.';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> SIGN IN';
             }
-        } catch (err) {
-            errorDiv.textContent = 'Server error. Please try again.';
-            errorDiv.classList.add('show');
-        } finally {
-            btnText.style.display = 'inline';
-            spinner.style.display = 'none';
-        }
-    }
+        });
     </script>
 </body>
 </html>

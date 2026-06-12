@@ -21,20 +21,30 @@ class TestFinanceCore:
     ]
 
     @pytest.mark.parametrize("path", ENDPOINTS)
-    async def test_list_returns_not_500(self, path: str, client: AsyncClient, auth_headers: dict):
+    async def test_list_returns_not_500(
+        self, path: str, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.get(path, headers=auth_headers)
         assert resp.status_code < 500, f"{path} returned 500"
 
     @pytest.mark.parametrize("path", ENDPOINTS)
     async def test_list_returns_401_without_auth(self, path: str, client: AsyncClient):
         resp = await client.get(path)
-        assert resp.status_code < 500, f"{path} returned {resp.status_code} (open or auth)"
+        assert resp.status_code < 500, (
+            f"{path} returned {resp.status_code} (open or auth)"
+        )
 
     async def test_open_endpoints(self, client: AsyncClient):
         """/currencies, /branches, /suppliers/categories are open (no auth)."""
-        for p in ["/api/v1/currencies", "/api/v1/branches", "/api/v1/suppliers/categories"]:
+        for p in [
+            "/api/v1/currencies",
+            "/api/v1/branches",
+            "/api/v1/suppliers/categories",
+        ]:
             resp = await client.get(p)
-            assert resp.status_code == 200, f"{p} should be open, got {resp.status_code}"
+            assert resp.status_code == 200, (
+                f"{p} should be open, got {resp.status_code}"
+            )
 
 
 class TestProcurementItems:
@@ -48,7 +58,9 @@ class TestProcurementItems:
     ]
 
     @pytest.mark.parametrize("path", ENDPOINTS)
-    async def test_list_returns_not_500(self, path: str, client: AsyncClient, auth_headers: dict):
+    async def test_list_returns_not_500(
+        self, path: str, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.get(path, headers=auth_headers)
         assert resp.status_code < 500, f"{path} returned 500"
 
@@ -63,7 +75,9 @@ class TestFinanceGL:
     ]
 
     @pytest.mark.parametrize("path", ENDPOINTS)
-    async def test_list_returns_not_500(self, path: str, client: AsyncClient, auth_headers: dict):
+    async def test_list_returns_not_500(
+        self, path: str, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.get(path, headers=auth_headers)
         assert resp.status_code < 500, f"{path} returned {resp.status_code}"
 
@@ -78,7 +92,9 @@ class TestCostingBudget:
     ]
 
     @pytest.mark.parametrize("path", ENDPOINTS)
-    async def test_list_returns_not_500(self, path: str, client: AsyncClient, auth_headers: dict):
+    async def test_list_returns_not_500(
+        self, path: str, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.get(path, headers=auth_headers)
         assert resp.status_code < 500, f"{path} returned {resp.status_code}"
 
@@ -90,6 +106,8 @@ class TestApprovalPettyCash:
     ]
 
     @pytest.mark.parametrize("path", ENDPOINTS)
-    async def test_list_returns_not_500(self, path: str, client: AsyncClient, auth_headers: dict):
+    async def test_list_returns_not_500(
+        self, path: str, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.get(path, headers=auth_headers)
         assert resp.status_code < 500, f"{path} returned {resp.status_code}"

@@ -1,0 +1,2 @@
+[tool.ruff]
+exclude = ["incentivehouse_erp_master_v3.py"]

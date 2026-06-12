@@ -1,4 +1,4 @@
-﻿class MarkupEngine:
+class MarkupEngine:
     DEFAULT_RULES = {
         "VEN": 0.12,
         "AV": 0.12,

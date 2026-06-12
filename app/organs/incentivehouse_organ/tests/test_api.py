@@ -3,6 +3,7 @@ IHE-ERP v2.3 — API endpoint tests.
 Run: pytest tests/test_api.py -v
 Uses the `sync_client` fixture from conftest.py.
 """
+
 import pytest
 
 
@@ -40,7 +41,11 @@ def test_ai_assist_get(sync_client):
 def test_ai_assist_post_pnr(sync_client):
     r = sync_client.post(
         "/api/ai/assist",
-        json={"message": "How do I create a PNR?", "page_context": "/evn", "current_form_data": {}},
+        json={
+            "message": "How do I create a PNR?",
+            "page_context": "/evn",
+            "current_form_data": {},
+        },
     )
     assert r.status_code == 200
     body = r.json()
@@ -61,7 +66,11 @@ def test_ai_assist_post_greeting(sync_client):
 def test_ai_assist_post_sales(sync_client):
     r = sync_client.post(
         "/api/ai/assist",
-        json={"message": "How to add invoice?", "page_context": "/sal", "current_form_data": {}},
+        json={
+            "message": "How to add invoice?",
+            "page_context": "/sal",
+            "current_form_data": {},
+        },
     )
     assert r.status_code == 200
     reply = r.json()["reply"].lower()

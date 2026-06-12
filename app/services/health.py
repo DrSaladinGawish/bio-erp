@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import os
 import shutil
 from datetime import datetime
@@ -18,7 +18,9 @@ class HealthCheck:
             async with AsyncSessionLocal() as db:
                 start = datetime.now(timezone.utc).replace(tzinfo=None)
                 await db.execute(text("SELECT 1"))
-                latency = (datetime.now(timezone.utc).replace(tzinfo=None) - start).total_seconds()
+                latency = (
+                    datetime.now(timezone.utc).replace(tzinfo=None) - start
+                ).total_seconds()
                 return {
                     "status": "healthy",
                     "latency_ms": round(latency * 1000, 2),
@@ -40,7 +42,9 @@ class HealthCheck:
         try:
             start = datetime.now(timezone.utc).replace(tzinfo=None)
             token = await ETAClient._get_token()
-            latency = (datetime.now(timezone.utc).replace(tzinfo=None) - start).total_seconds()
+            latency = (
+                datetime.now(timezone.utc).replace(tzinfo=None) - start
+            ).total_seconds()
             return {
                 "status": "healthy" if token else "degraded",
                 "latency_ms": round(latency * 1000, 2),

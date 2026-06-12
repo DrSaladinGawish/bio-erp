@@ -31,9 +31,18 @@ def run_sustainability_check(self, scm_id: str) -> dict:
 def _dispatch_trigger(trigger_type: str, payload: dict) -> dict:
     dispatcher = {
         "job_created": lambda p: {"action": "validate_job", "job_id": p.get("job_id")},
-        "cost_threshold": lambda p: {"action": "notify_approver", "threshold": p.get("value")},
-        "scm_update": lambda p: {"action": "recalc_strategic_cost", "scm_id": p.get("scm_id")},
-        "sustainability_check": lambda p: {"action": "generate_sustainability_report", "context": p},
+        "cost_threshold": lambda p: {
+            "action": "notify_approver",
+            "threshold": p.get("value"),
+        },
+        "scm_update": lambda p: {
+            "action": "recalc_strategic_cost",
+            "scm_id": p.get("scm_id"),
+        },
+        "sustainability_check": lambda p: {
+            "action": "generate_sustainability_report",
+            "context": p,
+        },
     }
     handler = dispatcher.get(trigger_type)
     if handler is None:

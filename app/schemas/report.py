@@ -19,9 +19,7 @@ class ReportResponse(BaseModel):
     path: str
     report_type: str
     source_id: Optional[str] = None
-    created_at: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat()
-    )
+    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
 class ReportType:

@@ -32,7 +32,14 @@ class PrescriptionPayload(BaseModel):
     notes: Optional[str] = None
     issued_at: Optional[str] = None
 
-    @field_validator("external_id", "patient_name", "patient_id", "medication", "dosage", "prescribing_doctor")
+    @field_validator(
+        "external_id",
+        "patient_name",
+        "patient_id",
+        "medication",
+        "dosage",
+        "prescribing_doctor",
+    )
     @classmethod
     def not_blank(cls, v: str) -> str:
         if not v or not v.strip():
@@ -74,7 +81,7 @@ async def push_to_eventcore(req: PushRequest, db: AsyncSession = Depends(get_db)
     if req.prescription_ids:
         query = query.where(OrPrescription.id.in_(req.prescription_ids))
     else:
-        query = query.where(OrPrescription.exported == False)
+        query = query.where(not OrPrescription.exported)
 
     result = await db.execute(query)
     records = list(result.scalars().all())
@@ -99,15 +106,23 @@ async def push_to_eventcore(req: PushRequest, db: AsyncSession = Depends(get_db)
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(EVENTCORE_PUSH_ENDPOINT, json=batch, headers=headers)
+            response = await client.post(
+                EVENTCORE_PUSH_ENDPOINT, json=batch, headers=headers
+            )
 
         if response.status_code in (200, 201):
             pushed_count = len(records)
             ids = [r.id for r in records]
-            stmt = update(OrPrescription).where(OrPrescription.id.in_(ids)).values(exported=True)
+            stmt = (
+                update(OrPrescription)
+                .where(OrPrescription.id.in_(ids))
+                .values(exported=True)
+            )
             await db.execute(stmt)
             await db.commit()
-            logger.info("Pushed %d prescriptions to EventCore successfully", pushed_count)
+            logger.info(
+                "Pushed %d prescriptions to EventCore successfully", pushed_count
+            )
         else:
             err_msg = f"EventCore returned status {response.status_code}: {response.text[:200]}"
             errors.append(err_msg)
@@ -117,17 +132,21 @@ async def push_to_eventcore(req: PushRequest, db: AsyncSession = Depends(get_db)
         errors.append(err_msg)
         logger.error(err_msg)
 
-    return PushResult(pushed=pushed_count, failed=len(records) - pushed_count, errors=errors)
+    return PushResult(
+        pushed=pushed_count, failed=len(records) - pushed_count, errors=errors
+    )
 
 
 @router.post("/webhook/eventcore-trigger", response_model=PushResult)
-async def eventcore_trigger_webhook(req: PushRequest, db: AsyncSession = Depends(get_db)):
+async def eventcore_trigger_webhook(
+    req: PushRequest, db: AsyncSession = Depends(get_db)
+):
     return await push_to_eventcore(req, db)
 
 
 @router.get("/pending-count")
 async def pending_count(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(OrPrescription).where(OrPrescription.exported == False))
+    result = await db.execute(select(OrPrescription).where(not OrPrescription.exported))
     records = result.scalars().all()
     return {"pending": len(records)}
 

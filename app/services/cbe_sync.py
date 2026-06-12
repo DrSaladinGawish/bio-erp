@@ -1,4 +1,4 @@
-﻿import httpx
+import httpx
 from datetime import datetime
 from datetime import timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -59,7 +59,9 @@ async def sync_cbe_rate():
         )
         db.add(new_rate)
         await db.commit()
-        print(f"[CBE Sync] USD/EGP = {rate} @ {datetime.now(timezone.utc).replace(tzinfo=None).isoformat()}")
+        print(
+            f"[CBE Sync] USD/EGP = {rate} @ {datetime.now(timezone.utc).replace(tzinfo=None).isoformat()}"
+        )
 
 
 def start_cbe_scheduler():

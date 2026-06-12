@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 from celery import shared_task
 from app.database import AsyncSessionLocal
 from app.services.cbe_sync import sync_cbe_rate

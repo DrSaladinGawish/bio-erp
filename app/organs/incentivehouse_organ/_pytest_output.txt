@@ -1,0 +1,274 @@
+C:\Users\dell\AppData\Roaming\Python\Python313\site-packages\pytest_asyncio\plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts =============================
+collecting ... collected 178 items
+
+tests\test_ai_assist.py::test_local_reply_greeting PASSED                [  0%]
+tests\test_ai_assist.py::test_local_reply_pnr_intent PASSED              [  1%]
+tests\test_ai_assist.py::test_local_reply_sales_intent PASSED            [  1%]
+tests\test_ai_assist.py::test_local_reply_bank_intent PASSED             [  2%]
+tests\test_ai_assist.py::test_local_reply_empty PASSED                   [  2%]
+tests\test_ai_assist.py::test_local_reply_fallback PASSED                [  3%]
+tests\test_ai_assist.py::test_ai_assist_api_get PASSED                   [  3%]
+tests\test_ai_assist.py::test_ai_assist_api_post_pnr PASSED              [  4%]
+tests\test_ai_assist.py::test_ai_assist_api_post_greeting PASSED         [  5%]
+tests\test_api.py::test_health_endpoint PASSED                           [  5%]
+tests\test_api.py::test_api_health_endpoint PASSED                       [  6%]
+tests\test_api.py::test_api_health_has_pnr_count PASSED                  [  6%]
+tests\test_api.py::test_ai_assist_get PASSED                             [  7%]
+tests\test_api.py::test_ai_assist_post_pnr PASSED                        [  7%]
+tests\test_api.py::test_ai_assist_post_greeting PASSED                   [  8%]
+tests\test_api.py::test_ai_assist_post_sales PASSED                      [  8%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\bnk\transactions] PASSED [  9%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\bnk\accounts] PASSED [ 10%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\bnk\summary] PASSED  [ 10%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\sal\invoices] PASSED [ 11%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\sal\summary] PASSED  [ 11%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\pur\orders] PASSED   [ 12%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\pur\summary] PASSED  [ 12%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\evn\events] PASSED   [ 13%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\evn\summary] PASSED  [ 14%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\env\clients] PASSED  [ 14%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\env\vendors] PASSED  [ 15%]
+tests\test_api.py::test_bnk_api_returns_2xx[\api\v1\env\staff] PASSED    [ 15%]
+tests\test_auth.py::test_login_default_admin PASSED                      [ 16%]
+tests\test_auth.py::test_login_wrong_password PASSED                     [ 16%]
+tests\test_auth.py::test_auth_me_unauthenticated PASSED                  [ 17%]
+tests\test_auth.py::test_auth_refresh_success PASSED                     [ 17%]
+tests\test_auth.py::test_auth_refresh_reuse_revoked PASSED               [ 18%]
+tests\test_auth.py::test_auth_refresh_invalid_token PASSED               [ 19%]
+tests\test_bank_recon.py::test_bank_recon_page_returns_200 PASSED        [ 19%]
+tests\test_bank_recon.py::test_recon_api_auto_reconcile PASSED           [ 20%]
+tests\test_bank_recon.py::test_recon_api_list_matches PASSED             [ 20%]
+tests\test_bank_recon.py::test_recon_form_page PASSED                    [ 21%]
+tests\test_dashboard.py::test_dashboard_data_range[7D] PASSED            [ 21%]
+tests\test_dashboard.py::test_dashboard_data_range[30D] PASSED           [ 22%]
+tests\test_dashboard.py::test_dashboard_data_range[90D] PASSED           [ 23%]
+tests\test_dashboard.py::test_dashboard_data_range[YTD] PASSED           [ 23%]
+tests\test_dashboard.py::test_dashboard_data_custom PASSED               [ 24%]
+tests\test_dashboard.py::test_dashboard_data_default PASSED              [ 24%]
+tests\test_dashboard.py::test_dashboard_data_invalid_range PASSED        [ 25%]
+tests\test_dashboard.py::test_dashboard_data_monthly_series_length PASSED [ 25%]
+tests\test_dashboard.py::test_dashboard_data_values_are_floats PASSED    [ 26%]
+tests\test_dashboard.py::test_dashboard_export_json PASSED               [ 26%]
+tests\test_dashboard.py::test_dashboard_export_pdf PASSED                [ 27%]
+tests\test_dashboard_extras.py::test_dashboard_template_exists PASSED    [ 28%]
+tests\test_dashboard_extras.py::test_dashboard_js_exists PASSED          [ 28%]
+tests\test_dashboard_extras.py::test_pdf_generator_imports PASSED        [ 29%]
+tests\test_dashboard_extras.py::test_pdf_generator_returns_bytes PASSED  [ 29%]
+tests\test_dashboard_extras.py::test_pdf_export_endpoint PASSED          [ 30%]
+tests\test_dashboard_extras.py::test_dashboard_export_excel PASSED       [ 30%]
+tests\test_dashboard_extras.py::test_dashboard_export_buttons_range_aware PASSED [ 31%]
+tests\test_dashboard_extras.py::test_dashboard_serves_new_template PASSED [ 32%]
+tests\test_documents.py::test_document_modules_seed PASSED               [ 32%]
+tests\test_documents.py::test_document_modules_list PASSED               [ 33%]
+tests\test_documents.py::test_document_modules_seed_idempotent PASSED    [ 33%]
+tests\test_documents.py::test_document_list_empty PASSED                 [ 34%]
+tests\test_documents.py::test_document_list_with_module_filter PASSED    [ 34%]
+tests\test_documents.py::test_document_get_not_found PASSED              [ 35%]
+tests\test_documents.py::test_document_delete_not_found PASSED           [ 35%]
+tests\test_documents.py::test_document_ingest_no_usb PASSED              [ 36%]
+tests\test_documents.py::test_document_ingest_basic PASSED               [ 37%]
+tests\test_documents.py::test_document_ingest_duplicate_skipped PASSED   [ 37%]
+tests\test_documents.py::test_document_ingest_pattern_matching PASSED    [ 38%]
+tests\test_documents.py::test_document_verify_empty PASSED               [ 38%]
+tests\test_documents.py::test_document_module_out_shape PASSED           [ 39%]
+tests\test_event_ops_cycle.py::TestExecutionQueue::test_queue_empty_when_no_ops_events PASSED [ 39%]
+tests\test_event_ops_cycle.py::TestExecutionQueue::test_queue_returns_confirmed_event PASSED [ 40%]
+tests\test_event_ops_cycle.py::TestExecutionQueue::test_queue_stage_filter PASSED [ 41%]
+tests\test_event_ops_cycle.py::TestExecutionQueue::test_queue_requires_auth PASSED [ 41%]
+tests\test_event_ops_cycle.py::TestDashboardSummary::test_dashboard_summary_shape PASSED [ 42%]
+tests\test_event_ops_cycle.py::TestDashboardSummary::test_dashboard_requires_ops_manager PASSED [ 42%]
+tests\test_event_ops_cycle.py::TestAutoRecognize::test_auto_recognize_returns_data PASSED [ 43%]
+tests\test_event_ops_cycle.py::TestAutoRecognize::test_auto_recognize_404 PASSED [ 43%]
+tests\test_event_ops_cycle.py::TestAutoRecognize::test_apply_auto_recognition_creates_checkpoints PASSED [ 44%]
+tests\test_event_ops_cycle.py::TestAutoRecognize::test_apply_twice_is_idempotent PASSED [ 44%]
+tests\test_event_ops_cycle.py::TestExecutionForm::test_get_execution_form PASSED [ 45%]
+tests\test_event_ops_cycle.py::TestExecutionForm::test_execution_form_404 PASSED [ 46%]
+tests\test_event_ops_cycle.py::TestAssignTeam::test_assign_ops_team PASSED [ 46%]
+tests\test_event_ops_cycle.py::TestAssignTeam::test_assign_team_404_event PASSED [ 47%]
+tests\test_event_ops_cycle.py::TestCheckpoints::test_create_and_complete_checkpoint PASSED [ 47%]
+tests\test_event_ops_cycle.py::TestCheckpoints::test_revert_checkpoint PASSED [ 48%]
+tests\test_event_ops_cycle.py::TestCheckpoints::test_checkpoint_404 PASSED [ 48%]
+tests\test_event_ops_cycle.py::TestAdvanceStage::test_advance_stage PASSED [ 49%]
+tests\test_event_ops_cycle.py::TestAdvanceStage::test_advance_stage_invalid PASSED [ 50%]
+tests\test_event_ops_cycle.py::TestAdvanceStage::test_advance_stage_404 PASSED [ 50%]
+tests\test_event_ops_cycle.py::TestBulkUpdate::test_bulk_update_empty PASSED [ 51%]
+tests\test_event_ops_cycle.py::TestBulkUpdate::test_bulk_update_404 PASSED [ 51%]
+tests\test_forms.py::test_form_page_loads[\evn\new] PASSED               [ 52%]
+tests\test_forms.py::test_form_page_loads[\sal\new] PASSED               [ 52%]
+tests\test_forms.py::test_form_page_loads[\pur\new] PASSED               [ 53%]
+tests\test_forms.py::test_form_page_loads[\bnk\new] PASSED               [ 53%]
+tests\test_forms.py::test_form_page_loads[\gl\new] PASSED                [ 54%]
+tests\test_forms.py::test_form_page_is_html[\evn\new] PASSED             [ 55%]
+tests\test_forms.py::test_form_page_is_html[\sal\new] PASSED             [ 55%]
+tests\test_forms.py::test_form_page_is_html[\pur\new] PASSED             [ 56%]
+tests\test_forms.py::test_form_page_is_html[\bnk\new] PASSED             [ 56%]
+tests\test_forms.py::test_form_page_is_html[\gl\new] PASSED              [ 57%]
+tests\test_forms.py::test_pnr_form_has_required_fields PASSED            [ 57%]
+tests\test_forms.py::test_sales_form_has_required_fields PASSED          [ 58%]
+tests\test_forms.py::test_purchases_form_has_required_fields PASSED      [ 58%]
+tests\test_forms.py::test_banking_form_has_required_fields PASSED        [ 59%]
+tests\test_forms.py::test_gl_form_has_required_fields PASSED             [ 60%]
+tests\test_forms.py::test_sidebar_references_forms PASSED                [ 60%]
+tests\test_forms.py::test_ai_widget_on_every_page PASSED                 [ 61%]
+tests\test_forms.py::test_brand_images_referenced PASSED                 [ 61%]
+tests\test_gl_data.py::test_gl_list_returns_200 PASSED                   [ 62%]
+tests\test_gl_data.py::test_gl_voucher_form_loads PASSED                 [ 62%]
+tests\test_gl_data.py::test_gl_form_has_expected_fields PASSED           [ 63%]
+tests\test_gl_data.py::test_gl_page_shows_table PASSED                   [ 64%]
+tests\test_intelligence.py::test_intelligence_endpoint_returns_2xx[\api\v1\intelligence\health] PASSED [ 64%]
+tests\test_intelligence.py::test_intelligence_endpoint_returns_2xx[\api\v1\intelligence\gap] PASSED [ 65%]
+tests\test_intelligence.py::test_intelligence_endpoint_returns_2xx[\api\v1\intelligence\audit] PASSED [ 65%]
+tests\test_intelligence.py::test_intelligence_endpoint_returns_2xx[\api\v1\intelligence\backup] PASSED [ 66%]
+tests\test_intelligence.py::test_intelligence_endpoint_returns_2xx[\api\v1\intelligence\neural\predict] PASSED [ 66%]
+tests\test_intelligence.py::test_intelligence_endpoint_returns_2xx[\api\v1\intelligence\neural\cashflow] PASSED [ 67%]
+tests\test_intelligence.py::test_intelligence_endpoint_returns_2xx[\api\v1\intelligence\neural\revenue] PASSED [ 67%]
+tests\test_intelligence.py::test_intelligence_endpoint_returns_2xx[\api\v1\intelligence\neural\anomalies] PASSED [ 68%]
+tests\test_intelligence.py::test_intelligence_endpoint_returns_2xx[\api\v1\intelligence\or\solve] PASSED [ 69%]
+tests\test_intelligence.py::test_intelligence_endpoint_returns_2xx[\api\v1\intelligence\scm\analyze] PASSED [ 69%]
+tests\test_intelligence.py::test_intelligence_health_shape PASSED        [ 70%]
+tests\test_intelligence.py::test_intelligence_gap_shape PASSED           [ 70%]
+tests\test_intelligence.py::test_intelligence_audit_query PASSED         [ 71%]
+tests\test_intelligence.py::test_intelligence_audit_post PASSED          [ 71%]
+tests\test_intelligence.py::test_intelligence_backup_list PASSED         [ 72%]
+tests\test_intelligence.py::test_intelligence_backup_run PASSED          [ 73%]
+tests\test_intelligence.py::test_intelligence_neural_predict PASSED      [ 73%]
+tests\test_intelligence.py::test_intelligence_or_solve_all PASSED        [ 74%]
+tests\test_intelligence.py::test_intelligence_or_solve_single PASSED     [ 74%]
+tests\test_intelligence.py::test_intelligence_scm_analyze PASSED         [ 75%]
+tests\test_intelligence.py::test_intelligence_page PASSED                [ 75%]
+tests\test_intelligence_extras.py::test_audit_post_and_query_back PASSED [ 76%]
+tests\test_intelligence_extras.py::test_audit_export_endpoint PASSED     [ 76%]
+tests\test_intelligence_extras.py::test_gap_analysis_check_count PASSED  [ 77%]
+tests\test_intelligence_extras.py::test_or_solve_eoq PASSED              [ 78%]
+tests\test_intelligence_extras.py::test_or_solve_breakeven PASSED        [ 78%]
+tests\test_intelligence_extras.py::test_scm_sustainability PASSED        [ 79%]
+tests\test_intelligence_extras.py::test_neural_cashflow_shape PASSED     [ 79%]
+tests\test_intelligence_extras.py::test_neural_anomalies_shape PASSED    [ 80%]
+tests\test_intelligence_extras.py::test_neural_revenue_shape PASSED      [ 80%]
+tests\test_intelligence_extras.py::test_health_db_status PASSED          [ 81%]
+tests\test_intelligence_extras.py::test_backup_list_returns_list PASSED  [ 82%]
+tests\test_intelligence_extras.py::test_backup_run_returns_status PASSED [ 82%]
+tests\test_intelligence_extras.py::test_or_solve_all_engines_present PASSED [ 83%]
+tests\test_intelligence_extras.py::test_dashboard_kpis_not_hardcoded PASSED [ 83%]
+tests\test_intelligence_extras.py::test_dashboard_data_typecheck PASSED  [ 84%]
+tests\test_intelligence_extras.py::test_scm_all_cells_present PASSED     [ 84%]
+tests\test_intelligence_templates.py::test_audit_page_returns_200 PASSED [ 85%]
+tests\test_intelligence_templates.py::test_or_workbench_page_returns_200 PASSED [ 85%]
+tests\test_intelligence_templates.py::test_scm_workbench_page_returns_200 PASSED [ 86%]
+tests\test_intelligence_templates.py::test_audit_page_has_audit_content PASSED [ 87%]
+tests\test_intelligence_templates.py::test_or_page_has_engine_cards PASSED [ 87%]
+tests\test_intelligence_templates.py::test_scm_page_has_technique_cards PASSED [ 88%]
+tests\test_intelligence_templates.py::test_or_solve_post_lp_returns_result PASSED [ 88%]
+tests\test_intelligence_templates.py::test_scm_analyze_post_returns_result PASSED [ 89%]
+tests\test_intelligence_templates.py::test_intelligence_breadcrumb_links PASSED [ 89%]
+tests\test_intelligence_templates.py::test_all_intelligence_pages_extend_base PASSED [ 90%]
+tests\test_pages.py::test_page_returns_200[\] PASSED                     [ 91%]
+tests\test_pages.py::test_page_returns_200[\evn] PASSED                  [ 91%]
+tests\test_pages.py::test_page_returns_200[\sal] PASSED                  [ 92%]
+tests\test_pages.py::test_page_returns_200[\pur] PASSED                  [ 92%]
+tests\test_pages.py::test_page_returns_200[\bnk] PASSED                  [ 93%]
+tests\test_pages.py::test_page_returns_200[\gl] PASSED                   [ 93%]
+tests\test_pages.py::test_page_returns_200[\documents] PASSED            [ 94%]
+tests\test_pages.py::test_page_returns_200[\reports] PASSED              [ 94%]
+tests\test_pages.py::test_page_returns_200[\neural] PASSED               [ 95%]
+tests\test_pages.py::test_page_returns_200[\login] PASSED                [ 96%]
+tests\test_pages.py::test_page_returns_200[\api\v1\incentivehouse\events\new] PASSED [ 96%]
+tests\test_pages.py::test_page_returns_200[\api\v1\incentivehouse\recon\form] PASSED [ 97%]
+tests\test_pages.py::test_page_returns_200[\api\v1\incentivehouse\purchasing] PASSED [ 97%]
+tests\test_pages.py::test_page_returns_200[\api\v1\incentivehouse\search] PASSED [ 98%]
+tests\test_pages.py::test_root_is_html PASSED                            [ 98%]
+tests\test_pages.py::test_login_has_username_field PASSED                [ 99%]
+tests\test_pages.py::test_static_logo_assets PASSED                      [100%]
+
+============================== warnings summary ===============================
+routers\recon_builder_router.py:152
+  d:\ERP System\BIO_ERP\app\organs\incentivehouse_organ\routers\recon_builder_router.py:152: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    format: str = Query("csv", regex="^(csv|json)$"), db: Session = Depends(get_db)
+
+C:\Python313\Lib\site-packages\pydantic\_internal\_config.py:291
+C:\Python313\Lib\site-packages\pydantic\_internal\_config.py:291
+C:\Python313\Lib\site-packages\pydantic\_internal\_config.py:291
+C:\Python313\Lib\site-packages\pydantic\_internal\_config.py:291
+C:\Python313\Lib\site-packages\pydantic\_internal\_config.py:291
+  C:\Python313\Lib\site-packages\pydantic\_internal\_config.py:291: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.9/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+conftest.py:32
+  D:\ERP System\BIO_ERP\app\organs\incentivehouse_organ\conftest.py:32: UserWarning: ERP-level app imports unavailable; only organ-level tests can run.
+    warnings.warn("ERP-level app imports unavailable; only organ-level tests can run.")
+
+app/organs/incentivehouse_organ/tests/test_api.py::test_bnk_api_returns_2xx[/api/v1/pur/summary]
+  <sys>:0: SAWarning: SELECT statement has a cartesian product between FROM element(s) "purchase_orders" and FROM element "anon_1".  Apply join condition(s) between each element to resolve.
+
+app/organs/incentivehouse_organ/tests/test_api.py::test_bnk_api_returns_2xx[/api/v1/pur/summary]
+  <sys>:0: SAWarning: SELECT statement has a cartesian product between FROM element(s) "anon_1" and FROM element "vendor_invoices".  Apply join condition(s) between each element to resolve.
+
+app/organs/incentivehouse_organ/tests/test_bank_recon.py: 1 warning
+app/organs/incentivehouse_organ/tests/test_dashboard_extras.py: 1 warning
+app/organs/incentivehouse_organ/tests/test_forms.py: 23 warnings
+app/organs/incentivehouse_organ/tests/test_gl_data.py: 4 warnings
+app/organs/incentivehouse_organ/tests/test_intelligence.py: 1 warning
+app/organs/incentivehouse_organ/tests/test_intelligence_templates.py: 10 warnings
+app/organs/incentivehouse_organ/tests/test_pages.py: 16 warnings
+  C:\Users\dell\AppData\Roaming\Python\Python313\site-packages\starlette\templating.py:161: DeprecationWarning: The `name` is not the first parameter anymore. The first parameter should be the `Request` instance.
+  Replace `TemplateResponse(name, {"request": request})` by `TemplateResponse(request, name)`.
+    warnings.warn(
+
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py: 28 warnings
+  C:\Python313\Lib\site-packages\jose\jwt.py:311: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = timegm(datetime.utcnow().utctimetuple())
+
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py: 33 warnings
+  C:\Users\dell\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\schema.py:3596: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestAutoRecognize::test_auto_recognize_returns_data
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestAutoRecognize::test_auto_recognize_404
+  d:\ERP System\BIO_ERP\app\organs\incentivehouse_organ\event_ops_router.py:241: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    event = db.query(Event).get(event_id)
+
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestAutoRecognize::test_apply_auto_recognition_creates_checkpoints
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestAutoRecognize::test_apply_twice_is_idempotent
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestAutoRecognize::test_apply_twice_is_idempotent
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestCheckpoints::test_create_and_complete_checkpoint
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestCheckpoints::test_revert_checkpoint
+  d:\ERP System\BIO_ERP\app\organs\incentivehouse_organ\event_ops_router.py:257: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    event = db.query(Event).get(event_id)
+
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestAssignTeam::test_assign_ops_team
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestAssignTeam::test_assign_team_404_event
+  d:\ERP System\BIO_ERP\app\organs\incentivehouse_organ\event_ops_router.py:404: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    event = db.query(Event).get(event_id)
+
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestAssignTeam::test_assign_ops_team
+  d:\ERP System\BIO_ERP\app\organs\incentivehouse_organ\event_ops_router.py:408: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    staff = db.query(Staff).get(assign.ops_team_id)
+
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestCheckpoints::test_create_and_complete_checkpoint
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestCheckpoints::test_revert_checkpoint
+  d:\ERP System\BIO_ERP\app\organs\incentivehouse_organ\event_ops_router.py:353: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    cp.completed_at = datetime.utcnow()
+
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestCheckpoints::test_create_and_complete_checkpoint
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestCheckpoints::test_revert_checkpoint
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestCheckpoints::test_revert_checkpoint
+  d:\ERP System\BIO_ERP\app\organs\incentivehouse_organ\event_ops_router.py:369: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    event = db.query(Event).get(event_id)
+
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestAdvanceStage::test_advance_stage
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestAdvanceStage::test_advance_stage_404
+  d:\ERP System\BIO_ERP\app\organs\incentivehouse_organ\event_ops_router.py:457: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    event = db.query(Event).get(event_id)
+
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestBulkUpdate::test_bulk_update_empty
+app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py::TestBulkUpdate::test_bulk_update_404
+  d:\ERP System\BIO_ERP\app\organs\incentivehouse_organ\event_ops_router.py:427: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    event = db.query(Event).get(event_id)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 178 passed, 145 warnings in 136.68s (0:02:16) ================
+Exit code: 0 

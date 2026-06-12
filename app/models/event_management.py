@@ -1,5 +1,5 @@
 import uuid
-from datetime import timezone, date, datetime, timezone
+from datetime import date, datetime, timezone
 from sqlalchemy import (
     Integer,
     String,
@@ -88,7 +88,9 @@ class EventLog(Base):
         SAEnum(Severity), nullable=False, default=Severity.info
     )
     timestamp: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )
     payload: Mapped[dict] = mapped_column(JSON, nullable=True)
     handled: Mapped[bool] = mapped_column(Boolean, default=False)

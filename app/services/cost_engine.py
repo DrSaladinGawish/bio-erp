@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from datetime import timezone
 from decimal import Decimal
 from sqlalchemy import select, func
@@ -163,12 +163,10 @@ class CostEngine:
             gross_profit = revenue - direct_costs
             gross_margin = float(gross_profit / revenue * 100) if revenue else 0
 
-            budget_q = (
-                select(
-                    func.coalesce(func.sum(BudgetLine.budgeted_amount), 0),
-                    func.coalesce(func.sum(BudgetLine.actual_amount), 0),
-                ).where(BudgetLine.branch_id == branch.id)
-            )
+            budget_q = select(
+                func.coalesce(func.sum(BudgetLine.budgeted_amount), 0),
+                func.coalesce(func.sum(BudgetLine.actual_amount), 0),
+            ).where(BudgetLine.branch_id == branch.id)
             if period_id:
                 budget_q = budget_q.where(BudgetLine.budget_period_id == period_id)
             budget_row = (await db.execute(budget_q)).one()
@@ -210,7 +208,11 @@ class CostEngine:
 
         for line in lines:
             gl_q = await db.execute(
-                select(func.coalesce(func.sum(JVLine.debit_amount - JVLine.credit_amount), 0))
+                select(
+                    func.coalesce(
+                        func.sum(JVLine.debit_amount - JVLine.credit_amount), 0
+                    )
+                )
                 .select_from(JVLine)
                 .join(JVHeader, JVHeader.id == JVLine.jv_id)
                 .where(JVLine.gl_account_id == line.coa_account_id)

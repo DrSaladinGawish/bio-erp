@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from datetime import timezone
 from typing import Dict
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -150,7 +150,9 @@ class CostingEngine:
                 "neural_load_score": round(neural_load, 2),
             },
             "variance_analysis": await CostingEngine._calculate_variances(db, event_id),
-            "calculated_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
+            "calculated_at": datetime.now(timezone.utc)
+            .replace(tzinfo=None)
+            .isoformat(),
         }
 
         existing = await db.execute(

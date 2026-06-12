@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,7 +52,9 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     role_names = [r.name for r in user.roles]
     token = create_access_token(user.id, user.username, role_names, user.branch_id)
 
-    user.last_login = __import__("datetime").datetime.now(timezone.utc).replace(tzinfo=None)
+    user.last_login = (
+        __import__("datetime").datetime.now(timezone.utc).replace(tzinfo=None)
+    )
     logger = AuditLogger(db)
     await logger.log(
         "LOGIN", "User", user.id, actor_id=user.id, actor_name=user.username
@@ -99,6 +101,15 @@ async def create_user(
         actor_id=current_user.id,
     )
     return {"id": user.id, "username": user.username}
+
+
+@router.get("/verify")
+async def verify_token(current_user: User = Depends(get_current_user)):
+    return {
+        "valid": True,
+        "username": current_user.username,
+        "roles": [r.name for r in current_user.roles],
+    }
 
 
 @router.get("/me")

@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 from datetime import date, datetime, timezone
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession

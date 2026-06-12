@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 from celery import shared_task
 from app.services.eta_retry_processor import ETARetryProcessor
 
