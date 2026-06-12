@@ -9,6 +9,7 @@ This migration creates the complete schema for the IncentiveHouse organ
 tables) so the Docker container can come up on a clean database with
 just ``alembic upgrade head``.
 """
+
 from __future__ import annotations
 
 from typing import Sequence, Union
@@ -66,7 +67,13 @@ def upgrade() -> None:
         sa.Column("source_row", sa.Integer()),
         sa.Column("staged_at", sa.String(length=30)),
     ]
-    for table in ("bnk_staging", "sal_staging", "pur_staging", "evn_staging", "env_staging"):
+    for table in (
+        "bnk_staging",
+        "sal_staging",
+        "pur_staging",
+        "evn_staging",
+        "env_staging",
+    ):
         op.create_table(table, *staging_columns)
 
     # 7-13. Pipeline lifecycle logs
@@ -294,7 +301,6 @@ def upgrade() -> None:
         sa.Column("finished_at", sa.String(length=30)),
     )
 
-
     # ── Production tables (used by SAL, PUR, EVN, ENV, RECON routers) ──
 
     op.create_table(
@@ -352,7 +358,9 @@ def upgrade() -> None:
     op.create_table(
         "events",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column("event_code", sa.String(length=50), unique=True, index=True, nullable=False),
+        sa.Column(
+            "event_code", sa.String(length=50), unique=True, index=True, nullable=False
+        ),
         sa.Column("pnr_id", sa.Integer(), index=True),
         sa.Column("client_id", sa.Integer(), index=True),
         sa.Column("event_name", sa.String(length=255)),
@@ -371,7 +379,9 @@ def upgrade() -> None:
     op.create_table(
         "work_orders",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column("wo_code", sa.String(length=50), unique=True, index=True, nullable=False),
+        sa.Column(
+            "wo_code", sa.String(length=50), unique=True, index=True, nullable=False
+        ),
         sa.Column("event_id", sa.Integer(), index=True),
         sa.Column("department", sa.String(length=50)),
         sa.Column("task", sa.String(length=255)),
@@ -402,7 +412,9 @@ def upgrade() -> None:
     op.create_table(
         "sales_invoices",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column("invoice_no", sa.String(length=50), unique=True, index=True, nullable=False),
+        sa.Column(
+            "invoice_no", sa.String(length=50), unique=True, index=True, nullable=False
+        ),
         sa.Column("invoice_date", sa.Date(), index=True),
         sa.Column("client_id", sa.Integer(), index=True),
         sa.Column("event_id", sa.Integer(), index=True),
@@ -439,7 +451,9 @@ def upgrade() -> None:
     op.create_table(
         "purchase_orders",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column("po_no", sa.String(length=50), unique=True, index=True, nullable=False),
+        sa.Column(
+            "po_no", sa.String(length=50), unique=True, index=True, nullable=False
+        ),
         sa.Column("po_date", sa.Date(), index=True),
         sa.Column("vendor_id", sa.Integer(), index=True),
         sa.Column("event_id", sa.Integer(), index=True),
@@ -457,7 +471,9 @@ def upgrade() -> None:
     op.create_table(
         "vendor_invoices",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column("invoice_no", sa.String(length=50), unique=True, index=True, nullable=False),
+        sa.Column(
+            "invoice_no", sa.String(length=50), unique=True, index=True, nullable=False
+        ),
         sa.Column("invoice_date", sa.Date(), index=True),
         sa.Column("vendor_id", sa.Integer(), index=True),
         sa.Column("po_id", sa.Integer(), index=True),
@@ -511,20 +527,44 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Drop in reverse dependency order
     for table in (
-        "recon_matches", "budget_lines", "vendor_invoices",
-        "purchase_orders", "sales_line_items", "sales_invoices",
-        "staff_assignments", "work_orders", "events",
-        "staff_mtbl", "vendors_mtbl", "bnk_transactions",
-        "agent_runs", "error_logs", "snapshot_records",
-        "validation_rules", "mapping_rules", "source_paths",
-        "pnr_records", "trnx_keys", "sub_ledger_keys",
-        "cheque_books", "cost_centers", "clients_mtbl",
-        "bnk_trnx_staging", "bnk_reconciliation",
-        "observe_log", "promotion_log", "approval_log",
-        "reconcile_log", "staging_log", "validation_log",
+        "recon_matches",
+        "budget_lines",
+        "vendor_invoices",
+        "purchase_orders",
+        "sales_line_items",
+        "sales_invoices",
+        "staff_assignments",
+        "work_orders",
+        "events",
+        "staff_mtbl",
+        "vendors_mtbl",
+        "bnk_transactions",
+        "agent_runs",
+        "error_logs",
+        "snapshot_records",
+        "validation_rules",
+        "mapping_rules",
+        "source_paths",
+        "pnr_records",
+        "trnx_keys",
+        "sub_ledger_keys",
+        "cheque_books",
+        "cost_centers",
+        "clients_mtbl",
+        "bnk_trnx_staging",
+        "bnk_reconciliation",
+        "observe_log",
+        "promotion_log",
+        "approval_log",
+        "reconcile_log",
+        "staging_log",
+        "validation_log",
         "extraction_log",
-        "env_staging", "evn_staging", "pur_staging",
-        "sal_staging", "bnk_staging",
+        "env_staging",
+        "evn_staging",
+        "pur_staging",
+        "sal_staging",
+        "bnk_staging",
         "incentivehouse_audit_log",
     ):
         op.drop_table(table)

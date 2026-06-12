@@ -4,13 +4,13 @@ Pre-change backup manager for IHE-ERP.
 Adapted from Bio-ERP.  On SQLite (test) it does .backup; on SQL Server it issues
 BACKUP DATABASE via the connection.  Failures are logged, never raised.
 """
+
 from __future__ import annotations
 import logging
 import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -46,7 +46,11 @@ def backup_before_change(
     try:
         # Try SQL Server BACKUP DATABASE first
         try:
-            db.execute(text(f"BACKUP DATABASE IHE_ERP TO DISK = N'{BACKUP_DIR}/IHE_ERP_{ts}.bak'"))
+            db.execute(
+                text(
+                    f"BACKUP DATABASE IHE_ERP TO DISK = N'{BACKUP_DIR}/IHE_ERP_{ts}.bak'"
+                )
+            )
             db.commit()
             out["status"] = "ok"
             out["path"] = f"{BACKUP_DIR}/IHE_ERP_{ts}.bak"
@@ -86,12 +90,16 @@ def list_backups() -> list:
     if not BACKUP_DIR.exists():
         return []
     out = []
-    for f in sorted(BACKUP_DIR.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True):
+    for f in sorted(
+        BACKUP_DIR.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True
+    ):
         if f.suffix in (".bak", ".db", ".sql"):
-            out.append({
-                "name": f.name,
-                "path": str(f),
-                "size_bytes": f.stat().st_size,
-                "modified": datetime.fromtimestamp(f.stat().st_mtime).isoformat(),
-            })
+            out.append(
+                {
+                    "name": f.name,
+                    "path": str(f),
+                    "size_bytes": f.stat().st_size,
+                    "modified": datetime.fromtimestamp(f.stat().st_mtime).isoformat(),
+                }
+            )
     return out[:50]

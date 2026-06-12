@@ -3,12 +3,11 @@ intelligence/neural/__init__.py
 Neural predictors for IHE-ERP.
 5 predictors: cashflow, anomaly, client score, revenue forecast, vendor rank.
 """
+
 from __future__ import annotations
 import logging
-import math
 import statistics
-from datetime import datetime, timedelta
-from typing import Any, Optional
+from datetime import datetime
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -19,9 +18,11 @@ logger = logging.getLogger("incentivehouse_organ.intelligence.neural")
 def _fetch_amounts(db: Session, table: str, amount_col: str, date_col: str) -> list:
     """Fetch (date, amount) tuples for time-series analysis."""
     try:
-        rows = db.execute(text(
-            f"SELECT {date_col}, {amount_col} FROM {table} WHERE {amount_col} IS NOT NULL ORDER BY {date_col} DESC LIMIT 200"
-        )).fetchall()
+        rows = db.execute(
+            text(
+                f"SELECT {date_col}, {amount_col} FROM {table} WHERE {amount_col} IS NOT NULL ORDER BY {date_col} DESC LIMIT 200"
+            )
+        ).fetchall()
         return [(r[0], float(r[1] or 0)) for r in rows]
     except Exception as exc:
         logger.debug("_fetch_amounts(%s) failed: %s", table, exc)
@@ -85,8 +86,12 @@ def detect_anomalies(db: Session) -> dict:
         return {"predictor": "anomaly", "anomalies": [], "scanned": 0}
     amounts = [a for _, a in series]
     if len(amounts) < 5:
-        return {"predictor": "anomaly", "anomalies": [], "scanned": len(amounts),
-                "note": "Need >=5 transactions for meaningful detection"}
+        return {
+            "predictor": "anomaly",
+            "anomalies": [],
+            "scanned": len(amounts),
+            "note": "Need >=5 transactions for meaningful detection",
+        }
     mean = statistics.mean(amounts)
     stdev = statistics.stdev(amounts) if len(amounts) > 1 else 0
     if stdev == 0:
@@ -109,15 +114,24 @@ def detect_anomalies(db: Session) -> dict:
 def score_clients(db: Session) -> dict:
     """Score clients by total sales (simple ranking)."""
     try:
-        rows = db.execute(text("""
+        rows = db.execute(
+            text("""
             SELECT client_id, COALESCE(SUM(total_amount), 0) as total, COUNT(*) as cnt
             FROM sales_invoice
             GROUP BY client_id
             ORDER BY total DESC
             LIMIT 20
-        """)).fetchall()
-        clients = [{"client_id": r[0], "total_sales": float(r[1]), "invoice_count": r[2],
-                    "score": round(min(100, float(r[1]) / 1000.0), 1)} for r in rows]
+        """)
+        ).fetchall()
+        clients = [
+            {
+                "client_id": r[0],
+                "total_sales": float(r[1]),
+                "invoice_count": r[2],
+                "score": round(min(100, float(r[1]) / 1000.0), 1),
+            }
+            for r in rows
+        ]
     except Exception as exc:
         logger.debug("score_clients failed: %s", exc)
         clients = []
@@ -132,15 +146,24 @@ def score_clients(db: Session) -> dict:
 def rank_vendors(db: Session) -> dict:
     """Rank vendors by total spend."""
     try:
-        rows = db.execute(text("""
+        rows = db.execute(
+            text("""
             SELECT vendor_id, COALESCE(SUM(total_amount), 0) as total, COUNT(*) as cnt
             FROM purchase_voucher
             GROUP BY vendor_id
             ORDER BY total DESC
             LIMIT 20
-        """)).fetchall()
-        vendors = [{"vendor_id": r[0], "total_spend": float(r[1]), "voucher_count": r[2],
-                    "rank": i + 1} for i, r in enumerate(rows)]
+        """)
+        ).fetchall()
+        vendors = [
+            {
+                "vendor_id": r[0],
+                "total_spend": float(r[1]),
+                "voucher_count": r[2],
+                "rank": i + 1,
+            }
+            for i, r in enumerate(rows)
+        ]
     except Exception as exc:
         logger.debug("rank_vendors failed: %s", exc)
         vendors = []

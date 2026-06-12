@@ -6,8 +6,14 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 INVOICE_PATTERNS = [
-    (r"(?i)(?:invoice|فاتورة)\s+(?:no|#|nummer|number)\s*[:\-]?\s*(\S+)", "invoice_number"),
-    (r"(?i)(date|تاريخ)\s*[:\-]?\s*(\d{1,4}[/\-\.]\d{1,2}[/\-\.]\d{1,4})", "document_date"),
+    (
+        r"(?i)(?:invoice|فاتورة)\s+(?:no|#|nummer|number)\s*[:\-]?\s*(\S+)",
+        "invoice_number",
+    ),
+    (
+        r"(?i)(date|تاريخ)\s*[:\-]?\s*(\d{1,4}[/\-\.]\d{1,2}[/\-\.]\d{1,4})",
+        "document_date",
+    ),
     (r"(?i)(total|due|المجموع|الإجمالي)\s*[:\-]?\s*([\d,]+\.?\d*)", "total_amount"),
     (r"(?i)(vat|tax|ضريبة|قيمة مضافة)\s*[:\-]?\s*([\d,]+\.?\d*)", "tax_amount"),
     (r"(?i)(supplier|vendor|مورد|بائع)\s*[:\-]?\s*(.+?)(?:\n|$)", "supplier_name"),
@@ -19,9 +25,7 @@ ACCOUNT_PATTERNS = [
     (r"(?i)(cost center|مركز تكلفة)\s*[:\-]?\s*(.+?)(?:\n|$)", "cost_center"),
 ]
 
-AMOUNT_LINE_PATTERN = re.compile(
-    r"(?i)([\w\s/]+?)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)"
-)
+AMOUNT_LINE_PATTERN = re.compile(r"(?i)([\w\s/]+?)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)")
 
 
 def extract_entities(text: str) -> dict[str, Any]:
@@ -76,21 +80,25 @@ def extract_patterns(text: str) -> list[dict[str, Any]]:
                 amt = float(m.group(3).replace(",", ""))
             except ValueError:
                 continue
-            patterns.append({
-                "type": "line_item",
-                "description": desc,
-                "quantity": qty,
-                "amount": amt,
-            })
+            patterns.append(
+                {
+                    "type": "line_item",
+                    "description": desc,
+                    "quantity": qty,
+                    "amount": amt,
+                }
+            )
 
     for entry in INVOICE_PATTERNS:
         pattern = entry[0] if isinstance(entry, tuple) else entry
         for match in re.finditer(pattern, text):
-            patterns.append({
-                "type": "keyword_match",
-                "pattern": str(pattern)[:100],
-                "matched": match.group(0).strip(),
-            })
+            patterns.append(
+                {
+                    "type": "keyword_match",
+                    "pattern": str(pattern)[:100],
+                    "matched": match.group(0).strip(),
+                }
+            )
 
     return patterns
 
@@ -109,12 +117,14 @@ def match_neural_nodes(
                 continue
             str_val = str(val).lower()
             if label in str_val or str_val in label:
-                matched.append({
-                    "node_id": node.get("id"),
-                    "label": node.get("label"),
-                    "matched_on": key,
-                    "confidence": 0.8,
-                })
+                matched.append(
+                    {
+                        "node_id": node.get("id"),
+                        "label": node.get("label"),
+                        "matched_on": key,
+                        "confidence": 0.8,
+                    }
+                )
                 break
     return matched
 
@@ -167,7 +177,9 @@ def _generate_summary(entities: dict[str, Any], patterns: list[dict[str, Any]]) 
     return " ".join(parts) if parts else "Document analyzed, no key entities found."
 
 
-def _calculate_confidence(entities: dict[str, Any], patterns: list[dict[str, Any]]) -> float:
+def _calculate_confidence(
+    entities: dict[str, Any], patterns: list[dict[str, Any]]
+) -> float:
     score = 0.0
     if entities.get("invoice_number"):
         score += 0.25

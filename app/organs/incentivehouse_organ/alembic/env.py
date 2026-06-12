@@ -13,6 +13,7 @@ Configuration is read from env vars:
   SYNC_DATABASE_URL     (sync)   - used for offline SQL emit
   ALEMBIC_INI_PATH      (optional path to alembic.ini; default: ./alembic.ini)
 """
+
 from __future__ import annotations
 
 import os
@@ -27,7 +28,9 @@ from sqlalchemy import create_engine, pool
 # Make ``app.organs.incentivehouse_organ`` importable when this file is
 # invoked by ``alembic -x ...`` from the project root.
 # ---------------------------------------------------------------------------
-_PROJECT_ROOT = Path(__file__).resolve().parents[3]  # alembic/ -> organ/ -> organs/ -> app/
+_PROJECT_ROOT = (
+    Path(__file__).resolve().parents[3]
+)  # alembic/ -> organ/ -> organs/ -> app/
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
@@ -60,6 +63,7 @@ target_metadata = IncentiveBase.metadata
 # Offline (emit SQL script without a live connection)
 # ---------------------------------------------------------------------------
 
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
     url = config.get_main_option("sqlalchemy.url")
@@ -77,6 +81,7 @@ def run_migrations_offline() -> None:
 # ---------------------------------------------------------------------------
 # Online (use a live DB connection)
 # ---------------------------------------------------------------------------
+
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""

@@ -1,0 +1,44 @@
+{
+  "id": 1,
+  "saved_at": "2026-06-07T09:48:07.119022",
+  "event_id": 1,
+  "analysis_type": "event_profitability",
+  "input_data": {},
+  "results": {
+    "analysis_type": "event_profitability",
+    "event_id": 1,
+    "event_name": "Cisco Annual Meeting",
+    "revenue": 250000.0,
+    "primary_cost": 140000.0,
+    "support_cost": 53000.0,
+    "sustainability_cost": 10000.0,
+    "overhead_allocation": 23160.0,
+    "total_cost": 226160.0,
+    "gross_profit": 23840.0,
+    "gross_margin_pct": 9.54,
+    "budget_variance": -26160.0,
+    "budget_variance_pct": -13.08,
+    "client_profitability": {
+      "client_id": 84,
+      "client_name": "CISCO",
+      "event_gross_profit": 23840.0,
+      "event_margin_pct": 9.54,
+      "budget_variance": -26160.0,
+      "budget_variance_pct": -13.08
+    },
+    "status": "profitable",
+    "recommendations": [
+      "Gross margin 9.5% \u2014 URGENT: renegotiate or cancel",
+      "Budget variance: -13.1% \u2014 over budget",
+      "True cost includes sustainability \u2014 not reflected in standard P&L"
+    ],
+    "confidence_score": 0.9
+  },
+  "recommendations": [
+    "Gross margin 9.5% \u2014 URGENT: renegotiate or cancel",
+    "Budget variance: -13.1% \u2014 over budget",
+    "True cost includes sustainability \u2014 not reflected in standard P&L"
+  ],
+  "confidence_score": 0.9,
+  "created_by": "scm_cost_engine"
+}

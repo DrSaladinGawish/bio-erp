@@ -25,6 +25,7 @@ router = APIRouter(prefix="/api/v1/manufacturing", tags=["manufacturing"])
 
 # ── Pydantic schemas ──────────────────────────────────────────────
 
+
 class BatchCreate(BaseModel):
     bioreactor_id: Optional[int] = None
     cell_line_id: Optional[int] = None
@@ -76,6 +77,7 @@ class BatchResponse(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────
 
+
 def _batch_to_dict(b: Batch) -> dict:
     return {
         "id": b.id,
@@ -88,8 +90,12 @@ def _batch_to_dict(b: Batch) -> dict:
         "product_id": b.product_id,
         "volume_l": float(b.volume_l or 0),
         "inoculum_density": float(b.inoculum_density) if b.inoculum_density else None,
-        "target_biomass_gl": float(b.target_biomass_gl) if b.target_biomass_gl else None,
-        "actual_biomass_gl": float(b.actual_biomass_gl) if b.actual_biomass_gl else None,
+        "target_biomass_gl": float(b.target_biomass_gl)
+        if b.target_biomass_gl
+        else None,
+        "actual_biomass_gl": float(b.actual_biomass_gl)
+        if b.actual_biomass_gl
+        else None,
         "start_time": b.start_time.isoformat() if b.start_time else None,
         "harvest_time": b.harvest_time.isoformat() if b.harvest_time else None,
         "total_cost_egp": float(b.total_cost_egp or 0),
@@ -105,12 +111,24 @@ def _batch_to_dict(b: Batch) -> dict:
 async def _generate_batch_number(db: AsyncSession) -> str:
     today = datetime.now(timezone.utc).strftime("%Y%m%d")
     prefix = f"BIO-{today}-"
-    count = (await db.scalar(select(func.count()).select_from(Batch).where(Batch.batch_number.like(f"{prefix}%")))) or 0
+    count = (
+        await db.scalar(
+            select(func.count())
+            .select_from(Batch)
+            .where(Batch.batch_number.like(f"{prefix}%"))
+        )
+    ) or 0
     return f"{prefix}{count + 1:04d}"
 
 
-async def _transition(batch: Batch, target: BatchStatus, db: AsyncSession, user: User, reason: str = ""):
-    current = batch.status if isinstance(batch.status, BatchStatus) else BatchStatus(batch.status)
+async def _transition(
+    batch: Batch, target: BatchStatus, db: AsyncSession, user: User, reason: str = ""
+):
+    current = (
+        batch.status
+        if isinstance(batch.status, BatchStatus)
+        else BatchStatus(batch.status)
+    )
     target_enum = target if isinstance(target, BatchStatus) else BatchStatus(target)
 
     if target_enum not in VALID_TRANSITIONS.get(current, set()):
@@ -124,7 +142,9 @@ async def _transition(batch: Batch, target: BatchStatus, db: AsyncSession, user:
     batch.status = target_enum
     history = BatchStatusHistory(
         batch_id=batch.id,
-        from_status=old_status.value if isinstance(old_status, BatchStatus) else old_status,
+        from_status=old_status.value
+        if isinstance(old_status, BatchStatus)
+        else old_status,
         to_status=target_enum.value,
         changed_by=user.id,
         reason=reason or f"Transition {old_status.value} → {target_enum.value}",
@@ -133,6 +153,7 @@ async def _transition(batch: Batch, target: BatchStatus, db: AsyncSession, user:
 
 
 # ── CRUD Endpoints ────────────────────────────────────────────────
+
 
 @router.get("/batches", response_model=dict)
 async def list_batches(
@@ -147,7 +168,9 @@ async def list_batches(
         query = query.where(Batch.status == status_filter)
     query = query.order_by(Batch.created_at.desc())
 
-    total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar() or 0
+    total = (
+        await db.execute(select(func.count()).select_from(query.subquery()))
+    ).scalar() or 0
     result = await db.execute(query.offset((page - 1) * page_size).limit(page_size))
     batches = result.scalars().all()
 
@@ -166,10 +189,14 @@ async def get_batch(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None)))
+    result = await db.execute(
+        select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None))
+    )
     batch = result.scalar_one_or_none()
     if not batch:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found"
+        )
     return _batch_to_dict(batch)
 
 
@@ -217,10 +244,14 @@ async def update_batch(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None)))
+    result = await db.execute(
+        select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None))
+    )
     batch = result.scalar_one_or_none()
     if not batch:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found"
+        )
 
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -236,10 +267,14 @@ async def delete_batch(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None)))
+    result = await db.execute(
+        select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None))
+    )
     batch = result.scalar_one_or_none()
     if not batch:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found"
+        )
     batch.deleted_at = datetime.now(timezone.utc)
     batch.is_active = False
     await db.commit()
@@ -248,16 +283,21 @@ async def delete_batch(
 
 # ── State Machine Endpoints ───────────────────────────────────────
 
+
 @router.post("/batches/{batch_id}/release")
 async def release_batch(
     batch_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None)))
+    result = await db.execute(
+        select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None))
+    )
     batch = result.scalar_one_or_none()
     if not batch:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found"
+        )
     await _transition(batch, BatchStatus.RELEASED, db, current_user)
     batch.start_time = datetime.now(timezone.utc)
     await db.commit()
@@ -271,10 +311,14 @@ async def start_batch(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None)))
+    result = await db.execute(
+        select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None))
+    )
     batch = result.scalar_one_or_none()
     if not batch:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found"
+        )
     await _transition(batch, BatchStatus.IN_PROGRESS, db, current_user)
     batch.phase = "exponential"
     await db.commit()
@@ -289,10 +333,14 @@ async def complete_batch(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None)))
+    result = await db.execute(
+        select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None))
+    )
     batch = result.scalar_one_or_none()
     if not batch:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found"
+        )
     await _transition(batch, BatchStatus.COMPLETED, db, current_user)
     batch.harvest_time = datetime.now(timezone.utc)
     if actual_biomass_gl is not None:
@@ -308,10 +356,14 @@ async def archive_batch(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None)))
+    result = await db.execute(
+        select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None))
+    )
     batch = result.scalar_one_or_none()
     if not batch:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found"
+        )
     await _transition(batch, BatchStatus.ARCHIVED, db, current_user)
     await db.commit()
     await db.refresh(batch)
@@ -324,10 +376,14 @@ async def cancel_batch(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None)))
+    result = await db.execute(
+        select(Batch).where(Batch.id == batch_id, Batch.deleted_at.is_(None))
+    )
     batch = result.scalar_one_or_none()
     if not batch:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found"
+        )
     await _transition(batch, BatchStatus.CANCELLED, db, current_user)
     await db.commit()
     await db.refresh(batch)

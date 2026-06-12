@@ -3,12 +3,13 @@ intelligence/or/__init__.py
 Operations Research engines for IHE-ERP (lightweight, in-memory).
 6 engines: LP, EOQ, PERT, Profit, BreakEven, Forecast.
 """
+
 from __future__ import annotations
 import logging
 import math
 import statistics
 from datetime import datetime
-from typing import Any
+
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -34,10 +35,16 @@ def solve_lp(products: list, constraints: dict) -> dict:
     x2_max = int(b / max(p2.get("resource_b_per_unit", 1) if p2 else 1, 0.001))
     for x1 in range(0, min(x1_max, 200), step):
         for x2 in range(0, min(x2_max, 200), step):
-            ra = x1 * p1.get("resource_a_per_unit", 0) + x2 * p2.get("resource_a_per_unit", 0)
-            rb = x1 * p1.get("resource_b_per_unit", 0) + x2 * p2.get("resource_b_per_unit", 0)
+            ra = x1 * p1.get("resource_a_per_unit", 0) + x2 * p2.get(
+                "resource_a_per_unit", 0
+            )
+            rb = x1 * p1.get("resource_b_per_unit", 0) + x2 * p2.get(
+                "resource_b_per_unit", 0
+            )
             if ra <= a and rb <= b:
-                profit = x1 * p1.get("profit_per_unit", 0) + x2 * p2.get("profit_per_unit", 0)
+                profit = x1 * p1.get("profit_per_unit", 0) + x2 * p2.get(
+                    "profit_per_unit", 0
+                )
                 if profit > best["profit"]:
                     best = {"x1": x1, "x2": x2, "profit": profit}
     return {
@@ -64,7 +71,9 @@ def solve_eoq(demand_annual: float, order_cost: float, holding_cost: float) -> d
         "eoq": round(eoq, 2),
         "orders_per_year": round(orders_per_year, 2),
         "cycle_time_days": round(cycle_time_days, 1),
-        "total_cost": round(math.sqrt(2 * demand_annual * order_cost * holding_cost), 2),
+        "total_cost": round(
+            math.sqrt(2 * demand_annual * order_cost * holding_cost), 2
+        ),
         "generated_at": datetime.now().isoformat(),
     }
 
@@ -79,7 +88,13 @@ def solve_pert(tasks: list) -> dict:
     for t in tasks:
         e = (t.get("o", 0) + 4 * t.get("m", 0) + t.get("p", 0)) / 6
         var = ((t.get("p", 0) - t.get("o", 0)) / 6) ** 2
-        expected.append({"name": t.get("name", "?"), "expected": round(e, 2), "variance": round(var, 2)})
+        expected.append(
+            {
+                "name": t.get("name", "?"),
+                "expected": round(e, 2),
+                "variance": round(var, 2),
+            }
+        )
     if not expected:
         return {"engine": "pert", "status": "error", "error": "no tasks"}
     critical = max(expected, key=lambda x: x["expected"])
@@ -111,9 +126,15 @@ def solve_profit(revenue: float, costs: dict) -> dict:
 
 
 # 5. Break-even point
-def solve_breakeven(fixed_costs: float, price_per_unit: float, variable_cost_per_unit: float) -> dict:
+def solve_breakeven(
+    fixed_costs: float, price_per_unit: float, variable_cost_per_unit: float
+) -> dict:
     if price_per_unit <= variable_cost_per_unit:
-        return {"engine": "breakeven", "status": "error", "error": "price must exceed variable cost"}
+        return {
+            "engine": "breakeven",
+            "status": "error",
+            "error": "price must exceed variable cost",
+        }
     units = fixed_costs / (price_per_unit - variable_cost_per_unit)
     revenue = units * price_per_unit
     return {
@@ -136,8 +157,16 @@ def solve_forecast(history: list, horizon: int = 7, window: int = 7) -> dict:
     recent = history[-window:] if len(history) >= window else history
     avg = statistics.mean(recent) if recent else 0
     if len(history) >= 2:
-        first_half = statistics.mean(history[:len(history) // 2]) if history[:len(history) // 2] else 0
-        second_half = statistics.mean(history[len(history) // 2:]) if history[len(history) // 2:] else 0
+        first_half = (
+            statistics.mean(history[: len(history) // 2])
+            if history[: len(history) // 2]
+            else 0
+        )
+        second_half = (
+            statistics.mean(history[len(history) // 2 :])
+            if history[len(history) // 2 :]
+            else 0
+        )
         trend = second_half - first_half
     else:
         trend = 0
@@ -161,10 +190,23 @@ def run_or_solver(db: Session, engine: str = "all", params: dict = None) -> dict
     if engine in ("lp", "all"):
         try:
             result["lp"] = solve_lp(
-                params.get("products", [
-                    {"name": "A", "profit_per_unit": 30, "resource_a_per_unit": 2, "resource_b_per_unit": 1},
-                    {"name": "B", "profit_per_unit": 40, "resource_a_per_unit": 1, "resource_b_per_unit": 2},
-                ]),
+                params.get(
+                    "products",
+                    [
+                        {
+                            "name": "A",
+                            "profit_per_unit": 30,
+                            "resource_a_per_unit": 2,
+                            "resource_b_per_unit": 1,
+                        },
+                        {
+                            "name": "B",
+                            "profit_per_unit": 40,
+                            "resource_a_per_unit": 1,
+                            "resource_b_per_unit": 2,
+                        },
+                    ],
+                ),
                 params.get("constraints", {"resource_a": 100, "resource_b": 100}),
             )
         except Exception as e:
@@ -180,11 +222,16 @@ def run_or_solver(db: Session, engine: str = "all", params: dict = None) -> dict
             result["eoq"] = {"status": "error", "error": str(e)}
     if engine in ("pert", "all"):
         try:
-            result["pert"] = solve_pert(params.get("tasks", [
-                {"name": "Plan", "o": 1, "m": 3, "p": 5},
-                {"name": "Design", "o": 2, "m": 4, "p": 8},
-                {"name": "Build", "o": 5, "m": 10, "p": 20},
-            ]))
+            result["pert"] = solve_pert(
+                params.get(
+                    "tasks",
+                    [
+                        {"name": "Plan", "o": 1, "m": 3, "p": 5},
+                        {"name": "Design", "o": 2, "m": 4, "p": 8},
+                        {"name": "Build", "o": 5, "m": 10, "p": 20},
+                    ],
+                )
+            )
         except Exception as e:
             result["pert"] = {"status": "error", "error": str(e)}
     if engine in ("profit", "all"):
@@ -208,10 +255,12 @@ def run_or_solver(db: Session, engine: str = "all", params: dict = None) -> dict
         try:
             # Try to fetch from DB; fall back to sample
             try:
-                rows = db.execute(text("""
+                rows = db.execute(
+                    text("""
                     SELECT COALESCE(total_amount, 0) FROM sales_invoice
                     WHERE total_amount IS NOT NULL ORDER BY invoice_date DESC LIMIT 30
-                """)).fetchall()
+                """)
+                ).fetchall()
                 hist = [float(r[0]) for r in reversed(rows)]
             except Exception:
                 hist = params.get("history", [100, 110, 105, 120, 115, 130, 125])

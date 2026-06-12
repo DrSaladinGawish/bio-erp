@@ -10,6 +10,7 @@ Usage:
 
     audit_event(db, "sales_invoice", "123", "CREATE", None, payload, user="admin")
 """
+
 from __future__ import annotations
 
 import json
@@ -17,7 +18,7 @@ import logging
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import Column, DateTime, Integer, String, Text, text
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger("incentivehouse_organ.intelligence.audit")
@@ -50,13 +51,21 @@ CREATE INDEX IF NOT EXISTS ix_audit_timestamp ON audit_trail(timestamp);
 # ORM-style wrapper (lightweight - we use raw SQL for cross-DB compatibility)
 # ============================================================================
 
+
 class AuditTrail:
     """Lightweight DTO for an audit record."""
 
     __slots__ = (
-        "id", "table_name", "record_id", "action",
-        "old_value", "new_value", "user_id", "ip_address",
-        "timestamp", "extra",
+        "id",
+        "table_name",
+        "record_id",
+        "action",
+        "old_value",
+        "new_value",
+        "user_id",
+        "ip_address",
+        "timestamp",
+        "extra",
     )
 
     def __init__(self, **kwargs):
@@ -72,6 +81,7 @@ class AuditTrail:
 # ============================================================================
 # Public API
 # ============================================================================
+
 
 def audit_event(
     db: Session,

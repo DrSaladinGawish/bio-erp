@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Event Operations - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Event Operations</div>
+<div class="page-header"><h1>Event Operations</h1></div>
+<div class="kpi-grid">
+  <div class="kpi-card kpi-active"><div class="kpi-label">Operations</div><div class="kpi-value" id="kpiTotal">-</div></div>
+  <div class="kpi-card kpi-revenue"><div class="kpi-label">Active Tasks</div><div class="kpi-value" id="kpiActive">-</div></div>
+</div>
+<div class="content-card"><h3>Operations</h3><div id="opsTableWrap">Loading...</div></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function loadOps(){ try{
+  var s = await fetch('/api/v1/event-ops/summary').then(r=>r.json());
+  document.getElementById('kpiTotal').textContent = s.total_operations;
+  document.getElementById('kpiActive').textContent = s.active_operations;
+  var r = await fetch('/api/v1/event-ops/list').then(r=>r.json());
+  var rows = r.data||[];
+  if(!rows.length){ document.getElementById('opsTableWrap').innerHTML='<div class="alert alert-info">No operations yet.</div>'; return; }
+  var html='<table class="data-table"><thead><tr><th>Event</th><th>Task</th><th>Assigned To</th><th>Status</th></tr></thead><tbody>';
+  rows.forEach(function(r){ html+='<tr><td>'+r.event_id+'</td><td>'+r.task_name+'</td><td>'+r.assigned_to+'</td><td>'+r.status+'</td></tr>'; });
+  html+='</tbody></table>'; document.getElementById('opsTableWrap').innerHTML=html;
+}catch(e){ document.getElementById('opsTableWrap').innerHTML='<div class="alert alert-error">Error: '+e+'</div>'; }}
+loadOps();
+</script>
+{% endblock %}

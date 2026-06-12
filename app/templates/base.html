@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}IncentiveHouse ERP{% endblock %}</title>
     <link rel="stylesheet" href="/static/css/erp-theme.css">
-    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔷</text></svg>">
+    <script src="/static/vendor/htmx.min.js"></script>
+    <script src="/static/vendor/chart.umd.min.js"></script>
+    <link rel="icon" href="/static/logo.ico">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -33,31 +33,31 @@
                     <span class="nav-label">Dashboard</span>
                 </a>
                 
-                <a href="/events" class="nav-item {% if request.url.path.startswith('/events') %}active{% endif %}">
+                <a href="/evn" class="nav-item {% if request.url.path.startswith('/evn') %}active{% endif %}">
                     <span class="nav-icon">📅</span>
                     <span class="nav-label">Event Management</span>
                     <span class="nav-badge success" id="nav-active-events">0</span>
                 </a>
                 
-                <a href="/sales" class="nav-item {% if request.url.path.startswith('/sales') %}active{% endif %}">
+                <a href="/sal" class="nav-item {% if request.url.path.startswith('/sal') %}active{% endif %}">
                     <span class="nav-icon">💰</span>
                     <span class="nav-label">Sales</span>
                     <span class="nav-badge" id="nav-sales-count">0</span>
                 </a>
                 
-                <a href="/purchasing" class="nav-item {% if request.url.path.startswith('/purchasing') %}active{% endif %}">
+                <a href="/pur" class="nav-item {% if request.url.path.startswith('/pur') %}active{% endif %}">
                     <span class="nav-icon">🛒</span>
                     <span class="nav-label">Purchasing</span>
                     <span class="nav-badge" id="nav-po-count">0</span>
                 </a>
                 
-                <a href="/finance" class="nav-item {% if request.url.path.startswith('/finance') %}active{% endif %}">
+                <a href="/gl" class="nav-item {% if request.url.path.startswith('/gl') %}active{% endif %}">
                     <span class="nav-icon">🏦</span>
                     <span class="nav-label">Financial</span>
                     <span class="nav-badge warning" id="nav-pending-invoices">0</span>
                 </a>
                 
-                <a href="/operations" class="nav-item {% if request.url.path.startswith('/operations') %}active{% endif %}">
+                <a href="/ops" class="nav-item {% if request.url.path.startswith('/ops') %}active{% endif %}">
                     <span class="nav-icon">⚙️</span>
                     <span class="nav-label">Operations</span>
                     <span class="nav-badge" id="nav-pending-ops">0</span>
@@ -68,7 +68,7 @@
             <div class="nav-section">
                 <div class="nav-section-title">Data & Reports</div>
                 
-                <a href="/bank-reconciliation" class="nav-item {% if request.url.path.startswith('/bank-reconciliation') %}active{% endif %}">
+                <a href="/bnk" class="nav-item {% if request.url.path.startswith('/bnk') %}active{% endif %}">
                     <span class="nav-icon">🏛️</span>
                     <span class="nav-label">Bank Reconciliation</span>
                     <span class="nav-badge" id="nav-unreconciled">0</span>

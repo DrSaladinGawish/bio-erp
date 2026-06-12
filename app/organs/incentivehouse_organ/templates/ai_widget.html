@@ -1,0 +1,39 @@
+<div id="ai-widget" class="ai-widget minimized" style="position:fixed;bottom:20px;right:20px;width:380px;max-height:600px;background:white;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.15);display:flex;flex-direction:column;z-index:9999;font-family:'Segoe UI',system-ui,sans-serif;transition:all 0.3s ease;">
+    <div class="ai-header" onclick="toggleAI()" style="background:linear-gradient(135deg,#1a3a5c,#0d2137);color:white;padding:12px 16px;border-radius:16px 16px 0 0;display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <span class="ai-title" style="flex:1;font-weight:600;font-size:14px;">AI Assistant</span>
+        <div class="ai-controls" style="display:flex;gap:8px;">
+            <button onclick="event.stopPropagation(); minimizeAI()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:24px;height:24px;border-radius:50%;cursor:pointer;">−</button>
+            <button onclick="event.stopPropagation(); closeAI()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:24px;height:24px;border-radius:50%;cursor:pointer;">×</button>
+        </div>
+    </div>
+    <div class="ai-body" id="ai-messages" style="flex:1;overflow-y:auto;padding:16px;max-height:400px;background:#f8f9fa;">
+        <div class="ai-message bot" style="margin-bottom:12px;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;max-width:85%;background:#fff3e0;margin-right:auto;border-bottom-left-radius:4px;">
+            👋 Hello! I'm your IncentiveHouse AI assistant. I can help you with:
+            <div class="ai-suggestion-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+                <span class="ai-chip" onclick="askAI('Show event summary')" style="background:white;border:1px solid #dee2e6;border-radius:16px;padding:4px 12px;font-size:11px;cursor:pointer;">Event Summary</span>
+                <span class="ai-chip" onclick="askAI('Check budget variance')" style="background:white;border:1px solid #dee2e6;border-radius:16px;padding:4px 12px;font-size:11px;cursor:pointer;">Budget Check</span>
+                <span class="ai-chip" onclick="askAI('Suggest vendors')" style="background:white;border:1px solid #dee2e6;border-radius:16px;padding:4px 12px;font-size:11px;cursor:pointer;">Vendor Suggestions</span>
+            </div>
+        </div>
+    </div>
+    <div class="ai-input-area" style="padding:12px 16px;border-top:1px solid #dee2e6;display:flex;gap:8px;background:white;border-radius:0 0 16px 16px;">
+        <input type="text" id="ai-input" placeholder="Ask me anything..." onkeypress="if(event.key==='Enter')sendAI()" style="flex:1;border:1px solid #dee2e6;border-radius:20px;padding:8px 16px;font-size:13px;outline:none;">
+        <button onclick="sendAI()" style="background:#1a3a5c;color:white;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;">➤</button>
+    </div>
+</div>
+<button id="ai-trigger" onclick="openAI()" style="position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#1a3a5c,#0d2137);color:white;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);z-index:9998;display:none;">🤖</button>
+<script>
+const AI_CONFIG = {apiEndpoint:'/api/v1/ai/assist',contextEndpoint:'/api/v1/ai/context',maxHistory:50,typingDelay:800};
+let aiHistory=[],currentContext={};
+function initAI(contextData){currentContext=contextData||{};}
+function toggleAI(){const w=document.getElementById('ai-widget');w.classList.toggle('minimized');document.getElementById('ai-trigger').style.display=w.classList.contains('minimized')?'block':'none';}
+function minimizeAI(){document.getElementById('ai-widget').classList.add('minimized');document.getElementById('ai-trigger').style.display='block';}
+function openAI(){document.getElementById('ai-widget').classList.remove('minimized');document.getElementById('ai-trigger').style.display='none';}
+function closeAI(){document.getElementById('ai-widget').style.display='none';document.getElementById('ai-trigger').style.display='none';}
+function addMessage(text,isUser){const c=document.getElementById('ai-messages');const m=document.createElement('div');m.className='ai-message '+(isUser?'user':'bot');m.innerHTML=text+'<div class="ai-time" style="font-size:10px;color:#999;margin-top:4px;">'+new Date().toLocaleTimeString()+'</div>';c.appendChild(m);c.scrollTop=c.scrollHeight;aiHistory.push({role:isUser?'user':'assistant',content:text});}
+function showTyping(){const c=document.getElementById('ai-messages');const t=document.createElement('div');t.id='ai-typing-indicator';t.className='ai-typing';t.innerHTML='<span></span><span></span><span></span>';c.appendChild(t);c.scrollTop=c.scrollHeight;}
+function hideTyping(){const e=document.getElementById('ai-typing-indicator');if(e)e.remove();}
+async function sendAI(){const i=document.getElementById('ai-input');const t=i.value.trim();if(!t)return;addMessage(t,true);i.value='';showTyping();try{const r=await fetch(AI_CONFIG.apiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:t,context:currentContext,history:aiHistory.slice(-10)})});hideTyping();if(r.ok){const d=await r.json();addMessage(d.response);}else{addMessage('❌ Sorry, I encountered an error.');}}catch(e){hideTyping();addMessage('❌ Network error.');}}
+function askAI(text){document.getElementById('ai-input').value=text;sendAI();}
+if(window.EVENT_CONTEXT)initAI(window.EVENT_CONTEXT);
+</script>

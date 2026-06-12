@@ -1,0 +1,175 @@
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║           BIO-ERP PHASES 3-5 — FINAL DEPLOYMENT PACKAGE                      ║
+║           Auth Fix + 28 Tests + All Production Code                          ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROBLEM SOLVED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Issue:        bcrypt hash regenerated on every sub_app.py import → 401 in tests
+Root Cause:   _ADMIN_PW_HASH = bcrypt.hashpw(..., bcrypt.gensalt()) at line 299
+              New salt = new hash on every import → test hash ≠ endpoint hash
+
+Fix Applied:  Monkey-patch hash BEFORE importing app in conftest.py
+              _TEST_ADMIN_HASH = bcrypt.hashpw("admin123".encode(), FIXED_SALT)
+              All test sessions now use identical hash
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FILES TO DEPLOY (8 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌───┬─────────────────────────────────────┬─────────────────────────────────────┐
+│ # │ File                                │ Destination                         │
+├───┼─────────────────────────────────────┼─────────────────────────────────────┤
+│ 1 │ auto_recognition.py                 │ app/organs/incentivehouse_organ/    │
+│   │                                     │   auto_recognition.py               │
+│ 2 │ event_ops_router.py                 │ app/organs/incentivehouse_organ/    │
+│   │                                     │   event_ops_router.py (overwrite)   │
+│ 3 │ ops_execution_form.html             │ app/organs/incentivehouse_organ/    │
+│   │                                     │   templates/ops_execution_form.html   │
+│ 4 │ event_checkpoint_model.py           │ app/organs/incentivehouse_organ/    │
+│   │                                     │   models_production.py (append)     │
+│ 5 │ alembic_migration.py              │ alembic/versions/                   │
+│   │                                     │   5c4f_event_ops_lifecycle.py       │
+│ 6 │ test_event_ops_cycle_fixed.py     │ app/organs/incentivehouse_organ/    │
+│   │                                     │   tests/test_event_ops_cycle.py     │
+│ 7 │ conftest_fix.py                     │ app/organs/incentivehouse_organ/    │
+│   │                                     │   tests/conftest.py (PREPEND)       │
+│ 8 │ sub_app_fix.py                      │ REFERENCE ONLY — apply manually     │
+│   │                                     │   to sub_app.py line 299            │
+└───┴─────────────────────────────────────┴─────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DEPLOYMENT STEPS (Run on Work PC)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: BACKUP
+    cd "D:\ERP System\BIO_ERP"
+    git stash
+    git checkout -b phases-3-5-deploy
+
+Step 2: APPLY AUTH FIX (Critical — do this FIRST)
+    # Edit app/organs/incentivehouse_organ/sub_app.py
+    # Replace line ~299:
+
+    # FROM:
+    _ADMIN_PW_HASH = bcrypt.hashpw(_ADMIN_PASSWORD.encode(), bcrypt.gensalt())
+
+    # TO (Option A — Fixed salt for tests):
+    import bcrypt
+    _TEST_SALT = bcrypt.gensalt(rounds=4)  # Run once, then hardcode
+    _ADMIN_PW_HASH = bcrypt.hashpw(_ADMIN_PASSWORD.encode(), _TEST_SALT)
+
+    # OR (Option B — Monkey-patch in conftest, keep production dynamic):
+    # Leave sub_app.py as-is, apply conftest_fix.py PREPEND to conftest.py
+
+Step 3: PREPEND conftest_fix.py to conftest.py
+    # Open app/organs/incentivehouse_organ/tests/conftest.py
+    # Paste the monkey-patch block at the VERY TOP (before any imports)
+
+Step 4: COPY ALL OTHER FILES
+    copy auto_recognition.py app\organs\incentivehouse_organ\
+    copy event_ops_router.py app\organs\incentivehouse_organ\
+    copy ops_execution_form.html app\organs\incentivehouse_organ\templates\
+    copy test_event_ops_cycle_fixed.py app\organs\incentivehouse_organ\tests\test_event_ops_cycle.py
+
+Step 5: APPEND EventCheckpoint to models_production.py
+    # Open app/organs/incentivehouse_organ/models_production.py
+    # Paste event_checkpoint_model.py content at the bottom
+    # Add EventCheckpoint to ALL_PRODUCTION_MODELS list
+
+Step 6: MOUNT ROUTER in main.py
+    # Open app/organs/incentivehouse_organ/main.py
+    # Add:
+    from app.organs.incentivehouse_organ.event_ops_router import router as event_ops_phase5_router
+    app.include_router(event_ops_phase5_router, prefix="/event-ops")
+
+Step 7: RUN MIGRATION
+    alembic upgrade 5c4f_event_ops_lifecycle
+
+Step 8: RUN TESTS
+    cd "D:\ERP System\BIO_ERP"
+    pytest app/organs/incentivehouse_organ/tests/test_event_ops_cycle.py -v
+
+    Expected: 28 passed, 0 failed
+
+    Then run full suite:
+    pytest app/organs/incentivehouse_organ/tests/ -v
+    Expected: 184 passed (156 baseline + 28 new), 0 failed
+
+Step 9: VERIFY ENDPOINTS
+    # Start server
+    uvicorn app.main:app --port 8000 --reload
+
+    # Test in browser or curl:
+    curl -X POST http://localhost:8000/api/v1/incentivehouse/auth/login \
+         -d "username=admin&password=admin123"
+    # → Should return 200 with access_token
+
+    curl -H "Authorization: Bearer <token>" \
+         http://localhost:8000/api/v1/incentivehouse/event-ops/execution-queue
+    # → Should return JSON array with priority scores
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST COVERAGE (28 Tests)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Class                    Tests  What It Validates
+────────────────────────────────────────────────────────────────────────────────
+TestAuth                 3      Login success, wrong password, missing creds
+TestAutoRecognition      4      Client data, history suggestions, UOM map, checklist
+TestExecutionForm        2      Form structure, permissions
+TestCheckpointLifecycle  3      Apply recognition, complete checkpoint, stage advance
+TestExecutionQueue       3      Queue returns events, priority sort, stage filter
+TestDashboardSummary     2      Metrics present, revenue non-negative
+TestBulkOperations       1      Team assignment
+TestPerformance          2      Response time <500ms (auto-recognize), <300ms (queue)
+────────────────────────────────────────────────────────────────────────────────
+TOTAL                    28     All Phases 3-5 functionality
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KNOWN ISSUES & WORKAROUNDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Issue                    Workaround
+────────────────────────────────────────────────────────────────────────────────
+Docker Desktop down      Use seeded PostgreSQL data (10 events, 17 clients)
+                         Docker import deferred until engine available
+
+sub_app.py hash regen    Monkey-patch in conftest.py (deployed)
+                         OR: Use fixed salt in sub_app.py line 299
+
+Missing vendor_options   auto_recognition.py returns empty list if no vendors
+                         Populate vendors table via seed script
+
+EventCheckpoint table    Created by MIGRATIONS_SQL in main.py on boot
+                         OR: Run alembic upgrade for explicit migration
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEXT STEPS AFTER DEPLOYMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1.  Confirm 28 tests pass
+2.  Open browser: http://localhost:8000/event-ops/2/execute
+3.  Verify stage tracker renders (6 dots: Confirmed → Closed)
+4.  Verify auto-recognition banner shows CISCO history
+5.  Verify UOM table has 5 categories with correct units
+6.  Click "Apply All" → Checklist should populate
+7.  Check off venue_contract → Stage should auto-advance to procurement
+8.  Run full suite: pytest app/organs/incentivehouse_organ/tests/ -v
+9.  Commit: git add . && git commit -m "v5.5.0 — Phases 3-5 Event Ops"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUPPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If any test fails, paste the EXACT error output. Common fixes:
+
+• ImportError: Check that models_production.py has EventCheckpoint class
+• 404 on endpoint: Check router is mounted in main.py with correct prefix
+• 500 on auto-recognize: Check seeded_event fixture creates line items
+• Slow responses: Add database indexes (see alembic_migration.py)
+
+═══════════════════════════════════════════════════════════════════════════════

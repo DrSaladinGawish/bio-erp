@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from datetime import timezone, timedelta
 from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -119,7 +119,9 @@ class ApprovalEngine:
             if rule and rule.escalation_role_id:
                 step.role_id = rule.escalation_role_id
                 step.approver_id = None
-                step.due_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=24)
+                step.due_at = datetime.now(timezone.utc).replace(
+                    tzinfo=None
+                ) + timedelta(hours=24)
 
         await self.db.commit()
         return {

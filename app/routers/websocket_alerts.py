@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import json
 import os
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect

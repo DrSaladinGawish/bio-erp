@@ -8,6 +8,7 @@ per table, computes a data quality score, reports last backup time.
 Endpoint: GET /api/v1/intelligence/health returns
   {db_status, table_counts, total_records, data_quality_score, last_backup}
 """
+
 from __future__ import annotations
 
 import logging
@@ -18,7 +19,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.organs.incentivehouse_organ.models import (
-    PRODUCTION_TABLE_NAMES, STAGING_TABLE_NAMES,
+    PRODUCTION_TABLE_NAMES,
+    STAGING_TABLE_NAMES,
 )
 
 logger = logging.getLogger("incentivehouse_organ.intelligence.health")
@@ -26,9 +28,17 @@ logger = logging.getLogger("incentivehouse_organ.intelligence.health")
 
 # Tables we consider "core" for the IHE-ERP business domain
 CORE_TABLES = [
-    "pnr_master", "events", "sales_invoice", "sales_invoice_line",
-    "purchase_voucher", "purchase_voucher_line", "bank_transaction",
-    "journal_voucher", "journal_voucher_line", "clients", "vendors",
+    "pnr_master",
+    "events",
+    "sales_invoice",
+    "sales_invoice_line",
+    "purchase_voucher",
+    "purchase_voucher_line",
+    "bank_transaction",
+    "journal_voucher",
+    "journal_voucher_line",
+    "clients",
+    "vendors",
     "chart_of_accounts",
 ]
 
@@ -96,7 +106,9 @@ def get_health_report(db: Session) -> dict:
     #    50% weight on coverage, 50% on having data in core tables
     nonempty = sum(1 for t in CORE_TABLES if (report["table_counts"].get(t) or 0) > 0)
     nonempty_ratio = (nonempty / len(CORE_TABLES)) if CORE_TABLES else 0.0
-    report["data_quality_score"] = round(100.0 * (0.5 * coverage + 0.5 * nonempty_ratio), 1)
+    report["data_quality_score"] = round(
+        100.0 * (0.5 * coverage + 0.5 * nonempty_ratio), 1
+    )
     report["core_table_status"] = {
         "present": seen,
         "missing": len(CORE_TABLES) - seen,
@@ -106,9 +118,11 @@ def get_health_report(db: Session) -> dict:
 
     # 6. Last backup (read from backup_log if present)
     try:
-        row = db.execute(text("""
+        row = db.execute(
+            text("""
             SELECT MAX(timestamp) FROM audit_trail WHERE action = 'BACKUP'
-        """)).scalar()
+        """)
+        ).scalar()
         report["last_backup"] = row
     except Exception:
         report["last_backup"] = None

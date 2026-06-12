@@ -3,6 +3,7 @@
 ERP Builder Protocol — Pre-Flight Health Check
 Run before docker-compose up to validate environment.
 """
+
 import sys
 import socket
 import subprocess
@@ -12,6 +13,7 @@ from pathlib import Path
 REQUIRED_ENVS = ["DATABASE_URL", "SECRET_KEY", "ENVIRONMENT"]
 OPTIONAL_PORTS = [5432, 6379, 8025]  # Postgres, Redis, Mailhog
 
+
 def check_env():
     missing = [e for e in REQUIRED_ENVS if not os.getenv(e)]
     if missing:
@@ -19,6 +21,7 @@ def check_env():
         return False
     print("✅ Environment variables")
     return True
+
 
 def check_ports():
     ok = True
@@ -30,6 +33,7 @@ def check_ports():
                 print(f"⚠️  Port {port} closed (optional)")
     return ok
 
+
 def check_migrations():
     mig_dir = Path("alembic/versions")
     if not mig_dir.exists():
@@ -38,6 +42,7 @@ def check_migrations():
     files = list(mig_dir.glob("*.py"))
     print(f"✅ {len(files)} migration files found")
     return True
+
 
 def main():
     print("🔍 IncentiveHouse ERP Pre-Flight Check\n")
@@ -52,6 +57,7 @@ def main():
     else:
         print("\n⛔ Fix issues before deploying.")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

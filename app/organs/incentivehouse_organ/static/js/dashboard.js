@@ -59,15 +59,23 @@
       });
     }
   }
+  function updateExportLinks(range){
+    document.querySelectorAll('.export-link').forEach(function(link){
+      link.href = '/api/dashboard/export?range=' + encodeURIComponent(range) + '&format=' + link.dataset.format;
+    });
+  }
   // Wire range buttons (live if present)
   document.addEventListener('DOMContentLoaded', function(){
     document.querySelectorAll('.range-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
         document.querySelectorAll('.range-btn').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
-        loadDashboard(btn.dataset.range || 'YTD');
+        var r = btn.dataset.range || 'YTD';
+        loadDashboard(r);
+        updateExportLinks(r);
       });
     });
     loadDashboard('YTD');
+    updateExportLinks('YTD');
   });
 })();

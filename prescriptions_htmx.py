@@ -2,6 +2,7 @@
 P5 — HTMX Prescription Fragments (EventCore Job Pages)
 Renders prescription cards as HTML for HTMX swapping.
 """
+
 import json
 from typing import Optional
 
@@ -28,7 +29,8 @@ def _verify_bridge_token_header(request: Request):
 
 
 def _ensure_prescriptions_table(db: Session):
-    db.execute(text("""
+    db.execute(
+        text("""
         CREATE TABLE IF NOT EXISTS prescriptions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             job_id INTEGER NOT NULL,
@@ -44,7 +46,8 @@ def _ensure_prescriptions_table(db: Session):
             source_batch_id TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """))
+    """)
+    )
     db.commit()
 
 
@@ -86,7 +89,11 @@ def _priority_class(p: str) -> str:
 
 
 def _status_border(status: str) -> str:
-    return f"rx-{status}" if status in ("applied", "rejected", "in_progress", "pending") else "rx-pending"
+    return (
+        f"rx-{status}"
+        if status in ("applied", "rejected", "in_progress", "pending")
+        else "rx-pending"
+    )
 
 
 def _render_card(row, request: Request) -> str:
@@ -100,7 +107,9 @@ def _render_card(row, request: Request) -> str:
         savings_html = f'<div class="rx-savings">💰 Estimated Savings: {row.estimated_savings:,.2f}</div>'
     cost_html = ""
     if row.estimated_cost:
-        cost_html = f'<div class="rx-cost">📉 Estimated Cost: {row.estimated_cost:,.2f}</div>'
+        cost_html = (
+            f'<div class="rx-cost">📉 Estimated Cost: {row.estimated_cost:,.2f}</div>'
+        )
 
     action_html = ""
     if row.status == "pending":
@@ -177,7 +186,9 @@ def htmx_prescriptions_for_job(
              hx-swap="innerHTML"></div>
     """
     _ensure_prescriptions_table(db)
-    rows = db.execute(text("""
+    rows = (
+        db.execute(
+            text("""
         SELECT id, job_id, analysis_type, title, summary, details, priority,
                recommended_action, estimated_savings, estimated_cost, status, created_at
         FROM prescriptions
@@ -189,7 +200,12 @@ def htmx_prescriptions_for_job(
                 WHEN 'low' THEN 3
             END,
             created_at DESC
-    """), {"job_id": job_id}).mappings().all()
+    """),
+            {"job_id": job_id},
+        )
+        .mappings()
+        .all()
+    )
 
     if not rows:
         html = f"""
@@ -226,27 +242,46 @@ def htmx_update_status(
     """
     valid = {"pending", "applied", "rejected", "in_progress"}
     if status not in valid:
-        return HTMLResponse(content=f"<div style='color:red;padding:8px;'>Invalid status: {status}</div>", status_code=422)
+        return HTMLResponse(
+            content=f"<div style='color:red;padding:8px;'>Invalid status: {status}</div>",
+            status_code=422,
+        )
 
     _ensure_prescriptions_table(db)
-    result = db.execute(text("""
+    result = db.execute(
+        text("""
         UPDATE prescriptions SET status = :status WHERE id = :id
-    """), {"status": status, "id": prescription_id})
+    """),
+        {"status": status, "id": prescription_id},
+    )
     db.commit()
 
     if result.rowcount == 0:
-        return HTMLResponse(content="<div style='color:red;padding:8px;'>Prescription not found</div>", status_code=404)
+        return HTMLResponse(
+            content="<div style='color:red;padding:8px;'>Prescription not found</div>",
+            status_code=404,
+        )
 
     # Re-fetch the updated row
-    row = db.execute(text("""
+    row = (
+        db.execute(
+            text("""
         SELECT id, job_id, analysis_type, title, summary, details, priority,
                recommended_action, estimated_savings, estimated_cost, status, created_at
         FROM prescriptions
         WHERE id = :id
-    """), {"id": prescription_id}).mappings().first()
+    """),
+            {"id": prescription_id},
+        )
+        .mappings()
+        .first()
+    )
 
     if not row:
-        return HTMLResponse(content="<div style='color:red;padding:8px;'>Prescription not found after update</div>", status_code=404)
+        return HTMLResponse(
+            content="<div style='color:red;padding:8px;'>Prescription not found after update</div>",
+            status_code=404,
+        )
 
     return HTMLResponse(content=_render_card(row, request))
 
@@ -265,9 +300,16 @@ def htmx_badge_for_job(
               hx-swap="outerHTML"></span>
     """
     _ensure_prescriptions_table(db)
-    rows = db.execute(text("""
+    rows = (
+        db.execute(
+            text("""
         SELECT priority, status FROM prescriptions WHERE job_id = :job_id
-    """), {"job_id": job_id}).mappings().all()
+    """),
+            {"job_id": job_id},
+        )
+        .mappings()
+        .all()
+    )
 
     if not rows:
         return HTMLResponse(content="")
@@ -275,15 +317,23 @@ def htmx_badge_for_job(
     count = len(rows)
     pending = sum(1 for r in rows if r.status == "pending")
     priorities = [r.priority for r in rows]
-    highest = "high" if "high" in priorities else "medium" if "medium" in priorities else "low"
+    highest = (
+        "high"
+        if "high" in priorities
+        else "medium"
+        if "medium" in priorities
+        else "low"
+    )
     high_cls = " high" if highest == "high" else ""
 
     label = f"{count} RX" if count > 1 else "1 RX"
     if pending:
         label += f" ({pending} pending)"
 
-    return HTMLResponse(content=f"""
+    return HTMLResponse(
+        content=f"""
 <span class="rx-badge-count{high_cls}" title="{count} prescription(s) from Bio-ERP Doctor">
     🩺 {label}
 </span>
-""")
+"""
+    )

@@ -1,6 +1,17 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Text, Boolean, ForeignKey, JSON, Numeric
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    Date,
+    Text,
+    Boolean,
+    JSON,
+    Numeric,
+)
 from sqlalchemy.sql import func
 from app.database import Base
+
 
 class SCMStagingCategory(Base):
     __tablename__ = "scm_staging_categories"
@@ -17,6 +28,7 @@ class SCMStagingCategory(Base):
     deployed_at = Column(DateTime, nullable=True)
     deployed_by = Column(Integer, nullable=True)
 
+
 class SCMStagingCostDriver(Base):
     __tablename__ = "scm_staging_cost_drivers"
     id = Column(Integer, primary_key=True, index=True)
@@ -29,6 +41,7 @@ class SCMStagingCostDriver(Base):
     created_by = Column(Integer, default=1)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now())
+
 
 class SCMStagingActivityCost(Base):
     __tablename__ = "scm_staging_activity_costs"
@@ -46,6 +59,7 @@ class SCMStagingActivityCost(Base):
     created_by = Column(Integer, default=1)
     created_at = Column(DateTime, server_default=func.now())
 
+
 class SCMStagingSustainability(Base):
     __tablename__ = "scm_staging_sustainability"
     id = Column(Integer, primary_key=True, index=True)
@@ -61,6 +75,7 @@ class SCMStagingSustainability(Base):
     status = Column(String(20), default="pending")
     created_by = Column(Integer, default=1)
     created_at = Column(DateTime, server_default=func.now())
+
 
 class SCMStagingBankTransaction(Base):
     __tablename__ = "scm_staging_bank_transactions"
@@ -78,6 +93,7 @@ class SCMStagingBankTransaction(Base):
     status = Column(String(20), default="pending")
     created_at = Column(DateTime, server_default=func.now())
 
+
 class SCMAuditLog(Base):
     __tablename__ = "scm_audit_log"
     id = Column(Integer, primary_key=True, index=True)
@@ -90,6 +106,7 @@ class SCMAuditLog(Base):
     performed_at = Column(DateTime, server_default=func.now())
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
+
 
 class SCMDeploymentQueue(Base):
     __tablename__ = "scm_deployment_queue"

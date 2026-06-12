@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Balanced Scorecard - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Balanced Scorecard</div>
+<div class="page-header"><h1>Balanced Scorecard</h1></div>
+<div class="kpi-grid">
+  <div class="kpi-card kpi-active"><div class="kpi-label">Objectives</div><div class="kpi-value" id="kpiObj">-</div></div>
+  <div class="kpi-card kpi-revenue"><div class="kpi-label">Indicators</div><div class="kpi-value" id="kpiInd">-</div></div>
+</div>
+<div class="content-card"><h3>Objectives</h3><div id="bscTableWrap">Loading...</div></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function loadBsc(){ try{
+  var s = await fetch('/api/v1/bsc/summary').then(r=>r.json());
+  document.getElementById('kpiObj').textContent = s.total_objectives;
+  document.getElementById('kpiInd').textContent = s.total_indicators;
+  var r = await fetch('/api/v1/bsc/objectives').then(r=>r.json());
+  var rows = r.data||[];
+  if(!rows.length){ document.getElementById('bscTableWrap').innerHTML='<div class="alert alert-info">No objectives yet.</div>'; return; }
+  var html='<table class="data-table"><thead><tr><th>Code</th><th>Perspective</th><th>Name</th><th>Weight</th></tr></thead><tbody>';
+  rows.forEach(function(r){ html+='<tr><td>'+r.code+'</td><td>'+r.perspective+'</td><td>'+r.name_en+'</td><td>'+r.weight+'</td></tr>'; });
+  html+='</tbody></table>'; document.getElementById('bscTableWrap').innerHTML=html;
+}catch(e){ document.getElementById('bscTableWrap').innerHTML='<div class="alert alert-error">Error: '+e+'</div>'; }}
+loadBsc();
+</script>
+{% endblock %}

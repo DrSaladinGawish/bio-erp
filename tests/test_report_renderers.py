@@ -1,5 +1,4 @@
 from pathlib import Path
-import pytest
 
 from app.services.report_renderers import ExcelRenderer, PDFRenderer, CSVRenderer
 

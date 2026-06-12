@@ -2,6 +2,7 @@
 Document Management System — Service Layer
 Handles: USB scan, file copy, hash compute, auto-link, verification
 """
+
 import hashlib
 import os
 import re
@@ -9,12 +10,11 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
 from app.models.documents import SupportingDocument, DocumentModule
-from app.schemas.documents import IngestResultItem, IngestResponse, VerifyResult
+from app.schemas.documents import IngestResultItem, VerifyResult
 
 
 # ── Config ────────────────────────────────────────────
@@ -24,7 +24,9 @@ USB_ROOT_TEMPLATE = r"{drive}:\{base_path}"
 # ── Auto-link patterns ──────────────────────────────
 # Maps (module, function) → regex pattern for extracting transaction ID
 AUTO_LINK_PATTERNS: Dict[Tuple[str, str], re.Pattern] = {
-    ("Bank", "Statements"): re.compile(r"Bnk_(?P<account>[A-Za-z0-9]+)_(?P<date>\d{4}-\d{2})"),
+    ("Bank", "Statements"): re.compile(
+        r"Bnk_(?P<account>[A-Za-z0-9]+)_(?P<date>\d{4}-\d{2})"
+    ),
     ("Bank", "Transfers"): re.compile(r"TRX_(?P<id>\d+)"),
     ("Bank", "ATM"): re.compile(r"TRX_(?P<id>\d+)"),
     ("Sales", "Events"): re.compile(r"EVT_(?P<id>\d+)"),
@@ -105,15 +107,20 @@ class DocumentService:
         module_path = usb_root / module_name
 
         if not module_path.exists():
-            return [IngestResultItem(
-                file=f"{module_name}/", status="error",
-                reason=f"USB path not found: {module_path}"
-            )]
+            return [
+                IngestResultItem(
+                    file=f"{module_name}/",
+                    status="error",
+                    reason=f"USB path not found: {module_path}",
+                )
+            ]
 
         results: List[IngestResultItem] = []
-        doc_modules = self.db.query(DocumentModule).filter(
-            DocumentModule.module_name == module_name
-        ).all()
+        doc_modules = (
+            self.db.query(DocumentModule)
+            .filter(DocumentModule.module_name == module_name)
+            .all()
+        )
 
         # Build function → transaction_table mapping
         func_to_table = {dm.function_name: dm.transaction_table for dm in doc_modules}
@@ -185,7 +192,9 @@ class DocumentService:
                         link_reason = f"No pattern match for {file_path.name}"
                 else:
                     link_status = "orphaned"
-                    link_reason = f"No auto-link pattern for {module_name}/{function_name}"
+                    link_reason = (
+                        f"No auto-link pattern for {module_name}/{function_name}"
+                    )
             else:
                 link_status = "orphaned"
                 link_reason = "Auto-link disabled or no transaction table mapping"
@@ -265,12 +274,18 @@ class DocumentService:
 
     # ── Query ─────────────────────────────────────────
     def get_by_transaction(self, table: str, txn_id: str) -> List[SupportingDocument]:
-        return self.db.query(SupportingDocument).filter(
-            SupportingDocument.transaction_table == table,
-            SupportingDocument.transaction_id == txn_id,
-        ).all()
+        return (
+            self.db.query(SupportingDocument)
+            .filter(
+                SupportingDocument.transaction_table == table,
+                SupportingDocument.transaction_id == txn_id,
+            )
+            .all()
+        )
 
-    def get_by_module(self, module: str, function: Optional[str] = None) -> List[SupportingDocument]:
+    def get_by_module(
+        self, module: str, function: Optional[str] = None
+    ) -> List[SupportingDocument]:
         q = self.db.query(SupportingDocument).filter(
             SupportingDocument.module_name == module
         )
@@ -281,50 +296,168 @@ class DocumentService:
     def seed_document_modules(self) -> int:
         """Insert seed data into document_modules. Idempotent."""
         seed_data = [
-            ("Bank", "Statements", "bnk_transactions", "Monthly bank statements", "Bnk_{account}_{date}.pdf"),
-            ("Bank", "Reconciliation", "bnk_reconciliation", "Reconciliation sheets", "Recon_{account}_{date}.xlsx"),
-            ("Bank", "Transfers", "bnk_transactions", "Transfer confirmations", "TRX_{id}_transfer.pdf"),
+            (
+                "Bank",
+                "Statements",
+                "bnk_transactions",
+                "Monthly bank statements",
+                "Bnk_{account}_{date}.pdf",
+            ),
+            (
+                "Bank",
+                "Reconciliation",
+                "bnk_reconciliation",
+                "Reconciliation sheets",
+                "Recon_{account}_{date}.xlsx",
+            ),
+            (
+                "Bank",
+                "Transfers",
+                "bnk_transactions",
+                "Transfer confirmations",
+                "TRX_{id}_transfer.pdf",
+            ),
             ("Bank", "ATM", "bnk_transactions", "ATM receipts", "TRX_{id}_atm.pdf"),
             ("Sales", "Events", "events", "Event documentation", "EVT_{id}_*.pdf"),
             ("Sales", "Invoices", "sales_invoices", "Sales invoices", "INV_{id}_*.pdf"),
-            ("Sales", "POs", "purchase_orders", "Client purchase orders", "PO_{id}_client.pdf"),
-            ("Sales", "Contracts", "events", "Client contracts", "EVT_{id}_contract.pdf"),
-            ("Purchase", "Orders", "purchase_orders", "POs to suppliers", "PO_{id}_supplier.pdf"),
-            ("Purchase", "Vendor_Invoices", "vendor_invoices", "Supplier invoices", "VIN_{id}_*.pdf"),
-            ("Purchase", "Quotations", "purchase_orders", "Supplier quotations", "QUO_{id}_*.pdf"),
-            ("Purchase", "GRN", "purchase_orders", "Goods receipt notes", "GRN_{id}_*.pdf"),
-            ("Events", "Work_Orders", "work_orders", "WO documentation", "WO_{id}_*.pdf"),
-            ("Events", "Staff_Assignments", "staff_assignments", "Staff docs", "SA_{id}_*.pdf"),
-            ("Events", "Line_Items", "event_line_items", "Item delivery proof", "LI_{id}_*.pdf"),
-            ("E_Invoice", "Submissions", "sales_invoices", "ETA submission proof", "ETA_{uuid}.json"),
-            ("E_Invoice", "QR_Codes", "sales_invoices", "QR code images", "INV_{id}_qr.png"),
-            ("E_Invoice", "Rejections", "sales_invoices", "Rejection notices", "ETA_{uuid}_rej.json"),
+            (
+                "Sales",
+                "POs",
+                "purchase_orders",
+                "Client purchase orders",
+                "PO_{id}_client.pdf",
+            ),
+            (
+                "Sales",
+                "Contracts",
+                "events",
+                "Client contracts",
+                "EVT_{id}_contract.pdf",
+            ),
+            (
+                "Purchase",
+                "Orders",
+                "purchase_orders",
+                "POs to suppliers",
+                "PO_{id}_supplier.pdf",
+            ),
+            (
+                "Purchase",
+                "Vendor_Invoices",
+                "vendor_invoices",
+                "Supplier invoices",
+                "VIN_{id}_*.pdf",
+            ),
+            (
+                "Purchase",
+                "Quotations",
+                "purchase_orders",
+                "Supplier quotations",
+                "QUO_{id}_*.pdf",
+            ),
+            (
+                "Purchase",
+                "GRN",
+                "purchase_orders",
+                "Goods receipt notes",
+                "GRN_{id}_*.pdf",
+            ),
+            (
+                "Events",
+                "Work_Orders",
+                "work_orders",
+                "WO documentation",
+                "WO_{id}_*.pdf",
+            ),
+            (
+                "Events",
+                "Staff_Assignments",
+                "staff_assignments",
+                "Staff docs",
+                "SA_{id}_*.pdf",
+            ),
+            (
+                "Events",
+                "Line_Items",
+                "event_line_items",
+                "Item delivery proof",
+                "LI_{id}_*.pdf",
+            ),
+            (
+                "E_Invoice",
+                "Submissions",
+                "sales_invoices",
+                "ETA submission proof",
+                "ETA_{uuid}.json",
+            ),
+            (
+                "E_Invoice",
+                "QR_Codes",
+                "sales_invoices",
+                "QR code images",
+                "INV_{id}_qr.png",
+            ),
+            (
+                "E_Invoice",
+                "Rejections",
+                "sales_invoices",
+                "Rejection notices",
+                "ETA_{uuid}_rej.json",
+            ),
             ("Master_Data", "Clients", "clients", "KYC, tax cards", "CLI_{id}_*.pdf"),
             ("Master_Data", "Vendors", "vendors", "KYC, tax cards", "VND_{id}_*.pdf"),
             ("Master_Data", "Items", "items", "Spec sheets, images", "ITM_{id}_*.pdf"),
             ("HR", "Staff", "staff", "Contracts, IDs", "STF_{id}_*.pdf"),
             ("HR", "Owners", "owners", "Registration docs", "OWN_{id}_*.pdf"),
-            ("Costing", "Budget", "budget_lines", "Budget approvals", "BUD_{id}_*.xlsx"),
+            (
+                "Costing",
+                "Budget",
+                "budget_lines",
+                "Budget approvals",
+                "BUD_{id}_*.xlsx",
+            ),
             ("Costing", "SCM", "scm_staging", "SCM analysis docs", "SCM_{id}_*.xlsx"),
-            ("OR", "Analysis", "or_analyses", "OR engine outputs", "OR_{engine}_{id}.json"),
-            ("OR", "Reports", "or_analyses", "Generated reports", "OR_{engine}_{id}_report.pdf"),
-            ("Manufacturing", "Production", "mfg_orders", "Production orders", "MFG_{id}_*.pdf"),
+            (
+                "OR",
+                "Analysis",
+                "or_analyses",
+                "OR engine outputs",
+                "OR_{engine}_{id}.json",
+            ),
+            (
+                "OR",
+                "Reports",
+                "or_analyses",
+                "Generated reports",
+                "OR_{engine}_{id}_report.pdf",
+            ),
+            (
+                "Manufacturing",
+                "Production",
+                "mfg_orders",
+                "Production orders",
+                "MFG_{id}_*.pdf",
+            ),
             ("Manufacturing", "QC", "mfg_orders", "Quality checks", "QC_{id}_*.pdf"),
         ]
 
         inserted = 0
         for row in seed_data:
-            exists = self.db.query(DocumentModule).filter_by(
-                module_name=row[0], function_name=row[1]
-            ).first()
+            exists = (
+                self.db.query(DocumentModule)
+                .filter_by(module_name=row[0], function_name=row[1])
+                .first()
+            )
             if not exists:
-                self.db.add(DocumentModule(
-                    module_name=row[0],
-                    function_name=row[1],
-                    transaction_table=row[2],
-                    description=row[3],
-                    filename_pattern=row[4],
-                ))
+                self.db.add(
+                    DocumentModule(
+                        module_name=row[0],
+                        function_name=row[1],
+                        transaction_table=row[2],
+                        description=row[3],
+                        filename_pattern=row[4],
+                    )
+                )
                 inserted += 1
         self.db.commit()
         return inserted
@@ -333,12 +466,15 @@ class DocumentService:
 async def run_nightly_verify():
     """Async wrapper for nightly archive verification. Scheduled via APScheduler."""
     from app.database import SessionLocal
+
     db = SessionLocal()
     try:
         service = DocumentService(db)
         result = service.verify_archive()
-        print(f"[{datetime.now()}] Document verify: {result.total_checked} checked, "
-              f"{result.verified} verified, {result.modified} modified, "
-              f"{result.missing} missing")
+        print(
+            f"[{datetime.now()}] Document verify: {result.total_checked} checked, "
+            f"{result.verified} verified, {result.modified} modified, "
+            f"{result.missing} missing"
+        )
     finally:
         db.close()

@@ -1,4 +1,4 @@
-﻿from prometheus_client import (
+from prometheus_client import (
     Counter,
     Histogram,
     Gauge,

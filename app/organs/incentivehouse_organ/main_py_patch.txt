@@ -1,0 +1,9 @@
+
+# ── ADD THESE LINES TO app/main.py (after other blueprint registrations) ──
+
+# Dashboard API — serves KPIs, activity, alerts, auth
+from app.dashboard_api import dashboard_bp
+app.register_blueprint(dashboard_bp)
+
+# Ensure template folder is correct
+app.template_folder = os.path.join(os.path.dirname(__file__), 'templates')

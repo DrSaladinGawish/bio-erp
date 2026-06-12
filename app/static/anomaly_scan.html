@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ERP Anomaly Scan — 2026-06-11 08:56</title>
+<link href="/static/vendor/bootstrap.min.css" rel="stylesheet">
+<style>
+  body { font-family: 'Segoe UI', sans-serif; padding: 2rem; background: #f5f6fa; }
+  .card { border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08); margin-bottom: 1rem; }
+  .card-header { border-radius: 12px 12px 0 0 !important; font-weight: 600; }
+  .pass { background: #d4edda; } .fail { background: #f8d7da; }
+  .badge-pass { background: #28a745; color: #fff; padding: 2px 10px; border-radius: 10px; font-size: 0.8rem; }
+  .badge-fail { background: #dc3545; color: #fff; padding: 2px 10px; border-radius: 10px; font-size: 0.8rem; }
+  table { font-size: 0.9rem; }
+  .summary-num { font-size: 2rem; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2 class="mb-3"><img src="/static/logo.ico" height="32" class="me-2">BIO-ERP v5.3.0 — Anomaly Scan</h2>
+  <p class="text-muted">Scanned at 2026-06-11 08:56:42 — Server: http://localhost:9001</p>
+
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card text-center p-3">
+        <div class="summary-num text-success">22</div>
+        <div class="text-muted">Checks Passed</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center p-3">
+        <div class="summary-num text-danger">0</div>
+        <div class="text-muted">Anomalies</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center p-3">
+        <div class="summary-num text-primary">22</div>
+        <div class="text-muted">Total Checks</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-dark text-white">Endpoint Results</div>
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>Status</th><th>Label</th><th>Endpoint</th><th>HTTP</th><th>Value</th><th>Expected</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>clients</strong></td>
+            <td><code>/api/v1/env/clients</code></td>
+            <td>200</td>
+            <td>49</td>
+            <td>49</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>suppliers (vendors)</strong></td>
+            <td><code>/api/v1/env/vendors</code></td>
+            <td>200</td>
+            <td>175</td>
+            <td>175</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>purchase orders</strong></td>
+            <td><code>/api/v1/pur/summary</code></td>
+            <td>200</td>
+            <td>8,649</td>
+            <td>8,649</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>sales invoices</strong></td>
+            <td><code>/api/v1/sal/summary</code></td>
+            <td>200</td>
+            <td>93</td>
+            <td>93</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>PNR events</strong></td>
+            <td><code>/api/v1/evn/summary</code></td>
+            <td>200</td>
+            <td>10</td>
+            <td>10</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>GRN receipts</strong></td>
+            <td><code>/api/v1/grn/summary</code></td>
+            <td>200</td>
+            <td>20</td>
+            <td>20</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>bank txns</strong></td>
+            <td><code>/api/v1/bnk/transactions</code></td>
+            <td>200</td>
+            <td>2,501</td>
+            <td>2,501</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>EVOPS summary</strong></td>
+            <td><code>/api/v1/evops/summary</code></td>
+            <td>200</td>
+            <td>1</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>EVOPS stats</strong></td>
+            <td><code>/api/v1/evops/stats</code></td>
+            <td>200</td>
+            <td>1</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>dash clients</strong></td>
+            <td><code>/api/v1/dashboard/summary</code></td>
+            <td>200</td>
+            <td>49</td>
+            <td>49</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>dash events</strong></td>
+            <td><code>/api/v1/dashboard/summary</code></td>
+            <td>200</td>
+            <td>143</td>
+            <td>143</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>dash revenue</strong></td>
+            <td><code>/api/v1/dashboard/summary</code></td>
+            <td>200</td>
+            <td>56,300,000.0</td>
+            <td>56,300,000.0</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>dash costs</strong></td>
+            <td><code>/api/v1/dashboard/summary</code></td>
+            <td>200</td>
+            <td>42,300,000.0</td>
+            <td>42,300,000.0</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>dash margin</strong></td>
+            <td><code>/api/v1/dashboard/summary</code></td>
+            <td>200</td>
+            <td>14,000,000.0</td>
+            <td>14,000,000.0</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>dash ap_due</strong></td>
+            <td><code>/api/v1/dashboard/summary</code></td>
+            <td>200</td>
+            <td>19,500,000.0</td>
+            <td>19,500,000.0</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>dash ar_due</strong></td>
+            <td><code>/api/v1/dashboard/summary</code></td>
+            <td>200</td>
+            <td>15,300,000.0</td>
+            <td>15,300,000.0</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>dash eta_val</strong></td>
+            <td><code>/api/v1/dashboard/summary</code></td>
+            <td>200</td>
+            <td>92</td>
+            <td>92</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>dash eta_rej</strong></td>
+            <td><code>/api/v1/dashboard/summary</code></td>
+            <td>200</td>
+            <td>1</td>
+            <td>1</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>login</strong></td>
+            <td><code>/api/v1/auth/login</code></td>
+            <td>200</td>
+            <td>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGVzIjpbXSwiYnJhbmNoX2lkIjoxLCJleHAiOjE3ODExODYxOTN9.AuFoZzAaQ2b6vH9Sa2ZCqiLSgefzE_52Z879g59c8JQ</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>auth/me</strong></td>
+            <td><code>/api/v1/auth/me</code></td>
+            <td>200</td>
+            <td>admin</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>health</strong></td>
+            <td><code>/health</code></td>
+            <td>200</td>
+            <td>ok</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+          <tr class="pass">
+            <td><span class="badge-pass">PASS</span></td>
+            <td><strong>v2 status</strong></td>
+            <td><code>/api/v2/status</code></td>
+            <td>200</td>
+            <td>completed</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

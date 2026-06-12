@@ -1,6 +1,7 @@
 """
 IncentiveHouse ERP — Database session dependency for async routers.
 """
+
 from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession

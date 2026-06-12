@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import json
 from datetime import datetime
 from datetime import timezone
@@ -34,7 +34,9 @@ class ETARetryProcessor:
                         job.status = "accepted"
                         job.eta_uuid = accepted[0].get("uuid")
                         job.eta_long_id = accepted[0].get("longId")
-                        job.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
+                        job.resolved_at = datetime.now(timezone.utc).replace(
+                            tzinfo=None
+                        )
                         await EmailService.eta_alert(
                             recipient="admin@bioerp.local",
                             invoice_uuid=job.eta_uuid,

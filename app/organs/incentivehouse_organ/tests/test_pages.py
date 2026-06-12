@@ -3,6 +3,7 @@ IHE-ERP v2.3 — Page route HTTP 200 tests.
 Run: pytest tests/test_pages.py -v
 Uses the `sync_client` and `app` fixtures from conftest.py.
 """
+
 import pytest
 
 
@@ -48,6 +49,7 @@ def test_static_logo_assets():
     """The 4 brand images must exist on disk in either /static/img or /static/images
     (the running container serves them at /static/img)."""
     from pathlib import Path
+
     static_dir = Path(__file__).resolve().parent.parent / "static"
     candidates = [static_dir / "img", static_dir / "images"]
     expected = ["logos.jpg", "logosmal.jpg", "hader.jpg", "fotter.jpg"]
@@ -56,6 +58,8 @@ def test_static_logo_assets():
     assert found_dirs, f"Neither {candidates} exists"
     for name in expected:
         matches = [d / name for d in found_dirs if (d / name).exists()]
-        assert matches, f"Missing asset: {name} not found in {[str(d) for d in found_dirs]}"
+        assert matches, (
+            f"Missing asset: {name} not found in {[str(d) for d in found_dirs]}"
+        )
         for m in matches:
             assert m.stat().st_size > 0, f"Empty asset: {m}"

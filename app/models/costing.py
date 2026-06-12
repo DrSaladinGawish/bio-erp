@@ -1,4 +1,4 @@
-from datetime import timezone, datetime, timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 from sqlalchemy import (
     Integer,

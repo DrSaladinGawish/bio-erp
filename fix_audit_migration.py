@@ -1,5 +1,6 @@
 import asyncio, asyncpg
 
+
 async def fix():
     conn = await asyncpg.connect(
         "postgresql://postgres:postgres123@localhost:5432/bio_erp"
@@ -15,7 +16,9 @@ async def fix():
         await conn.execute("ALTER TABLE audit_logs ADD COLUMN row_hash VARCHAR(64)")
         print("Added row_hash")
     if "previous_hash" not in existing:
-        await conn.execute("ALTER TABLE audit_logs ADD COLUMN previous_hash VARCHAR(64)")
+        await conn.execute(
+            "ALTER TABLE audit_logs ADD COLUMN previous_hash VARCHAR(64)"
+        )
         print("Added previous_hash")
     if "chain_verified" not in existing:
         await conn.execute(
@@ -29,6 +32,7 @@ async def fix():
     )
     print("Final columns:", [c["column_name"] for c in cols2])
     await conn.close()
+
 
 asyncio.run(fix())
 print("Migration complete")

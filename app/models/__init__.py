@@ -1,4 +1,4 @@
-﻿from app.database import Base
+from app.database import Base  # noqa: F401
 from app.models.base import (
     BaseMixin,
     BilingualMixin,
@@ -15,7 +15,16 @@ from app.models.supplier import Supplier, RFQ, SupplierQuote, PurchaseOrder
 from app.models.item import ItemCategory, ItemSubCategory, EventMasterNode
 from app.models.owner import Owner
 from app.models.staff import Staff, FieldTask
-from app.models.event import Event, PNR, EventBudgetLine, EventLineItem, EventDoc, EventOperation, ServiceUOM, LifecycleStatus
+from app.models.event import (
+    Event,
+    PNR,
+    EventBudgetLine,
+    EventLineItem,
+    EventDoc,
+    EventOperation,
+    ServiceUOM,
+    LifecycleStatus,
+)
 from app.models.transaction import (
     BankReconciliation,
     BankImportSession,

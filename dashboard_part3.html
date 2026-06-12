@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP IH — Data Flow & Health Monitor</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-green: #22c55e;
+            --accent-yellow: #eab308;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --accent-purple: #a855f7;
+            --accent-cyan: #06b6d4;
+            --border: #475569;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 2px solid var(--accent-cyan);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-section { display: flex; align-items: center; gap: 1rem; }
+        .logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+        }
+        .title-section h1 {
+            font-size: 1.4rem;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .title-section p { font-size: 0.8rem; color: var(--text-secondary); }
+
+        .header-actions { display: flex; gap: 0.75rem; }
+        .btn {
+            padding: 0.6rem 1.2rem; border: none; border-radius: 8px;
+            cursor: pointer; font-size: 0.9rem; font-weight: 600;
+            transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(6,182,212,0.4); }
+        .btn-secondary {
+            background: var(--bg-card); color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .nav-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .nav-card-header {
+            padding: 1rem;
+            background: linear-gradient(90deg, rgba(6,182,212,0.1), transparent);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+        }
+        .nav-item {
+            padding: 0.85rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: rgba(6,182,212,0.1);
+            border-left-color: var(--accent-cyan);
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+        .score-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        .score-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .score-card.healthy::before { background: var(--accent-green); }
+        .score-card.warning::before { background: var(--accent-yellow); }
+        .score-card.danger::before { background: var(--accent-red); }
+        .score-card.info::before { background: var(--accent-cyan); }
+
+        .score-label { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+        .score-value { font-size: 2rem; font-weight: 700; margin-top: 0.5rem; }
+        .score-value.healthy { color: var(--accent-green); }
+        .score-value.warning { color: var(--accent-yellow); }
+        .score-value.danger { color: var(--accent-red); }
+
+        .flow-container {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            height: 600px;
+            position: relative;
+        }
+        .flow-header {
+            padding: 1rem 1.25rem;
+            background: linear-gradient(90deg, rgba(6,182,212,0.1), transparent);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #flowGraph { width: 100%; height: 540px; }
+
+        .table-container {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .table-header {
+            padding: 1rem 1.25rem;
+            background: linear-gradient(90deg, rgba(6,182,212,0.1), transparent);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .data-row {
+            display: grid;
+            grid-template-columns: 1.5fr 0.8fr 1fr 0.8fr 0.8fr 1fr 100px;
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .data-row:hover { background: rgba(6,182,212,0.05); }
+        .data-row:last-child { border-bottom: none; }
+
+        .health-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .health-badge.healthy { background: rgba(34,197,94,0.2); color: var(--accent-green); }
+        .health-badge.stale { background: rgba(234,179,8,0.2); color: var(--accent-yellow); }
+        .health-badge.orphaned { background: rgba(239,68,68,0.2); color: var(--accent-red); }
+        .health-badge.empty { background: rgba(148,163,184,0.2); color: var(--text-secondary); }
+        .health-badge.duplicate { background: rgba(168,85,247,0.2); color: var(--accent-purple); }
+
+        .master-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        .master-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 1rem;
+            transition: all 0.2s;
+        }
+        .master-card:hover { border-color: var(--accent-cyan); }
+        .master-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .master-card-title { font-weight: 600; font-size: 0.95rem; }
+        .master-card-module { font-size: 0.75rem; color: var(--text-secondary); }
+        .master-health-bar {
+            width: 100%; height: 6px;
+            background: var(--bg-primary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+        .master-health-fill {
+            height: 100%; border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        .master-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+        .master-stat-value { color: var(--text-primary); font-weight: 600; }
+        .master-recommendation {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(6,182,212,0.05);
+            border-radius: 4px;
+        }
+
+        .alerts-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .alert-item {
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+        .alert-item:last-child { border-bottom: none; }
+        .alert-item.critical { border-left: 3px solid var(--accent-red); }
+        .alert-item.warning { border-left: 3px solid var(--accent-yellow); }
+        .alert-item.info { border-left: 3px solid var(--accent-cyan); }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .legend {
+            display: flex;
+            gap: 1.5rem;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .loading { padding: 2rem; text-align: center; color: var(--text-secondary); }
+        .empty-state { padding: 3rem; text-align: center; color: var(--text-secondary); }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            z-index: 1000;
+            animation: toastIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .toast.success { background: var(--accent-green); color: white; }
+        .toast.error { background: var(--accent-red); color: white; }
+        .toast.info { background: var(--accent-cyan); color: white; }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ws-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            background: var(--bg-card);
+        }
+        .ws-status.connected { color: var(--accent-green); }
+        .ws-status.disconnected { color: var(--accent-red); }
+        .ws-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .ws-dot.connected { background: var(--accent-green); animation: pulse 2s infinite; }
+        .ws-dot.disconnected { background: var(--accent-red); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo-section">
+            <div class="logo">🌊</div>
+            <div class="title-section">
+                <h1>ERP IH — Data Flow & Health Monitor</h1>
+                <p>Part 3: Flow Visualization | Data Locations | Master Table Health</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div class="ws-status disconnected" id="wsStatus">
+                <div class="ws-dot disconnected" id="wsDot"></div>
+                <span id="wsText">Offline</span>
+            </div>
+            <button class="btn btn-secondary" onclick="refreshAll()" id="refreshBtn">🔄 Refresh</button>
+            <button class="btn btn-primary" onclick="triggerScan()" id="scanBtn">🔍 Capture Snapshot</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="nav-card">
+                <div class="nav-card-header">📊 Views</div>
+                <div class="nav-item active" onclick="switchTab('flow')" data-tab="flow">
+                    <span>🌊</span>
+                    <div>
+                        <div style="font-weight:600;">Data Flow</div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);">Live topology graph</div>
+                    </div>
+                </div>
+                <div class="nav-item" onclick="switchTab('locations')" data-tab="locations">
+                    <span>📍</span>
+                    <div>
+                        <div style="font-weight:600;">Data Locations</div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);">Where data lives</div>
+                    </div>
+                </div>
+                <div class="nav-item" onclick="switchTab('master')" data-tab="master">
+                    <span>🏛️</span>
+                    <div>
+                        <div style="font-weight:600;">Master Tables</div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);">Health & staleness</div>
+                    </div>
+                </div>
+                <div class="nav-item" onclick="switchTab('alerts')" data-tab="alerts">
+                    <span>🚨</span>
+                    <div>
+                        <div style="font-weight:600;">Alerts</div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);">Critical issues</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-card">
+                <div class="nav-card-header">⚡ Quick Filters</div>
+                <div class="nav-item" onclick="filterLocations('master')">
+                    <span style="font-size:0.8rem;">🏷️</span> Master Data Only
+                </div>
+                <div class="nav-item" onclick="filterLocations('stale')">
+                    <span style="font-size:0.8rem;">⏰</span> Stale Data
+                </div>
+                <div class="nav-item" onclick="filterMaster('critical')">
+                    <span style="font-size:0.8rem;">🔴</span> Critical Tables
+                </div>
+                <div class="nav-item" onclick="filterMaster('stale')">
+                    <span style="font-size:0.8rem;">🟡</span> Stale Tables
+                </div>
+                <div class="nav-item" onclick="clearFilters()">
+                    <span style="font-size:0.8rem;">🔄</span> Clear Filters
+                </div>
+            </div>
+
+            <div class="nav-card">
+                <div class="nav-card-header">📈 Auto Refresh</div>
+                <div style="padding:1rem;">
+                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                        <input type="checkbox" id="autoRefresh" checked onchange="toggleAutoRefresh()">
+                        <span style="font-size:0.85rem;">Every 30 seconds</span>
+                    </label>
+                </div>
+            </div>
+        </aside>
+
+        <main class="content">
+            <!-- Score Cards -->
+            <div class="score-grid">
+                <div class="score-card info">
+                    <div class="score-label">Flow Health</div>
+                    <div class="score-value" id="flowHealthScore">--</div>
+                </div>
+                <div class="score-card healthy">
+                    <div class="score-label">Data Health</div>
+                    <div class="score-value healthy" id="dataHealthScore">--</div>
+                </div>
+                <div class="score-card warning">
+                    <div class="score-label">Master Health</div>
+                    <div class="score-value warning" id="masterHealthScore">--</div>
+                </div>
+                <div class="score-card danger">
+                    <div class="score-label">Critical Alerts</div>
+                    <div class="score-value danger" id="alertCount">--</div>
+                </div>
+            </div>
+
+            <!-- TAB: Data Flow -->
+            <div class="tab-content active" id="tab-flow">
+                <div class="flow-container">
+                    <div class="flow-header">
+                        <span>🌊 Real-Time Data Flow Topology</span>
+                        <span style="font-size:0.8rem;color:var(--text-secondary);" id="flowTimestamp">--</span>
+                    </div>
+                    <div id="flowGraph"></div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-dot" style="background:#22c55e;"></div> Active</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#eab308;"></div> Idle</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div> Error/Offline</div>
+                        <div class="legend-item">— Solid: Flowing</div>
+                        <div class="legend-item">- - Dashed: Stalled</div>
+                        <div class="legend-item">→ Sync | ⇢ Async | ⇢ Batch | ⇢ Trigger</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Data Locations -->
+            <div class="tab-content" id="tab-locations">
+                <div class="table-container">
+                    <div class="table-header">
+                        <span>📍 Data Entity Locations Map</span>
+                        <span style="font-size:0.8rem;color:var(--text-secondary);" id="locationCount">-- entities</span>
+                    </div>
+                    <div style="padding:0.5rem 1.25rem;background:rgba(6,182,212,0.05);font-size:0.8rem;color:var(--text-secondary);display:grid;grid-template-columns:1.5fr 0.8fr 1fr 0.8fr 0.8fr 1fr 100px;font-weight:600;">
+                        <span>Entity</span><span>Type</span><span>Primary Location</span>
+                        <span>Rows</span><span>Replicas</span><span>Last Update</span><span>Health</span>
+                    </div>
+                    <div id="locationsBody">
+                        <div class="loading">Loading data locations...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Master Tables -->
+            <div class="tab-content" id="tab-master">
+                <div class="table-container" style="margin-bottom:1rem;">
+                    <div class="table-header">
+                        <span>🏛️ Master Table Health Dashboard</span>
+                        <span style="font-size:0.8rem;color:var(--text-secondary);" id="masterSummary">--</span>
+                    </div>
+                </div>
+                <div class="master-grid" id="masterGrid">
+                    <div class="loading" style="grid-column:1/-1;">Loading master tables...</div>
+                </div>
+            </div>
+
+            <!-- TAB: Alerts -->
+            <div class="tab-content" id="tab-alerts">
+                <div class="table-container" style="margin-bottom:1rem;">
+                    <div class="table-header">
+                        <span>🚨 Critical Alerts & Notifications</span>
+                        <span style="font-size:0.8rem;color:var(--text-secondary);" id="alertSummary">--</span>
+                    </div>
+                </div>
+                <div class="alerts-panel" id="alertsPanel">
+                    <div class="loading">Loading alerts...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ── State ──────────────────────────────────────────────────────────
+        let flowNetwork = null;
+        let ws = null;
+        let autoRefreshInterval = null;
+        let currentFilter = { locations: null, master: null };
+        let lastSnapshot = null;
+
+        // ── Tab Switching ──────────────────────────────────────────────────
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item[data-tab]').forEach(n => n.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.querySelector('.nav-item[data-tab="' + tabName + '"]')?.classList.add('active');
+
+            if (tabName === 'flow' && flowNetwork) {
+                setTimeout(() => flowNetwork.fit(), 100);
+            }
+        }
+
+        // ── WebSocket ──────────────────────────────────────────────────────
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = protocol + '//' + window.location.host + '/ws';
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                updateWsStatus(true);
+                showToast('Connected to live updates', 'success');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'snapshot') {
+                    lastSnapshot = data.payload;
+                    updateAllViews(data.payload);
+                }
+            };
+
+            ws.onclose = () => {
+                updateWsStatus(false);
+                setTimeout(connectWebSocket, 5000);
+            };
+
+            ws.onerror = () => {
+                updateWsStatus(false);
+            };
+        }
+
+        function updateWsStatus(connected) {
+            const dot = document.getElementById('wsDot');
+            const text = document.getElementById('wsText');
+            const status = document.getElementById('wsStatus');
+
+            if (connected) {
+                dot.className = 'ws-dot connected';
+                text.textContent = 'Live';
+                status.className = 'ws-status connected';
+            } else {
+                dot.className = 'ws-dot disconnected';
+                text.textContent = 'Offline';
+                status.className = 'ws-status disconnected';
+            }
+        }
+
+        // ── API Calls ──────────────────────────────────────────────────────
+        async function fetchJSON(url) {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        }
+
+        async function refreshAll() {
+            const btn = document.getElementById('refreshBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Loading...';
+
+            try {
+                const [snapshot, graph, locations, masterTables] = await Promise.all([
+                    fetchJSON('/api/v1/flow/snapshot'),
+                    fetchJSON('/api/v1/flow/graph'),
+                    fetchJSON('/api/v1/locations'),
+                    fetchJSON('/api/v1/master-tables')
+                ]);
+
+                lastSnapshot = snapshot;
+                updateScoreCards(snapshot);
+                renderFlowGraph(graph);
+                renderLocations(locations.locations || []);
+                renderMasterTables(masterTables.tables || []);
+                renderAlerts(snapshot.critical_alerts || []);
+
+                showToast('All views refreshed', 'success');
+            } catch (err) {
+                showToast('Refresh failed: ' + err.message, 'error');
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔄 Refresh';
+            }
+        }
+
+        async function triggerScan() {
+            const btn = document.getElementById('scanBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Scanning...';
+
+            try {
+                const response = await fetch('/api/v1/flow/snapshot', { method: 'POST' });
+                const data = await response.json();
+                showToast('Snapshot captured: ' + data.node_count + ' nodes, ' + data.edge_count + ' edges', 'success');
+                await refreshAll();
+            } catch (err) {
+                showToast('Scan failed: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 Capture Snapshot';
+            }
+        }
+
+        // ── Update Views ───────────────────────────────────────────────────
+        function updateAllViews(snapshot) {
+            updateScoreCards(snapshot);
+            // Re-fetch detailed views on WebSocket update
+            fetchJSON('/api/v1/flow/graph').then(renderFlowGraph);
+            fetchJSON('/api/v1/locations').then(d => renderLocations(d.locations || []));
+            fetchJSON('/api/v1/master-tables').then(d => renderMasterTables(d.tables || []));
+            renderAlerts(snapshot.critical_alerts || []);
+        }
+
+        function updateScoreCards(snapshot) {
+            document.getElementById('flowHealthScore').textContent = snapshot.overall_flow_health + '/100';
+            document.getElementById('dataHealthScore').textContent = snapshot.overall_data_health + '/100';
+            document.getElementById('masterHealthScore').textContent = snapshot.overall_master_health + '/100';
+            document.getElementById('alertCount').textContent = snapshot.critical_alerts.length;
+            document.getElementById('flowTimestamp').textContent = new Date(snapshot.timestamp).toLocaleString();
+        }
+
+        // ── Flow Graph (Vis.js) ──────────────────────────────────────────
+        function renderFlowGraph(graphData) {
+            const container = document.getElementById('flowGraph');
+            if (!container) return;
+
+            const nodes = new vis.DataSet(graphData.nodes.map(n => ({
+                id: n.id,
+                label: n.label,
+                group: n.group,
+                shape: n.type === 'database_table' ? 'box' : n.type === 'file' ? 'ellipse' : n.type === 'api' ? 'diamond' : 'dot',
+                color: {
+                    background: n.status === 'active' ? '#22c55e' : n.status === 'idle' ? '#eab308' : '#ef4444',
+                    border: n.status === 'active' ? '#16a34a' : n.status === 'idle' ? '#ca8a04' : '#dc2626'
+                },
+                size: n.type === 'module' ? 30 : 20,
+                title: n.title || n.label,
+                font: { color: '#f1f5f9', size: 12 }
+            })));
+
+            const edges = new vis.DataSet(graphData.edges.map(e => ({
+                id: e.id,
+                from: e.from,
+                to: e.to,
+                label: e.label,
+                title: e.title || e.label,
+                color: {
+                    color: e.status === 'flowing' ? '#22c55e' : e.status === 'stalled' ? '#ef4444' : '#94a3b8',
+                    opacity: e.status === 'flowing' ? 1 : 0.5
+                },
+                dashes: e.status === 'stalled',
+                arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+                width: e.volume > 1000 ? 3 : e.volume > 100 ? 2 : 1
+            })));
+
+            const options = {
+                groups: {
+                    'Bio-ERP Core': { color: { background: '#3b82f6', border: '#2563eb' } },
+                    'IncentiveHouse ERP': { color: { background: '#06b6d4', border: '#0891b2' } },
+                    'EventCore ERP': { color: { background: '#a855f7', border: '#9333ea' } },
+                    'OR-ERP Module': { color: { background: '#f97316', border: '#ea580c' } },
+                    'SCM Module': { color: { background: '#ec4899', border: '#db2777' } },
+                    'External': { color: { background: '#64748b', border: '#475569' } },
+                    'AI Layer': { color: { background: '#14b8a6', border: '#0d9488' } }
+                },
+                physics: {
+                    stabilization: false,
+                    barnesHut: {
+                        gravitationalConstant: -3000,
+                        centralGravity: 0.3,
+                        springLength: 150,
+                        springConstant: 0.04
+                    }
+                },
+                interaction: { hover: true, tooltipDelay: 200 }
+            };
+
+            if (flowNetwork) {
+                flowNetwork.destroy();
+            }
+            flowNetwork = new vis.Network(container, { nodes, edges }, options);
+        }
+
+        // ── Locations Table ──────────────────────────────────────────────
+        function renderLocations(locations) {
+            const container = document.getElementById('locationsBody');
+            const filtered = currentFilter.locations 
+                ? locations.filter(l => l.entity_type === currentFilter.locations || l.health_status === currentFilter.locations)
+                : locations;
+
+            document.getElementById('locationCount').textContent = filtered.length + ' entities';
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state">No data locations found</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(loc => `
+                <div class="data-row">
+                    <div>
+                        <div style="font-weight:600;">${loc.entity_name}</div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);">${loc.primary_module}</div>
+                    </div>
+                    <div style="font-size:0.8rem;color:var(--text-secondary);">${loc.entity_type}</div>
+                    <div style="font-size:0.8rem;">
+                        <div>${loc.primary_table}</div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);">${loc.primary_db}</div>
+                    </div>
+                    <div style="font-weight:600;">${loc.row_count?.toLocaleString() || 'N/A'}</div>
+                    <div style="font-size:0.8rem;">${loc.replicas?.length || 0} replicas</div>
+                    <div style="font-size:0.8rem;color:var(--text-secondary);">
+                        ${loc.last_updated ? new Date(loc.last_updated).toLocaleString() : 'Never'}
+                    </div>
+                    <div>
+                        <span class="health-badge ${loc.health_status}">${loc.health_status}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterLocations(filter) {
+            currentFilter.locations = filter;
+            switchTab('locations');
+            if (lastSnapshot) {
+                renderLocations(lastSnapshot.locations || []);
+            }
+        }
+
+        // ── Master Tables ────────────────────────────────────────────────
+        function renderMasterTables(tables) {
+            const container = document.getElementById('masterGrid');
+            const filtered = currentFilter.master
+                ? tables.filter(t => {
+                    if (currentFilter.master === 'critical') return t.health_score < 50;
+                    if (currentFilter.master === 'stale') return t.is_stale;
+                    return true;
+                })
+                : tables;
+
+            const healthy = tables.filter(t => t.health_score >= 80).length;
+            const degraded = tables.filter(t => t.health_score >= 50 && t.health_score < 80).length;
+            const critical = tables.filter(t => t.health_score < 50).length;
+
+            document.getElementById('masterSummary').textContent = 
+                `${tables.length} tables | ${healthy} healthy | ${degraded} degraded | ${critical} critical`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">No master tables match filter</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(t => {
+                const healthColor = t.health_score >= 80 ? 'var(--accent-green)' : 
+                                   t.health_score >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+                return `
+                <div class="master-card">
+                    <div class="master-card-header">
+                        <div>
+                            <div class="master-card-title">${t.table_name}</div>
+                            <div class="master-card-module">${t.module} • ${t.database}</div>
+                        </div>
+                        <span class="health-badge ${t.health_score >= 80 ? 'healthy' : t.health_score >= 50 ? 'stale' : 'orphaned'}">
+                            ${t.health_score}/100
+                        </span>
+                    </div>
+                    <div class="master-health-bar">
+                        <div class="master-health-fill" style="width:${t.health_score}%;background:${healthColor};"></div>
+                    </div>
+                    <div class="master-stats">
+                        <div>Rows: <span class="master-stat-value">${t.row_count?.toLocaleString() || 0}</span></div>
+                        <div>Trend: <span class="master-stat-value">${t.row_count_trend}</span></div>
+                        <div>Orphans: <span class="master-stat-value">${t.orphan_count}</span></div>
+                        <div>Dupes: <span class="master-stat-value">${t.duplicate_count}</span></div>
+                    </div>
+                    <div class="master-recommendation">
+                        ${t.recommendation}
+                    </div>
+                    <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.5rem;">
+                        ${t.is_stale ? '⏰ Stale ' : '✓ Fresh '}
+                        ${t.last_update ? '• Updated ' + new Date(t.last_update).toLocaleDateString() : ''}
+                        ${t.index_health !== 'unknown' ? '• Index: ' + t.index_health : ''}
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function filterMaster(filter) {
+            currentFilter.master = filter;
+            switchTab('master');
+            if (lastSnapshot) {
+                renderMasterTables(lastSnapshot.master_tables || []);
+            }
+        }
+
+        function clearFilters() {
+            currentFilter = { locations: null, master: null };
+            refreshAll();
+        }
+
+        // ── Alerts ─────────────────────────────────────────────────────────
+        function renderAlerts(alerts) {
+            const container = document.getElementById('alertsPanel');
+            document.getElementById('alertSummary').textContent = `${alerts.length} active alerts`;
+
+            if (alerts.length === 0) {
+                container.innerHTML = '<div class="empty-state">🎉 No critical alerts — all systems healthy!</div>';
+                return;
+            }
+
+            container.innerHTML = alerts.map(alert => {
+                let type = 'info';
+                if (alert.includes('STALLED') || alert.includes('OFFLINE') || alert.includes('MASTER TABLE')) type = 'critical';
+                else if (alert.includes('STALE')) type = 'warning';
+
+                return `<div class="alert-item ${type}">${alert}</div>`;
+            }).join('');
+        }
+
+        // ── Auto Refresh ───────────────────────────────────────────────────
+        function toggleAutoRefresh() {
+            const enabled = document.getElementById('autoRefresh').checked;
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+            if (enabled) {
+                autoRefreshInterval = setInterval(refreshAll, 30000);
+            }
+        }
+
+        // ── Toast Notifications ──────────────────────────────────────────
+        function showToast(message, type = 'info') {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'toastIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ── Init ───────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshAll();
+            connectWebSocket();
+            toggleAutoRefresh();
+        });
+    </script>
+</body>
+</html>

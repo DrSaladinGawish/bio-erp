@@ -2,6 +2,7 @@
 IHE-ERP v2.3 — Intelligence layer tests.
 Run: pytest tests/test_intelligence.py -v
 """
+
 import pytest
 
 

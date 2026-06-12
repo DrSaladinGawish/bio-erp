@@ -1,9 +1,18 @@
 from __future__ import annotations
 
 import enum
-from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -11,6 +20,7 @@ from app.database import Base
 
 
 # ── Bio Entity Models ────────────────────────────────────────────
+
 
 class Bioreactor(Base):
     __tablename__ = "bioreactors"
@@ -26,11 +36,20 @@ class Bioreactor(Base):
     aeration_rate_vvm = Column(Float, nullable=True)
     status = Column(String(50), default="available")
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
     deleted_at = Column(DateTime(timezone=True), nullable=True, index=True)
 
-    batches = relationship("Batch", back_populates="bioreactor", foreign_keys="Batch.bioreactor_id")
+    batches = relationship(
+        "Batch", back_populates="bioreactor", foreign_keys="Batch.bioreactor_id"
+    )
 
 
 class CellLine(Base):
@@ -45,11 +64,20 @@ class CellLine(Base):
     viability_threshold = Column(Float, default=80.0)
     atp_maintenance_cost = Column(Float, default=0)
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
     deleted_at = Column(DateTime(timezone=True), nullable=True, index=True)
 
-    batches = relationship("Batch", back_populates="cell_line", foreign_keys="Batch.cell_line_id")
+    batches = relationship(
+        "Batch", back_populates="cell_line", foreign_keys="Batch.cell_line_id"
+    )
 
 
 class GeneConstruct(Base):
@@ -64,11 +92,20 @@ class GeneConstruct(Base):
     resistance_marker = Column(String(50), nullable=True)
     construction_cost_egp = Column(Float, default=0)
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
     deleted_at = Column(DateTime(timezone=True), nullable=True, index=True)
 
-    batches = relationship("Batch", back_populates="gene_construct", foreign_keys="Batch.gene_construct_id")
+    batches = relationship(
+        "Batch", back_populates="gene_construct", foreign_keys="Batch.gene_construct_id"
+    )
 
 
 class RawMaterial(Base):
@@ -81,8 +118,15 @@ class RawMaterial(Base):
     atp_per_mol = Column(Float, default=0)
     density_g_per_l = Column(Float, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
     deleted_at = Column(DateTime(timezone=True), nullable=True, index=True)
 
 
@@ -118,9 +162,15 @@ class Batch(Base):
     gene_construct_id = Column(Integer, ForeignKey("gene_constructs.id"), nullable=True)
     product_id = Column(Integer, ForeignKey("raw_materials.id"), nullable=True)
 
-    bioreactor = relationship("Bioreactor", back_populates="batches", foreign_keys=[bioreactor_id])
-    cell_line = relationship("CellLine", back_populates="batches", foreign_keys=[cell_line_id])
-    gene_construct = relationship("GeneConstruct", back_populates="batches", foreign_keys=[gene_construct_id])
+    bioreactor = relationship(
+        "Bioreactor", back_populates="batches", foreign_keys=[bioreactor_id]
+    )
+    cell_line = relationship(
+        "CellLine", back_populates="batches", foreign_keys=[cell_line_id]
+    )
+    gene_construct = relationship(
+        "GeneConstruct", back_populates="batches", foreign_keys=[gene_construct_id]
+    )
 
     volume_l = Column(Float, default=0.0)
     inoculum_density = Column(Float, nullable=True)
@@ -133,13 +183,26 @@ class Batch(Base):
     notes = Column(Text, nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
     deleted_at = Column(DateTime(timezone=True), nullable=True, index=True)
     is_active = Column(Boolean, nullable=False, default=True)
 
-    steps = relationship("BatchStep", back_populates="batch", order_by="BatchStep.sequence")
-    status_history = relationship("BatchStatusHistory", back_populates="batch", order_by="BatchStatusHistory.changed_at")
+    steps = relationship(
+        "BatchStep", back_populates="batch", order_by="BatchStep.sequence"
+    )
+    status_history = relationship(
+        "BatchStatusHistory",
+        back_populates="batch",
+        order_by="BatchStatusHistory.changed_at",
+    )
 
 
 class BatchStep(Base):
@@ -154,7 +217,9 @@ class BatchStep(Base):
     actual_duration_hr = Column(Float, nullable=True)
     assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True)
     notes = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     batch = relationship("Batch", back_populates="steps")
 
@@ -167,7 +232,9 @@ class BatchStatusHistory(Base):
     from_status = Column(String(50), nullable=True)
     to_status = Column(String(50), nullable=False)
     changed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
-    changed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    changed_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     reason = Column(Text, nullable=True)
 
     batch = relationship("Batch", back_populates="status_history")

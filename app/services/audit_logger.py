@@ -1,4 +1,4 @@
-﻿import hashlib
+import hashlib
 import json
 from datetime import datetime
 from datetime import timezone, date
@@ -58,15 +58,18 @@ class AuditLogger:
 
         # Get last entry's hash for chain
         prev_result = await self.session.execute(
-            select(AuditLog.row_hash)
-            .order_by(desc(AuditLog.id))
-            .limit(1)
+            select(AuditLog.row_hash).order_by(desc(AuditLog.id)).limit(1)
         )
         previous_hash = prev_result.scalar_one_or_none()
 
         row_hash = compute_row_hash(
-            timestamp, action, target_type, target_id,
-            old_json, new_json, previous_hash,
+            timestamp,
+            action,
+            target_type,
+            target_id,
+            old_json,
+            new_json,
+            previous_hash,
         )
 
         entry = AuditLog(

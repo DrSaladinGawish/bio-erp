@@ -5,6 +5,7 @@ Mount at: /api/v1/or/eventcore/...
 Receives clean data pushed from EventCore (port 8001)
 and persists into Bio-ERP PostgreSQL using existing models.
 """
+
 from __future__ import annotations
 
 import logging
@@ -42,15 +43,20 @@ async def ingest_vendors(
     _=Depends(verify_bridge_token),
 ):
     from app.models.supplier import Supplier
+
     accepted, rejected, errors = 0, 0, []
     for item in payload:
         try:
-            existing = await db.execute(select(Supplier).where(Supplier.id == item.get("id")))
+            existing = await db.execute(
+                select(Supplier).where(Supplier.id == item.get("id"))
+            )
             if existing.scalar_one_or_none():
                 accepted += 1
                 continue
             vendor = Supplier(
-                name_en=item.get("name", item.get("name_en", f"Vendor-{item.get('id')}")),
+                name_en=item.get(
+                    "name", item.get("name_en", f"Vendor-{item.get('id')}")
+                ),
                 name_ar=item.get("name_ar"),
                 email=item.get("email"),
                 phone1=item.get("phone"),
@@ -78,10 +84,13 @@ async def ingest_gl_accounts(
     _=Depends(verify_bridge_token),
 ):
     from app.models.coa import COAAccount, COACategory
+
     accepted, rejected, errors = 0, 0, []
     for item in payload:
         try:
-            existing = await db.execute(select(COAAccount).where(COAAccount.code == item.get("code")))
+            existing = await db.execute(
+                select(COAAccount).where(COAAccount.code == item.get("code"))
+            )
             if existing.scalar_one_or_none():
                 accepted += 1
                 continue
@@ -114,11 +123,14 @@ async def ingest_journal_entries(
 ):
     from app.models.finance import JVHeader, JVLine
     from app.models.coa import COAAccount
+
     accepted, rejected, errors = 0, 0, []
     for item in payload:
         try:
             jv_number = item.get("voucher_number", f"EC-JV-{item.get('id')}")
-            existing = await db.execute(select(JVHeader).where(JVHeader.jv_number == jv_number))
+            existing = await db.execute(
+                select(JVHeader).where(JVHeader.jv_number == jv_number)
+            )
             if existing.scalar_one_or_none():
                 accepted += 1
                 continue
@@ -126,7 +138,11 @@ async def ingest_journal_entries(
             default_gl = result.scalar_one_or_none()
             gl_id = default_gl.id if default_gl else 1
             raw_date = item.get("date")
-            jv_date = date.fromisoformat(raw_date) if isinstance(raw_date, str) else (raw_date or date.today())
+            jv_date = (
+                date.fromisoformat(raw_date)
+                if isinstance(raw_date, str)
+                else (raw_date or date.today())
+            )
             jv = JVHeader(
                 jv_number=jv_number,
                 jv_date=jv_date,
@@ -153,7 +169,9 @@ async def ingest_journal_entries(
             rejected += 1
             errors.append(f"JV {item.get('voucher_number', item.get('id'))}: {str(e)}")
     await db.commit()
-    logger.info("Journal entries ingested: %d accepted, %d rejected", accepted, rejected)
+    logger.info(
+        "Journal entries ingested: %d accepted, %d rejected", accepted, rejected
+    )
     return IngestResult(accepted=accepted, rejected=rejected, errors=errors)
 
 
@@ -165,12 +183,17 @@ async def ingest_invoices(
 ):
     from app.models.finance import CustomerInvoice
     from app.models.client import Client
+
     accepted, rejected, errors = 0, 0, []
     for item in payload:
         try:
             inv_number = item.get("invoice_number")
             if inv_number:
-                existing = await db.execute(select(CustomerInvoice).where(CustomerInvoice.invoice_number == inv_number))
+                existing = await db.execute(
+                    select(CustomerInvoice).where(
+                        CustomerInvoice.invoice_number == inv_number
+                    )
+                )
                 if existing.scalar_one_or_none():
                     accepted += 1
                     continue
@@ -179,8 +202,14 @@ async def ingest_invoices(
             client_id = default_client.id if default_client else 1
             raw_issue = item.get("issue_date")
             raw_due = item.get("due_date")
-            issue_date = date.fromisoformat(raw_issue) if isinstance(raw_issue, str) else (raw_issue or date.today())
-            due_date = date.fromisoformat(raw_due) if isinstance(raw_due, str) else raw_due
+            issue_date = (
+                date.fromisoformat(raw_issue)
+                if isinstance(raw_issue, str)
+                else (raw_issue or date.today())
+            )
+            due_date = (
+                date.fromisoformat(raw_due) if isinstance(raw_due, str) else raw_due
+            )
             inv = CustomerInvoice(
                 invoice_number=inv_number or f"EC-INV-{item.get('id')}",
                 customer_id=client_id,

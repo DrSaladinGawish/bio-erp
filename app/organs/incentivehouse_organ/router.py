@@ -2,6 +2,7 @@
 IncentiveHouse ERP Router — Staging review, promote, audit endpoints.
 All writes go to staging tables only; production requires explicit --migrate.
 """
+
 import json
 import logging
 from datetime import datetime
@@ -11,11 +12,15 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.organs.incentivehouse_organ.schemas import (
-    PromoteRequest, PromoteResponse,
-    StagingListResponse, StagingQuery, StagingRecord,
+    PromoteRequest,
+    PromoteResponse,
+    StagingListResponse,
+    StagingQuery,
+    StagingRecord,
 )
 from app.organs.incentivehouse_organ.models import (
-    STAGING_TABLE_NAMES, PRODUCTION_TABLE_NAMES,
+    STAGING_TABLE_NAMES,
+    PRODUCTION_TABLE_NAMES,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,6 +30,7 @@ router = APIRouter(prefix="/incentivehouse", tags=["incentivehouse"])
 
 def get_sync_db():
     from app.database import get_sync_session
+
     session = get_sync_session()
     try:
         yield session
@@ -33,6 +39,7 @@ def get_sync_db():
 
 
 # ── Staging Query / Review ──
+
 
 @router.post("/staging/query", response_model=StagingListResponse)
 def query_staging(q: StagingQuery, db: Session = Depends(get_sync_db)):
@@ -76,26 +83,30 @@ def query_staging(q: StagingQuery, db: Session = Depends(get_sync_db)):
                     val_errors = json.loads(r.validation_errors or "[]")
                 except (json.JSONDecodeError, TypeError):
                     pass
-                all_records.append(StagingRecord(
-                    id=r.id,
-                    transaction_id=r.transaction_id or "",
-                    transaction_date=str(r.transaction_date or ""),
-                    account_code=str(r.account_code or ""),
-                    description=str(r.description or ""),
-                    debit_amount=float(r.debit_amount or 0),
-                    credit_amount=float(r.credit_amount or 0),
-                    currency=str(r.currency or "EGP"),
-                    sub_led_code=int(r.sub_led_code or 0),
-                    pnr_id=int(r.pnr_id or 0),
-                    client_id=int(r.client_id or 0),
-                    validation_status=str(r.validation_status or "PASS"),
-                    validation_errors=val_errors,
-                    staged_at=str(r.staged_at or ""),
-                ))
+                all_records.append(
+                    StagingRecord(
+                        id=r.id,
+                        transaction_id=r.transaction_id or "",
+                        transaction_date=str(r.transaction_date or ""),
+                        account_code=str(r.account_code or ""),
+                        description=str(r.description or ""),
+                        debit_amount=float(r.debit_amount or 0),
+                        credit_amount=float(r.credit_amount or 0),
+                        currency=str(r.currency or "EGP"),
+                        sub_led_code=int(r.sub_led_code or 0),
+                        pnr_id=int(r.pnr_id or 0),
+                        client_id=int(r.client_id or 0),
+                        validation_status=str(r.validation_status or "PASS"),
+                        validation_errors=val_errors,
+                        staged_at=str(r.staged_at or ""),
+                    )
+                )
         except Exception as exc:
             logger.warning("Query failed for %s: %s", table, exc)
 
-    return StagingListResponse(module=q.module, total=total, records=all_records[:q.limit])
+    return StagingListResponse(
+        module=q.module, total=total, records=all_records[: q.limit]
+    )
 
 
 @router.get("/staging/summary")
@@ -127,6 +138,7 @@ def staging_summary(db: Session = Depends(get_sync_db)):
 
 
 # ── Promote to Production ──
+
 
 @router.post("/promote", response_model=PromoteResponse)
 def promote_to_production(
@@ -162,7 +174,7 @@ def promote_to_production(
             table_to=prod_table,
             confirmation_required=True,
             message=f"Dry-run: {requested} records ready to promote to {prod_table}. "
-                    f"Set confirmed=True to execute.",
+            f"Set confirmed=True to execute.",
         )
 
     # Promote: insert validated rows not already in production
@@ -204,6 +216,7 @@ def promote_to_production(
 
 
 # ── Audit Trail ──
+
 
 @router.get("/audit")
 def audit_log(

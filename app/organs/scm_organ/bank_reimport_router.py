@@ -3,33 +3,36 @@ P3 — Bank Re-Import Router
 API endpoints for recovering excluded bank transactions.
 All writes go to staging tables only — production data is protected.
 """
-import json
+
 import logging
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.config import settings
-
 
 def get_sync_db():
     from app.database import get_sync_session
+
     session = get_sync_session()
     try:
         yield session
     finally:
         session.close()
 
+
 # Import the engine (adjust path as needed)
 try:
-    from app.organs.scm_organ.bank_reimport_engine import BankReimportEngine, run_reimport, STAGING_TABLE
+    from app.organs.scm_organ.bank_reimport_engine import (
+        BankReimportEngine,
+        STAGING_TABLE,
+    )
 except ImportError:
     # Fallback: try relative import
-    from .bank_reimport_engine import BankReimportEngine, run_reimport, STAGING_TABLE
+    from .bank_reimport_engine import BankReimportEngine, STAGING_TABLE
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +42,13 @@ router = APIRouter(prefix="/bank", tags=["bank-reimport"])
 # ── Pydantic Schemas ──
 class ReimportRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    source: str = Field(default="exclusion_table", description="Source: exclusion_table, csv_file, json_file")
-    dry_run: bool = Field(default=True, description="If True, validate only — do not write to staging")
+    source: str = Field(
+        default="exclusion_table",
+        description="Source: exclusion_table, csv_file, json_file",
+    )
+    dry_run: bool = Field(
+        default=True, description="If True, validate only — do not write to staging"
+    )
     batch_size: int = Field(default=500, ge=1, le=5000, description="Process in chunks")
 
     @field_validator("source")
@@ -75,7 +83,9 @@ class StagingStatusResponse(BaseModel):
 
 class ApproveRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    record_ids: List[int] = Field(..., description="List of staging record IDs to approve")
+    record_ids: List[int] = Field(
+        ..., description="List of staging record IDs to approve"
+    )
     reviewer: str = Field(default="system", description="Name/id of reviewer")
 
 
@@ -89,8 +99,12 @@ class ApproveResponse(BaseModel):
 
 class DeployRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    batch_id: Optional[str] = Field(None, description="Deploy all approved records in this batch")
-    record_ids: Optional[List[int]] = Field(None, description="Or deploy specific record IDs")
+    batch_id: Optional[str] = Field(
+        None, description="Deploy all approved records in this batch"
+    )
+    record_ids: Optional[List[int]] = Field(
+        None, description="Or deploy specific record IDs"
+    )
     confirmed: bool = Field(False, description="Must be True to actually deploy")
 
 
@@ -118,10 +132,12 @@ def bank_reimport(
 
     # Process in batches if needed
     if len(transactions) > request.batch_size:
-        logger.info(f"Processing {len(transactions)} transactions in batches of {request.batch_size}")
+        logger.info(
+            f"Processing {len(transactions)} transactions in batches of {request.batch_size}"
+        )
         all_reports = []
         for i in range(0, len(transactions), request.batch_size):
-            batch = transactions[i:i+request.batch_size]
+            batch = transactions[i : i + request.batch_size]
             report = engine.process_batch(batch, dry_run=request.dry_run)
             all_reports.append(report)
 
@@ -140,7 +156,9 @@ def bank_reimport(
             },
             "valid_records_staged": sum(r["valid_records_staged"] for r in all_reports),
             "invalid_records": sum(r["invalid_records"] for r in all_reports),
-            "invalid_samples": [sample for r in all_reports for sample in r["invalid_samples"]][:5],
+            "invalid_samples": [
+                sample for r in all_reports for sample in r["invalid_samples"]
+            ][:5],
             "staging_table": STAGING_TABLE,
             "next_steps": all_reports[0]["next_steps"],
         }
@@ -193,7 +211,7 @@ def deploy_to_production(
     if not request.confirmed:
         raise HTTPException(
             status_code=400,
-            detail="Deployment requires confirmed=True. This is a safety measure."
+            detail="Deployment requires confirmed=True. This is a safety measure.",
         )
 
     engine = BankReimportEngine(db)
@@ -210,16 +228,14 @@ def deploy_to_production(
         params["ids"] = tuple(request.record_ids)
     else:
         raise HTTPException(
-            status_code=400,
-            detail="Must provide either batch_id or record_ids"
+            status_code=400, detail="Must provide either batch_id or record_ids"
         )
 
     rows = db.execute(query, params).mappings().all()
 
     if not rows:
         raise HTTPException(
-            status_code=404,
-            detail="No approved records found matching criteria"
+            status_code=404, detail="No approved records found matching criteria"
         )
 
     deployed = 0
@@ -228,7 +244,8 @@ def deploy_to_production(
     for row in rows:
         try:
             # Insert into production (adjust column names to match your schema)
-            db.execute("""
+            db.execute(
+                """
                 INSERT INTO bank_transactions (
                     transaction_date, amount, currency, account_number,
                     description, reference_number, counterparty_name,
@@ -240,30 +257,36 @@ def deploy_to_production(
                     :counterparty_account, :transaction_type, 'reimport',
                     :created_at, :tx_hash
                 )
-            """, {
-                "transaction_date": row.transaction_date,
-                "amount": row.amount,
-                "currency": row.currency,
-                "account_number": row.account_number,
-                "description": row.description,
-                "reference_number": row.reference_number,
-                "counterparty_name": row.counterparty_name,
-                "counterparty_account": row.counterparty_account,
-                "transaction_type": row.transaction_type,
-                "created_at": datetime.utcnow(),
-                "tx_hash": row.tx_hash,
-            })
+            """,
+                {
+                    "transaction_date": row.transaction_date,
+                    "amount": row.amount,
+                    "currency": row.currency,
+                    "account_number": row.account_number,
+                    "description": row.description,
+                    "reference_number": row.reference_number,
+                    "counterparty_name": row.counterparty_name,
+                    "counterparty_account": row.counterparty_account,
+                    "transaction_type": row.transaction_type,
+                    "created_at": datetime.utcnow(),
+                    "tx_hash": row.tx_hash,
+                },
+            )
 
             # Mark as deployed in staging
-            db.execute(f"""
+            db.execute(
+                f"""
                 UPDATE {STAGING_TABLE} 
                 SET status = 'deployed', deployed_at = :now, deployment_batch_id = :batch_id
                 WHERE id = :id
-            """, {
-                "id": row.id,
-                "now": datetime.utcnow().isoformat(),
-                "batch_id": request.batch_id or f"DEPLOY-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-            })
+            """,
+                {
+                    "id": row.id,
+                    "now": datetime.utcnow().isoformat(),
+                    "batch_id": request.batch_id
+                    or f"DEPLOY-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+                },
+            )
 
             deployed += 1
         except Exception as e:
@@ -297,9 +320,15 @@ def bank_reimport_health(db: Session = Depends(get_sync_db)):
     engine._ensure_staging_table()
 
     # Count records by status
-    counts = db.execute(text(f"""
+    counts = (
+        db.execute(
+            text(f"""
         SELECT status, COUNT(*) as count FROM {STAGING_TABLE} GROUP BY status
-    """)).mappings().all()
+    """)
+        )
+        .mappings()
+        .all()
+    )
 
     return {
         "module": "Bank Re-Import Engine",

@@ -19,6 +19,7 @@ def generate_excel_report(
     path = str(REPORT_DIR / name)
 
     from app.services.report_renderers import ExcelRenderer
+
     ExcelRenderer.generate(report_type, data, path)
 
     logger.info("report.excel.generated", path=path, type=report_type)
@@ -35,6 +36,7 @@ def generate_pdf_report(
     path = str(REPORT_DIR / name)
 
     from app.services.report_renderers import PDFRenderer
+
     PDFRenderer.generate(report_type, data, path, template_name)
 
     logger.info("report.pdf.generated", path=path, type=report_type)

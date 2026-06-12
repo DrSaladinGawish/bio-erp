@@ -1,73 +1,79 @@
 # =============================================================================
-#  .dockerignore — keep the build context lean
+# IncentiveHouse ERP v5.5 - Docker ignore
 # =============================================================================
 
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
 # Python
-__pycache__/
+__pycache__
 *.py[cod]
 *$py.class
-*.so
-.Python
-*.egg-info/
-.eggs/
-build/
-dist/
-.pytest_cache/
-.coverage
-htmlcov/
-.mypy_cache/
-.ruff_cache/
+*.egg-info
+.eggs
+dist
+build
+*.egg
+.pytest_cache
+.ruff_cache
 
-# Virtual envs
-.venv/
-venv/
-env/
+# Virtual env
+.venv
+venv
+env
 
 # IDE
-.vscode/
-.idea/
+.idea
+.vscode
 *.swp
 *.swo
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Git
-.git/
-.gitignore
-.gitattributes
+# Logs / data (Docker volumes)
+logs/*
+data/*
+uploads/*
+!data/.gitkeep
+!uploads/.gitkeep
 
-# Test / sample data
-tests/
-snapshots/
-uploads/
-*.xlsx
-*.xls
-~$*.xlsx
-~$*.xls
-*.db
-*.sqlite
-*.sqlite3
-protocell_staging.db
-*.log
-*.pid
+# Environment (use Docker env vars instead)
+.env
+.env.local
 
-# Docker self-references
+# Docker (don't copy nested Docker context)
+docker-compose*.yml
 Dockerfile
-docker-compose.yml
 .dockerignore
-nginx.conf
-deploy_all.py
 
-# Docs / scripts that are not needed in the image
+# Nginx / SSL (mounted as volumes)
+nginx
+ssl
+scripts/gen-ssl*
+
+# Docs
 *.md
-docs/
-.github/
-templates/
-static/
-certs/
+*.pdf
+*.docx
+*.zip
+*.7z
 
-# Node / front-end (not used)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Reports / analysis
+analysis_sandbox
+reports
+audit_report*.json
+audit_report*.md
+preflight_check.py
+verify_*.py
+fast_coverage.py
+integration_test.py
+smoke_test.log
+
+# Backups
+ihe_backups
+migrations/versions/*.pyc

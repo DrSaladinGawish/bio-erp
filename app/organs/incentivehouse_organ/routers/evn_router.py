@@ -19,29 +19,45 @@ End-points (prefix ``/api/v1/evn``):
   GET  /upcoming                     — events ordered by date, OPEN only
   GET  /budget-vs-actual             — budget vs. actual variance per event
 """
+
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
+from datetime import date
 from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select, func, and_, or_, desc, text
+from sqlalchemy import select, func, and_, or_, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_async_session
 from ..models_production import (
-    Event, WorkOrder, StaffAssignment,
-    SalesInvoice, PurchaseOrder, VendorInvoice,
+    Event,
+    WorkOrder,
+    StaffAssignment,
+    SalesInvoice,
+    VendorInvoice,
+)
+from app.models.ihe_models import (
+    PNRMaster,
+    ServiceMainCategory,
+    ServiceSubCategory,
+    ServiceType,
+    PNRBudgetLineItem,
 )
 from ..schemas import PaginatedResponse
+from app.organs.incentivehouse_organ.admin_permissions_module import (
+    Permission,
+    require_permission,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/evn", tags=["EVN Events"])
 
 
 # ── Pydantic models ────────────────────────────────────────────────────
+
 
 class EventCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
@@ -114,6 +130,7 @@ class EVNSummary(BaseModel):
 
 # ── Helpers ────────────────────────────────────────────────────────────
 
+
 def _event_filters(client_id, pnr_id, status_, date_from, date_to, search):
     f = []
     if client_id is not None:
@@ -127,16 +144,19 @@ def _event_filters(client_id, pnr_id, status_, date_from, date_to, search):
     if date_to:
         f.append(Event.event_date <= date_to)
     if search:
-        f.append(or_(
-            Event.event_code.ilike(f"%{search}%"),
-            Event.event_name.ilike(f"%{search}%"),
-            Event.venue.ilike(f"%{search}%"),
-            Event.city.ilike(f"%{search}%"),
-        ))
+        f.append(
+            or_(
+                Event.event_code.ilike(f"%{search}%"),
+                Event.event_name.ilike(f"%{search}%"),
+                Event.venue.ilike(f"%{search}%"),
+                Event.city.ilike(f"%{search}%"),
+            )
+        )
     return f
 
 
 # ── End-points ─────────────────────────────────────────────────────────
+
 
 @router.get("/events", response_model=PaginatedResponse[EventOut])
 async def list_events(
@@ -161,7 +181,9 @@ async def list_events(
     rows = (await session.execute(stmt)).scalars().all()
     return PaginatedResponse(
         data=[EventOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
@@ -171,17 +193,25 @@ async def get_event(
     event_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    ev = (await session.execute(
-        select(Event).where(Event.id == event_id)
-    )).scalar_one_or_none()
+    ev = (
+        await session.execute(select(Event).where(Event.id == event_id))
+    ).scalar_one_or_none()
     if not ev:
         raise HTTPException(404, "Event not found")
-    wos = (await session.execute(
-        select(WorkOrder).where(WorkOrder.event_id == event_id)
-    )).scalars().all()
-    sas = (await session.execute(
-        select(StaffAssignment).where(StaffAssignment.event_id == event_id)
-    )).scalars().all()
+    wos = (
+        (await session.execute(select(WorkOrder).where(WorkOrder.event_id == event_id)))
+        .scalars()
+        .all()
+    )
+    sas = (
+        (
+            await session.execute(
+                select(StaffAssignment).where(StaffAssignment.event_id == event_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
     return {
         "event": EventOut.model_validate(ev).model_dump(),
         "work_orders": [WorkOrderOut.model_validate(w).model_dump() for w in wos],
@@ -195,6 +225,7 @@ async def get_event(
 async def create_event(
     payload: EventCreate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    _=Depends(require_permission(Permission.CREATE_EVENTS)),
 ):
     ev = Event(**payload.model_dump(exclude_unset=True))
     session.add(ev)
@@ -208,10 +239,11 @@ async def update_event(
     event_id: int,
     payload: EventCreate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
+    _=Depends(require_permission(Permission.EDIT_EVENTS)),
 ):
-    ev = (await session.execute(
-        select(Event).where(Event.id == event_id)
-    )).scalar_one_or_none()
+    ev = (
+        await session.execute(select(Event).where(Event.id == event_id))
+    ).scalar_one_or_none()
     if not ev:
         raise HTTPException(404, "Event not found")
     for k, v in payload.model_dump(exclude_unset=True).items():
@@ -226,11 +258,17 @@ async def event_work_orders(
     event_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    rows = (await session.execute(
-        select(WorkOrder)
-        .where(WorkOrder.event_id == event_id)
-        .order_by(WorkOrder.start_date)
-    )).scalars().all()
+    rows = (
+        (
+            await session.execute(
+                select(WorkOrder)
+                .where(WorkOrder.event_id == event_id)
+                .order_by(WorkOrder.start_date)
+            )
+        )
+        .scalars()
+        .all()
+    )
     return [WorkOrderOut.model_validate(r) for r in rows]
 
 
@@ -239,11 +277,17 @@ async def event_assignments(
     event_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    rows = (await session.execute(
-        select(StaffAssignment)
-        .where(StaffAssignment.event_id == event_id)
-        .order_by(StaffAssignment.start_date)
-    )).scalars().all()
+    rows = (
+        (
+            await session.execute(
+                select(StaffAssignment)
+                .where(StaffAssignment.event_id == event_id)
+                .order_by(StaffAssignment.start_date)
+            )
+        )
+        .scalars()
+        .all()
+    )
     return [StaffAssignmentOut.model_validate(r) for r in rows]
 
 
@@ -253,30 +297,37 @@ async def event_financials(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     """Event P&L: revenue (sales invoices) − cost (vendor invoices + staff cost)."""
-    ev = (await session.execute(
-        select(Event).where(Event.id == event_id)
-    )).scalar_one_or_none()
+    ev = (
+        await session.execute(select(Event).where(Event.id == event_id))
+    ).scalar_one_or_none()
     if not ev:
         raise HTTPException(404, "Event not found")
-    sales = (await session.execute(
-        select(
-            func.coalesce(func.sum(SalesInvoice.total), 0).label("revenue"),
-            func.coalesce(func.sum(SalesInvoice.tax_amount), 0).label("tax"),
-            func.coalesce(func.sum(SalesInvoice.paid_amount), 0).label("paid"),
-            func.count().label("inv_count"),
-        ).where(SalesInvoice.event_id == event_id)
-    )).one()
-    purchases = (await session.execute(
-        select(
-            func.coalesce(func.sum(VendorInvoice.total), 0).label("cost"),
-            func.coalesce(func.sum(VendorInvoice.paid_amount), 0).label("paid"),
-            func.count().label("inv_count"),
-        ).where(VendorInvoice.event_id == event_id)
-    )).one()
-    staff_cost = (await session.execute(
-        select(func.coalesce(func.sum(StaffAssignment.total_cost), 0))
-        .where(StaffAssignment.event_id == event_id)
-    )).scalar() or 0
+    sales = (
+        await session.execute(
+            select(
+                func.coalesce(func.sum(SalesInvoice.total), 0).label("revenue"),
+                func.coalesce(func.sum(SalesInvoice.tax_amount), 0).label("tax"),
+                func.coalesce(func.sum(SalesInvoice.paid_amount), 0).label("paid"),
+                func.count().label("inv_count"),
+            ).where(SalesInvoice.event_id == event_id)
+        )
+    ).one()
+    purchases = (
+        await session.execute(
+            select(
+                func.coalesce(func.sum(VendorInvoice.total), 0).label("cost"),
+                func.coalesce(func.sum(VendorInvoice.paid_amount), 0).label("paid"),
+                func.count().label("inv_count"),
+            ).where(VendorInvoice.event_id == event_id)
+        )
+    ).one()
+    staff_cost = (
+        await session.execute(
+            select(func.coalesce(func.sum(StaffAssignment.total_cost), 0)).where(
+                StaffAssignment.event_id == event_id
+            )
+        )
+    ).scalar() or 0
     revenue = float(sales.revenue or 0)
     po_cost = float(purchases.cost or 0)
     total_cost = po_cost + float(staff_cost)
@@ -326,7 +377,9 @@ async def list_work_orders(
     rows = (await session.execute(stmt)).scalars().all()
     return PaginatedResponse(
         data=[WorkOrderOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
@@ -336,15 +389,17 @@ async def get_work_order(
     wo_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    wo = (await session.execute(
-        select(WorkOrder).where(WorkOrder.id == wo_id)
-    )).scalar_one_or_none()
+    wo = (
+        await session.execute(select(WorkOrder).where(WorkOrder.id == wo_id))
+    ).scalar_one_or_none()
     if not wo:
         raise HTTPException(404, "Work order not found")
     return WorkOrderOut.model_validate(wo)
 
 
-@router.post("/work-orders", response_model=WorkOrderOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/work-orders", response_model=WorkOrderOut, status_code=status.HTTP_201_CREATED
+)
 async def create_work_order(
     payload: WorkOrderCreate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
@@ -382,12 +437,18 @@ async def list_assignments(
     rows = (await session.execute(stmt)).scalars().all()
     return PaginatedResponse(
         data=[StaffAssignmentOut.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         pages=(total + page_size - 1) // page_size,
     )
 
 
-@router.post("/assignments", response_model=StaffAssignmentOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/assignments",
+    response_model=StaffAssignmentOut,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_assignment(
     payload: StaffAssignmentCreate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
@@ -406,17 +467,20 @@ async def create_assignment(
 async def get_summary(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    head = (await session.execute(
-        select(
-            func.count().label("cnt"),
-            func.coalesce(func.sum(Event.budget), 0).label("budget"),
-            func.coalesce(func.sum(Event.gross_sales), 0).label("sales"),
+    head = (
+        await session.execute(
+            select(
+                func.count().label("cnt"),
+                func.coalesce(func.sum(Event.budget), 0).label("budget"),
+                func.coalesce(func.sum(Event.gross_sales), 0).label("sales"),
+            )
         )
-    )).one()
-    status_rows = (await session.execute(
-        select(Event.status, func.count().label("cnt"))
-        .group_by(Event.status)
-    )).all()
+    ).one()
+    status_rows = (
+        await session.execute(
+            select(Event.status, func.count().label("cnt")).group_by(Event.status)
+        )
+    ).all()
     by_status = {r.status: r.cnt for r in status_rows if r.status}
     return EVNSummary(
         total_events=head.cnt or 0,
@@ -435,13 +499,20 @@ async def upcoming_events(
     limit: Annotated[int, Query(ge=1, le=200)] = 20,
 ):
     from datetime import datetime as _dt
+
     today = _dt.utcnow().date()
-    rows = (await session.execute(
-        select(Event)
-        .where(and_(Event.status == "OPEN", Event.event_date >= today))
-        .order_by(Event.event_date)
-        .limit(limit)
-    )).scalars().all()
+    rows = (
+        (
+            await session.execute(
+                select(Event)
+                .where(and_(Event.status == "OPEN", Event.event_date >= today))
+                .order_by(Event.event_date)
+                .limit(limit)
+            )
+        )
+        .scalars()
+        .all()
+    )
     return [EventOut.model_validate(r) for r in rows]
 
 
@@ -450,39 +521,239 @@ async def budget_vs_actual(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ):
-    rows = (await session.execute(
-        select(
-            Event.id,
-            Event.event_code,
-            Event.event_name,
-            Event.budget,
-            Event.gross_sales,
+    rows = (
+        await session.execute(
+            select(
+                Event.id,
+                Event.event_code,
+                Event.event_name,
+                Event.budget,
+                Event.gross_sales,
+            )
+            .order_by(desc(Event.event_date))
+            .limit(limit)
         )
-        .order_by(desc(Event.event_date))
-        .limit(limit)
-    )).all()
+    ).all()
     result = []
     for r in rows:
-        revenue_rows = (await session.execute(
-            select(func.coalesce(func.sum(SalesInvoice.total), 0))
-            .where(SalesInvoice.event_id == r.id)
-        )).scalar() or 0
-        cost_rows = (await session.execute(
-            select(func.coalesce(func.sum(VendorInvoice.total), 0))
-            .where(VendorInvoice.event_id == r.id)
-        )).scalar() or 0
+        revenue_rows = (
+            await session.execute(
+                select(func.coalesce(func.sum(SalesInvoice.total), 0)).where(
+                    SalesInvoice.event_id == r.id
+                )
+            )
+        ).scalar() or 0
+        cost_rows = (
+            await session.execute(
+                select(func.coalesce(func.sum(VendorInvoice.total), 0)).where(
+                    VendorInvoice.event_id == r.id
+                )
+            )
+        ).scalar() or 0
         budget = float(r.budget or 0)
         revenue = float(revenue_rows or 0)
         cost = float(cost_rows or 0)
-        result.append({
-            "event_id": r.id,
-            "event_code": r.event_code,
-            "event_name": r.event_name,
-            "budget": round(budget, 2),
-            "revenue": round(revenue, 2),
-            "cost": round(cost, 2),
-            "margin": round(revenue - cost, 2),
-            "budget_variance": round(budget - revenue, 2),
-            "budget_utilization_pct": round(revenue / budget * 100, 2) if budget else 0.0,
-        })
+        result.append(
+            {
+                "event_id": r.id,
+                "event_code": r.event_code,
+                "event_name": r.event_name,
+                "budget": round(budget, 2),
+                "revenue": round(revenue, 2),
+                "cost": round(cost, 2),
+                "margin": round(revenue - cost, 2),
+                "budget_variance": round(budget - revenue, 2),
+                "budget_utilization_pct": round(revenue / budget * 100, 2)
+                if budget
+                else 0.0,
+            }
+        )
     return result
+
+
+# -- EVN PNRs (from dbo.PNRMaster) --
+
+
+class EVNPNROut(BaseModel):
+    PNRNumber: str
+    ClientCode: Optional[str] = None
+    EventName: Optional[str] = None
+    EventStartDate: Optional[str] = None
+    EventEndDate: Optional[str] = None
+    Year: Optional[int] = None
+    Status: Optional[str] = None
+    CurrencyCode: Optional[str] = None
+
+
+class EVNPNRCreate(BaseModel):
+    PNRNumber: str
+    ClientCode: Optional[str] = None
+    EventName: Optional[str] = None
+    EventStartDate: Optional[str] = None
+    EventEndDate: Optional[str] = None
+    Year: Optional[int] = None
+    Status: Optional[str] = None
+    CurrencyCode: Optional[str] = None
+
+
+@router.get("/pnrs", response_model=list[EVNPNROut])
+async def list_pnrs(session: Annotated[AsyncSession, Depends(get_async_session)]):
+    result = await session.execute(select(PNRMaster).order_by(PNRMaster.PNRNumber))
+    return result.scalars().all()
+
+
+@router.post("/pnrs", response_model=EVNPNROut, status_code=201)
+async def create_pnr(
+    payload: EVNPNRCreate,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _=Depends(require_permission(Permission.CREATE_EVENTS)),
+):
+    pnr = PNRMaster(**payload.model_dump())
+    session.add(pnr)
+    await session.commit()
+    await session.refresh(pnr)
+    return pnr
+
+
+@router.get("/pnrs/{pnr_number}", response_model=EVNPNROut)
+async def get_pnr(
+    pnr_number: str,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    result = await session.execute(
+        select(PNRMaster).where(PNRMaster.PNRNumber == pnr_number)
+    )
+    pnr = result.scalar_one_or_none()
+    if not pnr:
+        raise HTTPException(status_code=404, detail="PNR not found")
+    return pnr
+
+
+@router.put("/pnrs/{pnr_number}", response_model=EVNPNROut)
+async def update_pnr(
+    pnr_number: str,
+    payload: EVNPNRCreate,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    result = await session.execute(
+        select(PNRMaster).where(PNRMaster.PNRNumber == pnr_number)
+    )
+    pnr = result.scalar_one_or_none()
+    if not pnr:
+        raise HTTPException(status_code=404, detail="PNR not found")
+    for key, val in payload.model_dump().items():
+        setattr(pnr, key, val)
+    await session.commit()
+    await session.refresh(pnr)
+    return pnr
+
+
+@router.delete("/pnrs/{pnr_number}", status_code=204)
+async def delete_pnr(
+    pnr_number: str,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _=Depends(require_permission(Permission.DELETE_EVENTS)),
+):
+    result = await session.execute(
+        select(PNRMaster).where(PNRMaster.PNRNumber == pnr_number)
+    )
+    pnr = result.scalar_one_or_none()
+    if not pnr:
+        raise HTTPException(status_code=404, detail="PNR not found")
+    await session.delete(pnr)
+    await session.commit()
+
+
+# -- EVN Categories / Service Types (from dbo.*) --
+
+
+@router.get("/categories", response_model=list)
+async def list_evn_categories(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    result = await session.execute(
+        select(ServiceMainCategory).order_by(ServiceMainCategory.DisplayOrder)
+    )
+    return [
+        {"code": r.MainCategoryCode, "name": r.MainCategoryName}
+        for r in result.scalars().all()
+    ]
+
+
+@router.get("/sub-categories", response_model=list)
+async def list_evn_sub_categories(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    result = await session.execute(
+        select(ServiceSubCategory).order_by(ServiceSubCategory.SubCategoryCode)
+    )
+    return [
+        {
+            "code": r.SubCategoryCode,
+            "name": r.SubCategoryName,
+            "main_category": r.MainCategoryCode,
+        }
+        for r in result.scalars().all()
+    ]
+
+
+@router.get("/service-types", response_model=list)
+async def list_evn_service_types(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    result = await session.execute(
+        select(ServiceType).order_by(ServiceType.ServiceTypeCode)
+    )
+    return [
+        {
+            "code": r.ServiceTypeCode,
+            "name": r.ServiceName,
+            "sub_category": r.SubCategoryCode,
+        }
+        for r in result.scalars().all()
+    ]
+
+
+# -- EVN Budget Lines (from dbo.PNRBudgetLineItem) --
+
+
+class EVNBudgetLineOut(BaseModel):
+    LineItemID: int
+    Year: Optional[int] = None
+    MainCategoryCode: Optional[str] = None
+    SubCategoryCode: Optional[str] = None
+    Description: Optional[str] = None
+    Amount: Optional[float] = None
+    CurrencyCode: Optional[str] = None
+
+
+@router.get("/budget-lines", response_model=list[EVNBudgetLineOut])
+async def list_budget_lines(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    pnr: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=1000),
+):
+    query = (
+        select(PNRBudgetLineItem)
+        .order_by(PNRBudgetLineItem.LineItemID.desc())
+        .limit(limit)
+    )
+    if pnr:
+        query = query.where(PNRBudgetLineItem.JobFolder == pnr)
+    if category:
+        query = query.where(PNRBudgetLineItem.MainCategoryCode == category)
+    result = await session.execute(query)
+    return result.scalars().all()
+
+
+@router.post("/budget-lines", response_model=EVNBudgetLineOut, status_code=201)
+async def create_budget_line(
+    payload: EVNBudgetLineOut,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
+    line = PNRBudgetLineItem(**payload.model_dump())
+    session.add(line)
+    await session.commit()
+    await session.refresh(line)
+    return line

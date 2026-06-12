@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, SmallInteger
-from datetime import timezone, datetime, timezone
+from datetime import datetime, timezone
 from app.database import Base
 
 
@@ -21,7 +21,9 @@ class ETASubmissionQueue(Base):
     rejection_code = Column(String(20), nullable=True)
     rejection_reason = Column(Text, nullable=True)
     submission_id = Column(String(100), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    created_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
     updated_at = Column(
         DateTime,
         default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),

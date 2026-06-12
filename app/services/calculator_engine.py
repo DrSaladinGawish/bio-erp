@@ -13,6 +13,7 @@ from typing import Any
 
 # ── ATP Cost ─────────────────────────────────────────────────────
 
+
 @dataclass
 class ATPCostResult:
     total_atp_mol: float = 0.0
@@ -41,6 +42,7 @@ def calculate_atp_cost(
 
 # ── Enzyme Efficiency (Michaelis-Menten) ─────────────────────────
 
+
 def enzyme_efficiency(
     vmax: float,
     km: float,
@@ -56,6 +58,7 @@ def enzyme_efficiency(
 
 
 # ── Batch Optimization ───────────────────────────────────────────
+
 
 def batch_optimization(
     biomass_target_gl: float,
@@ -101,6 +104,7 @@ def batch_optimization(
 
 # ── Sensitivity Analysis ─────────────────────────────────────────
 
+
 def sensitivity_analysis(
     base_value: float,
     param_range: float,
@@ -126,6 +130,7 @@ INDUCTION_COST_MAP = {
     "auto": 1.0,
     "constitutive": 0.0,
 }
+
 
 def gene_expression_cost(
     plasmid_size_kb: float,
@@ -160,6 +165,7 @@ ORGAN_EFFICIENCY_FACTORS = {
     "lung": 0.7,
     "pancreas": 0.4,
 }
+
 
 def organ_line_throughput(
     organ_type: str = "liver",

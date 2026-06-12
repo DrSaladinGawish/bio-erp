@@ -1,4 +1,4 @@
-﻿import re
+import re
 import sqlparse
 from typing import Any
 from sqlalchemy import text

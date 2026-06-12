@@ -18,7 +18,9 @@ def _utcnow() -> datetime:
 
 class CashFlowPredictor:
     @staticmethod
-    async def predict(db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def predict(
+        db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         features = await db.execute(
             select(NeuralFeatureStore.feature_data)
             .where(
@@ -38,8 +40,12 @@ class CashFlowPredictor:
         current_balance = feature_row.get("current_balance", 0) or 0
         trend_factor = 1.0 + (feature_row.get("growth_rate", 0) or 0)
 
-        projected_balance = current_balance + (avg_inflow - avg_outflow) * trend_factor * 3
-        confidence = min(0.95, max(0.3, 1.0 - (abs(avg_inflow - avg_outflow) / (avg_inflow + 0.01))))
+        projected_balance = (
+            current_balance + (avg_inflow - avg_outflow) * trend_factor * 3
+        )
+        confidence = min(
+            0.95, max(0.3, 1.0 - (abs(avg_inflow - avg_outflow) / (avg_inflow + 0.01)))
+        )
 
         return {
             "predicted_value": round(projected_balance, 2),
@@ -53,7 +59,9 @@ class CashFlowPredictor:
 
 class ClientChurnPredictor:
     @staticmethod
-    async def predict(db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def predict(
+        db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         features = await db.execute(
             select(NeuralFeatureStore.feature_data)
             .where(
@@ -79,7 +87,11 @@ class ClientChurnPredictor:
             "predicted_value": round(churn_prob, 4),
             "confidence": round(confidence, 4),
             "churn_probability_pct": round(churn_prob * 100, 2),
-            "risk_level": "high" if churn_prob > 0.6 else "medium" if churn_prob > 0.3 else "low",
+            "risk_level": "high"
+            if churn_prob > 0.6
+            else "medium"
+            if churn_prob > 0.3
+            else "low",
             "months_since_last_event": recency,
             "events_per_year": frequency,
             "avg_revenue_per_event": avg_revenue,
@@ -88,7 +100,9 @@ class ClientChurnPredictor:
 
 class PnrOverrunPredictor:
     @staticmethod
-    async def predict(db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def predict(
+        db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         features = await db.execute(
             select(NeuralFeatureStore.feature_data)
             .where(
@@ -126,7 +140,9 @@ class PnrOverrunPredictor:
 
 class TransactionAnomalyDetector:
     @staticmethod
-    async def predict(db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def predict(
+        db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         features = await db.execute(
             select(NeuralFeatureStore.feature_data)
             .where(
@@ -195,7 +211,9 @@ class PredictorService:
             "actual_value": p.actual_value,
             "features_snapshot": p.features_snapshot,
             "model_version": p.model_version,
-            "prediction_date": p.prediction_date.isoformat() if p.prediction_date else None,
+            "prediction_date": p.prediction_date.isoformat()
+            if p.prediction_date
+            else None,
             "metadata_json": p.metadata_json,
             "is_active": p.is_active,
             "created_at": p.created_at.isoformat() if p.created_at else None,
@@ -235,7 +253,9 @@ class PredictorService:
         return result
 
     @staticmethod
-    async def submit_feedback(db: AsyncSession, prediction_id: int, actual_value: float) -> dict[str, Any]:
+    async def submit_feedback(
+        db: AsyncSession, prediction_id: int, actual_value: float
+    ) -> dict[str, Any]:
         pred = await db.execute(
             select(NeuralPrediction).where(NeuralPrediction.id == prediction_id)
         )
@@ -246,7 +266,11 @@ class PredictorService:
         prediction.actual_value = actual_value
         await db.commit()
         await db.refresh(prediction)
-        return {"status": "ok", "prediction_id": prediction.id, "actual_value": actual_value}
+        return {
+            "status": "ok",
+            "prediction_id": prediction.id,
+            "actual_value": actual_value,
+        }
 
     @staticmethod
     async def list_predictions(
@@ -259,14 +283,18 @@ class PredictorService:
         count_query = select(func.count(NeuralPrediction.id))
         if prediction_type:
             query = query.where(NeuralPrediction.prediction_type == prediction_type)
-            count_query = count_query.where(NeuralPrediction.prediction_type == prediction_type)
+            count_query = count_query.where(
+                NeuralPrediction.prediction_type == prediction_type
+            )
 
         total_result = await db.execute(count_query)
         total = total_result.scalar() or 0
         total_pages = max(1, (total + page_size - 1) // page_size)
 
         result = await db.execute(query.offset((page - 1) * page_size).limit(page_size))
-        items = [PredictorService._prediction_to_dict(p) for p in result.scalars().all()]
+        items = [
+            PredictorService._prediction_to_dict(p) for p in result.scalars().all()
+        ]
 
         return {
             "data": items,
@@ -282,14 +310,16 @@ class PredictorService:
         total_predictions = total.scalar() or 0
 
         by_type_result = await db.execute(
-            select(NeuralPrediction.prediction_type, func.count(NeuralPrediction.id))
-            .group_by(NeuralPrediction.prediction_type)
+            select(
+                NeuralPrediction.prediction_type, func.count(NeuralPrediction.id)
+            ).group_by(NeuralPrediction.prediction_type)
         )
         by_type = dict(by_type_result.all())
 
         avg_conf = await db.execute(
-            select(func.avg(NeuralPrediction.confidence))
-            .where(NeuralPrediction.is_active.is_(True))
+            select(func.avg(NeuralPrediction.confidence)).where(
+                NeuralPrediction.is_active.is_(True)
+            )
         )
         avg_confidence = round(avg_conf.scalar() or 0, 4)
 
@@ -298,11 +328,12 @@ class PredictorService:
             .order_by(NeuralPrediction.created_at.desc())
             .limit(5)
         )
-        recent_predictions = [PredictorService._prediction_to_dict(p) for p in recent.scalars().all()]
+        recent_predictions = [
+            PredictorService._prediction_to_dict(p) for p in recent.scalars().all()
+        ]
 
         mem_count = await db.execute(
-            select(func.count(NeuralMemory.id))
-            .where(NeuralMemory.is_active.is_(True))
+            select(func.count(NeuralMemory.id)).where(NeuralMemory.is_active.is_(True))
         )
         active_memories = mem_count.scalar() or 0
 

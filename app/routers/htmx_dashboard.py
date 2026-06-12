@@ -1,9 +1,9 @@
-﻿from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.middleware.auth import get_current_user, RequirePermission
+from app.middleware.auth import RequirePermission
 from app.models.auth import User
 from app.services.cost_engine import CostEngine
 from app.services.report_engine import generate_executive_summary

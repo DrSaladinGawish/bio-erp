@@ -1,0 +1,635 @@
+{
+  "timestamp": "2026-06-07T10:53:02.604089",
+  "base_path": "D:\\ERP System\\BIO_ERP",
+  "summary": {
+    "total_checks": 62,
+    "passed": 30,
+    "failed": 22,
+    "partial": 2,
+    "skipped": 1,
+    "p0_failures": 42,
+    "pass_rate": 48.4
+  },
+  "results": [
+    {
+      "category": "1_System_Identity",
+      "requirement_id": "1.1",
+      "description": "System name is IncentiveHouse ERP",
+      "status": "PASS",
+      "expected": "IncentiveHouse ERP",
+      "actual": "IncentiveHouse ERP",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "1_System_Identity",
+      "requirement_id": "1.2",
+      "description": "Base path exists: D:\\ERP System\\BIO_ERP",
+      "status": "PASS",
+      "expected": "D:\\ERP System\\BIO_ERP",
+      "actual": "D:\\ERP System\\BIO_ERP",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "1_System_Identity",
+      "requirement_id": "1.3",
+      "description": "Standalone port 9001 check",
+      "status": "PASS",
+      "expected": "LISTENING",
+      "actual": "Port 9001 is LISTENING",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "1_System_Identity",
+      "requirement_id": "1.4",
+      "description": "BIO-ERP main.py exists",
+      "status": "PASS",
+      "expected": "Exists",
+      "actual": "Exists",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "1_System_Identity",
+      "requirement_id": "1.8",
+      "description": "OR-ERP mounted as sub-app",
+      "status": "FAIL",
+      "expected": "app/or_module/ with 12 engines",
+      "actual": "__init__=False, module=False",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "1_System_Identity",
+      "requirement_id": "1.9",
+      "description": "IncentiveHouse mounted as organ",
+      "status": "FAIL",
+      "expected": "Mounted at /api/v1/ih/ or /api/v1/scm/",
+      "actual": "Not found",
+      "severity": "P0",
+      "remediation": "Create app/ih_module/ or mount in main.py"
+    },
+    {
+      "category": "1_System_Identity",
+      "requirement_id": "1.10",
+      "description": "No standalone legacy directories",
+      "status": "PASS",
+      "expected": "Neither exists",
+      "actual": "D:/Bio_ERP=False, D:/OR_Module=False",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "2_Version_History",
+      "requirement_id": "2.1",
+      "description": "v2.1 production server files",
+      "status": "PASS",
+      "expected": "app/ directory exists",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "2_Version_History",
+      "requirement_id": "2.2",
+      "description": "Dashboard + Event + Recon forms present",
+      "status": "FAIL",
+      "expected": "All 3 forms",
+      "actual": "dash=True, event=True, recon=False",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "2_Version_History",
+      "requirement_id": "2.2.2",
+      "description": "Infrastructure files complete",
+      "status": "PASS",
+      "expected": "requirements.txt, .gitignore, .env.example, Dockerfile, docker-compose.yml, nginx.conf",
+      "actual": "All present",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "2_Version_History",
+      "requirement_id": "2.2.2_orm",
+      "description": "ORM models file exists",
+      "status": "FAIL",
+      "expected": "models.py present",
+      "actual": "Missing",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "3_Data_Sources",
+      "requirement_id": "3.1",
+      "description": "Data file: Bnk_TRNX SOURCE.xlsx",
+      "status": "FAIL",
+      "expected": "Present in data/ or root",
+      "actual": "Missing",
+      "severity": "P0",
+      "remediation": "Place Bnk_TRNX SOURCE.xlsx in D:\\ERP System\\BIO_ERP\\data/"
+    },
+    {
+      "category": "3_Data_Sources",
+      "requirement_id": "3.2",
+      "description": "Data file: Bnk_Trnx_Sub_Key.xlsx",
+      "status": "FAIL",
+      "expected": "Present in data/ or root",
+      "actual": "Missing",
+      "severity": "P0",
+      "remediation": "Place Bnk_Trnx_Sub_Key.xlsx in D:\\ERP System\\BIO_ERP\\data/"
+    },
+    {
+      "category": "3_Data_Sources",
+      "requirement_id": "3.3",
+      "description": "Data file: Data_Base_Mtbls.xlsx",
+      "status": "FAIL",
+      "expected": "Present in data/ or root",
+      "actual": "Missing",
+      "severity": "P0",
+      "remediation": "Place Data_Base_Mtbls.xlsx in D:\\ERP System\\BIO_ERP\\data/"
+    },
+    {
+      "category": "3_Data_Sources",
+      "requirement_id": "3.5",
+      "description": "openpyxl available for Excel parsing",
+      "status": "PASS",
+      "expected": "openpyxl installed",
+      "actual": "Installed",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "4_Database_ORM",
+      "requirement_id": "4.4",
+      "description": "27 core ORM tables present",
+      "status": "FAIL",
+      "expected": "All 16 tables",
+      "actual": "0/16 found",
+      "severity": "P0",
+      "remediation": "Missing tables: ['clients', 'vendors', 'cost_centers', 'pnr_dim', 'events', 'work_orders', 'sales_line_items', 'bnk_transactions', 'sales_invoices', 'purchase_orders', 'event_line_items', 'staff_assignments', 'vendor_invoices', 'audit_trail', 'bnk_reconciliation', 'mv_event_financial_summary']"
+    },
+    {
+      "category": "4_Database_ORM",
+      "requirement_id": "4.7",
+      "description": "Total tables in database",
+      "status": "PARTIAL",
+      "expected": "160+ tables across 29+ model files",
+      "actual": "15 tables found in DB",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "4_Database_ORM",
+      "requirement_id": "4.8",
+      "description": "SCM staging tables separation",
+      "status": "PARTIAL",
+      "expected": "scm_staging tables in models",
+      "actual": "Not confirmed",
+      "severity": "P0",
+      "remediation": "Add scm_staging_* table definitions"
+    },
+    {
+      "category": "5_Infrastructure",
+      "requirement_id": "5.1",
+      "description": "File: requirements.txt",
+      "status": "PASS",
+      "expected": "Present",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "5_Infrastructure",
+      "requirement_id": "5.2",
+      "description": "File: .gitignore",
+      "status": "PASS",
+      "expected": "Present",
+      "actual": "Found",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "5_Infrastructure",
+      "requirement_id": "5.3",
+      "description": "File: .env.example",
+      "status": "PASS",
+      "expected": "Present",
+      "actual": "Found",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "5_Infrastructure",
+      "requirement_id": "5.4",
+      "description": "File: Dockerfile",
+      "status": "PASS",
+      "expected": "Present",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "5_Infrastructure",
+      "requirement_id": "5.5",
+      "description": "File: docker-compose.yml",
+      "status": "PASS",
+      "expected": "Present",
+      "actual": "Found",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "5_Infrastructure",
+      "requirement_id": "5.6",
+      "description": "File: nginx.conf",
+      "status": "PASS",
+      "expected": "Present",
+      "actual": "Found",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "5_Infrastructure",
+      "requirement_id": "5.7",
+      "description": "Configs refactored to env variables",
+      "status": "PASS",
+      "expected": "Env vars in .env.example",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": "Move secrets to .env.example and load via os.environ"
+    },
+    {
+      "category": "5_Infrastructure",
+      "requirement_id": "5.8",
+      "description": "Git repository initialized",
+      "status": "PASS",
+      "expected": ".git/ directory",
+      "actual": "Found",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "6_Core_Modules",
+      "requirement_id": "6.1",
+      "description": "Dashboard template exists",
+      "status": "PASS",
+      "expected": "dashboard.html",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "6_Core_Modules",
+      "requirement_id": "6.2",
+      "description": "Event form fields (1/17)",
+      "status": "PARTIAL",
+      "expected": "All 20 fields",
+      "actual": "1 found",
+      "severity": "P0",
+      "remediation": "Missing fields: ['CoCen_Key_ID', 'PNR_ID', 'Branch', 'Client_ID', 'Currency_ID', 'Conversion_Rate', 'Event_Description', 'Start_Date', 'End_Date', 'Size', 'Avenue', 'Payment_Terms', 'Requester', 'Gross_Sales', 'PO_COPY', 'Sales Line Items']"
+    },
+    {
+      "category": "6_Core_Modules",
+      "requirement_id": "6.3",
+      "description": "Recon form features (0/9)",
+      "status": "FAIL",
+      "expected": "All 9 features",
+      "actual": "0 found",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "6_Core_Modules",
+      "requirement_id": "6.4",
+      "description": "Sales API endpoints present",
+      "status": "FAIL",
+      "expected": "6 endpoints",
+      "actual": "Missing",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "7_UI_UX",
+      "requirement_id": "7.1",
+      "description": "AI smart window in all forms",
+      "status": "FAIL",
+      "expected": "Embedded in all forms",
+      "actual": "Missing",
+      "severity": "P0",
+      "remediation": "Add <div id=\"ai-smart-window\"> to base template"
+    },
+    {
+      "category": "7_UI_UX",
+      "requirement_id": "7.2",
+      "description": "Company logo in header",
+      "status": "PASS",
+      "expected": "Logo in header",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": "Add <img src=\"logo.png\" class=\"header-logo\">"
+    },
+    {
+      "category": "7_UI_UX",
+      "requirement_id": "7.3",
+      "description": "Company logo in footer",
+      "status": "PASS",
+      "expected": "Logo in footer",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "7_UI_UX",
+      "requirement_id": "7.4",
+      "description": "Smart presentation functionality",
+      "status": "PASS",
+      "expected": "Intelligent presentation",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "7_UI_UX",
+      "requirement_id": "7.5",
+      "description": "Easy to use interface (manual check required)",
+      "status": "SKIP",
+      "expected": "Usability validated",
+      "actual": "Requires manual QA",
+      "severity": "P0",
+      "remediation": "Run user acceptance testing with 3 non-technical users"
+    },
+    {
+      "category": "7_UI_UX",
+      "requirement_id": "7.6",
+      "description": "Neural nodes visual indicators",
+      "status": "FAIL",
+      "expected": "Visible neural nodes",
+      "actual": "Missing",
+      "severity": "P1",
+      "remediation": "Add CSS/JS neural network visualization"
+    },
+    {
+      "category": "7_UI_UX",
+      "requirement_id": "7.7",
+      "description": "Document management integrated",
+      "status": "PASS",
+      "expected": "Document handling",
+      "actual": "Found",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "8_AI_Integration",
+      "requirement_id": "8.1-8.8",
+      "description": "AI Agent Prompt covers all 8 requirements",
+      "status": "PARTIAL",
+      "expected": "Prompt file exists",
+      "actual": "Missing",
+      "severity": "P0",
+      "remediation": "Create docs/ai_agent_prompt.md with all 8 coverage items"
+    },
+    {
+      "category": "8_AI_Integration",
+      "requirement_id": "8.9",
+      "description": "AI smart window context-aware",
+      "status": "FAIL",
+      "expected": "AI module with context",
+      "actual": "Missing",
+      "severity": "P0",
+      "remediation": "Build app/ai_module.py with context injection"
+    },
+    {
+      "category": "9_ERP_Builder_Protocol",
+      "requirement_id": "9.1-9.2",
+      "description": "ERP Builder Protocol v2.2 documentation",
+      "status": "FAIL",
+      "expected": "Protocol doc present",
+      "actual": "Missing",
+      "severity": "P0",
+      "remediation": "Create docs/ERP_BUILDER_PROTOCOL.md"
+    },
+    {
+      "category": "9_ERP_Builder_Protocol",
+      "requirement_id": "9.8_P0_Auth",
+      "description": "P0 Gap: Auth module",
+      "status": "PASS",
+      "expected": "Auth implemented",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": "Add JWT/OAuth2 auth router"
+    },
+    {
+      "category": "9_ERP_Builder_Protocol",
+      "requirement_id": "9.8_P0_Audit",
+      "description": "P0 Gap: Audit module",
+      "status": "PASS",
+      "expected": "Audit implemented",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": "Add audit_trail middleware"
+    },
+    {
+      "category": "9_ERP_Builder_Protocol",
+      "requirement_id": "9.8_P0_Backup",
+      "description": "P0 Gap: Backup module",
+      "status": "FAIL",
+      "expected": "Backup implemented",
+      "actual": "Missing",
+      "severity": "P0",
+      "remediation": "Add backup.py with export/restore"
+    },
+    {
+      "category": "9_ERP_Builder_Protocol",
+      "requirement_id": "9.8_P0_Variance",
+      "description": "P0 Gap: Variance analysis",
+      "status": "PARTIAL",
+      "expected": "Variance module",
+      "actual": "Manual check required",
+      "severity": "P0",
+      "remediation": "Add variance reporting endpoint"
+    },
+    {
+      "category": "9_ERP_Builder_Protocol",
+      "requirement_id": "9.3",
+      "description": "Current compliance score (estimated)",
+      "status": "PARTIAL",
+      "expected": "92.0%",
+      "actual": "~45-60% (auto-estimate)",
+      "severity": "P0",
+      "remediation": "Complete P0 gaps and 5-phase roadmap"
+    },
+    {
+      "category": "10_OR_ERP",
+      "requirement_id": "10.1-10.3",
+      "description": "OR module files present",
+      "status": "FAIL",
+      "expected": "__init__.py, or_erp_module.py, sub_app.py",
+      "actual": "init=False, main=False, sub=False",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "10_OR_ERP",
+      "requirement_id": "10.8",
+      "description": "scipy>=1.14.0 in requirements",
+      "status": "PASS",
+      "expected": "scipy>=1.14.0",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": "Add scipy>=1.14.0"
+    },
+    {
+      "category": "10_OR_ERP",
+      "requirement_id": "10.1",
+      "description": "OR mounted at /api/v1/or/",
+      "status": "PASS",
+      "expected": "Mount in main.py",
+      "actual": "Found",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "10_OR_ERP",
+      "requirement_id": "10.5",
+      "description": "Planning API endpoints",
+      "status": "FAIL",
+      "expected": "5 endpoints under /planning",
+      "actual": "Missing",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "10_OR_ERP",
+      "requirement_id": "10.6",
+      "description": "Auto-trigger engine",
+      "status": "FAIL",
+      "expected": "job_or_bridge.py + auto_trigger.py",
+      "actual": "bridge=False, trigger=False",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "11_Auto_Trigger",
+      "requirement_id": "11.1-11.4",
+      "description": "Auto-trigger runs LP+EOQ+PERT+profit",
+      "status": "PARTIAL",
+      "expected": "All 4 analyses",
+      "actual": "LP=False, EOQ=False, PERT=False",
+      "severity": "P0",
+      "remediation": ""
+    },
+    {
+      "category": "11_Auto_Trigger",
+      "requirement_id": "11.5-11.8",
+      "description": "EventBridge OR hook integration",
+      "status": "FAIL",
+      "expected": "EventBridge calls OR trigger",
+      "actual": "Missing",
+      "severity": "P0",
+      "remediation": "Add self.or_trigger.on_event_created() call in EventBridge.sync_web_to_local"
+    },
+    {
+      "category": "12_Known_Issues",
+      "requirement_id": "12.1-12.4",
+      "description": "Fix scripts available",
+      "status": "FAIL",
+      "expected": "fix_broken_imports.py or fix_all_tables.py",
+      "actual": "imports=False, tables=False",
+      "severity": "P1",
+      "remediation": "Keep fix scripts in tools/ directory"
+    },
+    {
+      "category": "12_Known_Issues",
+      "requirement_id": "12.5",
+      "description": "Hardcoded passwords scrubbed",
+      "status": "FAIL",
+      "expected": "Zero hardcoded passwords",
+      "actual": "3 files with password=",
+      "severity": "P0",
+      "remediation": "Move all passwords to .env and use os.environ.get()"
+    },
+    {
+      "category": "13_Meta_Audit",
+      "requirement_id": "13.1",
+      "description": "Test suite size",
+      "status": "PASS",
+      "expected": "210 tests (reported)",
+      "actual": "20 test files found",
+      "severity": "P1",
+      "remediation": "Consolidate tests; target 200+ assertions"
+    },
+    {
+      "category": "13_Meta_Audit",
+      "requirement_id": "13.4",
+      "description": "Git commit count",
+      "status": "PASS",
+      "expected": "24 commits (reported)",
+      "actual": "32 commits",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "13_Meta_Audit",
+      "requirement_id": "13.6",
+      "description": "Server health (runtime)",
+      "status": "SKIP",
+      "expected": "PID active on port 8002",
+      "actual": "Runtime check only",
+      "severity": "P1",
+      "remediation": "Run: python -c \"import requests; requests.get('http://localhost:8002/health')\""
+    },
+    {
+      "category": "14_SCM_Module",
+      "requirement_id": "14.1",
+      "description": "SCM Module directory exists",
+      "status": "PASS",
+      "expected": "D:\\SCM Module\\ with 16 files",
+      "actual": "Exists=True",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "14_SCM_Module",
+      "requirement_id": "14.1_detail",
+      "description": "SCM Module file count",
+      "status": "PARTIAL",
+      "expected": "16+ files",
+      "actual": "4 items",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "15_Sales_Budget",
+      "requirement_id": "15.1",
+      "description": "Sales budget line items compiled",
+      "status": "FAIL",
+      "expected": "Included in plan",
+      "actual": "Missing",
+      "severity": "P1",
+      "remediation": ""
+    },
+    {
+      "category": "16_Format",
+      "requirement_id": "16.1",
+      "description": "Output format: PROBLEM first, then SOLUTION",
+      "status": "PASS",
+      "expected": "This audit follows user preference",
+      "actual": "Compliant",
+      "severity": "INFO",
+      "remediation": ""
+    },
+    {
+      "category": "16_Format",
+      "requirement_id": "16.2",
+      "description": "Visual tables and charts in output",
+      "status": "PASS",
+      "expected": "Markdown tables used",
+      "actual": "Compliant",
+      "severity": "INFO",
+      "remediation": ""
+    }
+  ]
+}

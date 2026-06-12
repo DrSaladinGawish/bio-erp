@@ -19,7 +19,9 @@ class TestEvents:
     ]
 
     @pytest.mark.parametrize("path", ENDPOINTS)
-    async def test_list_returns_not_500(self, path: str, client: AsyncClient, auth_headers: dict):
+    async def test_list_returns_not_500(
+        self, path: str, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.get(path, headers=auth_headers)
         assert resp.status_code < 500, f"{path} returned {resp.status_code}"
 
@@ -36,7 +38,9 @@ class TestDashboard:
     ]
 
     @pytest.mark.parametrize("path", ENDPOINTS)
-    async def test_list_returns_not_500(self, path: str, client: AsyncClient, auth_headers: dict):
+    async def test_list_returns_not_500(
+        self, path: str, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.get(path, headers=auth_headers)
         assert resp.status_code < 500, f"{path} returned {resp.status_code}"
 

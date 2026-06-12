@@ -1,4 +1,5 @@
 """Tests for bank reconciliation auto-reconcile feature (v2.4.2)."""
+
 from __future__ import annotations
 
 import os
@@ -106,9 +107,7 @@ async def test_auto_reconcile_success(
     assert "still_unmatched" in data
 
 
-async def test_auto_reconcile_not_found(
-    client: AsyncClient, auth_headers: dict
-):
+async def test_auto_reconcile_not_found(client: AsyncClient, auth_headers: dict):
     resp = await client.post(
         "/api/v1/bank-reconciliation/auto-reconcile/99999",
         headers=auth_headers,
@@ -132,9 +131,7 @@ async def test_reconciliation_status(
     assert "unmatched" in data
 
 
-async def test_reconciliation_status_not_found(
-    client: AsyncClient, auth_headers: dict
-):
+async def test_reconciliation_status_not_found(client: AsyncClient, auth_headers: dict):
     resp = await client.get(
         "/api/v1/bank-reconciliation/reconciliation-status/99999",
         headers=auth_headers,
@@ -142,9 +139,7 @@ async def test_reconciliation_status_not_found(
     assert resp.status_code == 404
 
 
-async def test_auto_reconcile_requires_auth(
-    client: AsyncClient, seeded_session: dict
-):
+async def test_auto_reconcile_requires_auth(client: AsyncClient, seeded_session: dict):
     session_id = seeded_session["session_id"]
     resp = await client.post(
         f"/api/v1/bank-reconciliation/auto-reconcile/{session_id}",

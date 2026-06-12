@@ -1,4 +1,4 @@
-﻿"""
+"""
 IncentiveHouse ERP - Database Engines & Session Factories
 =========================================================
 Extracted from main.py to break the circular import chain:
@@ -8,6 +8,7 @@ Extracted from main.py to break the circular import chain:
 
 All three now import ``get_sync_session_factory`` from this module instead.
 """
+
 from __future__ import annotations
 
 import os
@@ -18,12 +19,21 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-DATABASE_URL: str = os.getenv(
-    "DATABASE_URL", "sqlite+aiosqlite:///./protocell_staging.db"
+try:
+    from app.config import settings
+
+    _cfg_db = settings.DATABASE_URL
+    _cfg_sync = settings.SYNC_DATABASE_URL
+except Exception:
+    _cfg_db = _cfg_sync = None
+
+DATABASE_URL: str = (
+    os.getenv("DATABASE_URL") or _cfg_db or "sqlite+aiosqlite:///./protocell_staging.db"
 )
-SYNC_DATABASE_URL: str = os.getenv(
-    "SYNC_DATABASE_URL",
-    DATABASE_URL.replace("+asyncpg", "").replace("+aiosqlite", ""),
+SYNC_DATABASE_URL: str = (
+    os.getenv("SYNC_DATABASE_URL")
+    or _cfg_sync
+    or DATABASE_URL.replace("+asyncpg", "").replace("+aiosqlite", "")
 )
 
 _async_engine = None
@@ -58,7 +68,9 @@ def get_async_session_factory() -> async_sessionmaker:
 def get_sync_engine() -> Engine:
     global _sync_engine
     if _sync_engine is None:
-        connect_args = {"check_same_thread": False} if "sqlite" in SYNC_DATABASE_URL else {}
+        connect_args = (
+            {"check_same_thread": False} if "sqlite" in SYNC_DATABASE_URL else {}
+        )
         _sync_engine = create_engine(
             SYNC_DATABASE_URL,
             echo=False,

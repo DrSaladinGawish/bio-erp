@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if voucher else "New" }} Purchase Voucher{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>{{ "Edit" if voucher else "New" }} Purchase Voucher</h2>
+  <span class="badge {% if voucher and voucher.status == 'approved' %}badge-success{% elif voucher and voucher.status == 'submitted' %}badge-warning{% else %}badge-secondary{% endif %}">
+    {{ voucher.status|title if voucher else "Draft" }}
+  </span>
+</div>
+
+<form method="POST"
+      action="{{ url_for('pur_router.update_voucher', id=voucher.id) if voucher else url_for('pur_router.create_voucher') }}"
+      id="purchase-form">
+  {% if voucher %}<input type="hidden" name="id" value="{{ voucher.id }}">{% endif %}
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <!-- SECTION 1: Header -->
+  <div class="form-section">
+    <h3 class="section-title">Voucher details</h3>
+    <div class="form-grid-2">
+
+      <div class="field-group">
+        <label for="voucher_number">Voucher number <span class="required">*</span></label>
+        <input type="text" id="voucher_number" name="voucher_number"
+               value="{{ voucher.voucher_number if voucher else '' }}"
+               placeholder="Auto-generated if blank" />
+      </div>
+
+      <div class="field-group">
+        <label for="voucher_date">Voucher date <span class="required">*</span></label>
+        <input type="date" id="voucher_date" name="voucher_date"
+               value="{{ voucher.voucher_date if voucher else today }}" required />
+      </div>
+
+      <div class="field-group">
+        <label for="vendor_id">Vendor <span class="required">*</span></label>
+        <select id="vendor_id" name="vendor_id" required onchange="fetchVendorDetails(this.value)">
+          <option value="">— Select vendor —</option>
+          {% for v in vendors %}
+          <option value="{{ v.id }}"
+                  data-tax-id="{{ v.tax_id }}"
+                  data-payment-terms="{{ v.payment_terms_days }}"
+                  {{ 'selected' if voucher and voucher.vendor_id == v.id }}>
+            {{ v.vendor_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="vendor_tax_id">Vendor tax ID</label>
+        <input type="text" id="vendor_tax_id" name="vendor_tax_id"
+               value="{{ voucher.vendor_tax_id if voucher else '' }}"
+               placeholder="Auto-filled from vendor" readonly />
+      </div>
+
+      <div class="field-group">
+        <label for="invoice_reference">Invoice reference</label>
+        <input type="text" id="invoice_reference" name="invoice_reference"
+               value="{{ voucher.invoice_reference if voucher else '' }}"
+               placeholder="Vendor's invoice number" />
+      </div>
+
+      <div class="field-group">
+        <label for="due_date">Due date</label>
+        <input type="date" id="due_date" name="due_date"
+               value="{{ voucher.due_date if voucher else '' }}"
+               placeholder="Auto-calc from payment terms" />
+      </div>
+
+      <div class="field-group">
+        <label for="currency_code">Currency</label>
+        <select id="currency_code" name="currency_code">
+          <option value="EGP" {{ 'selected' if not voucher or voucher.currency_code == 'EGP' }}>EGP — Egyptian Pound</option>
+          <option value="USD" {{ 'selected' if voucher and voucher.currency_code == 'USD' }}>USD — US Dollar</option>
+          <option value="EUR" {{ 'selected' if voucher and voucher.currency_code == 'EUR' }}>EUR — Euro</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="exchange_rate">Exchange rate</label>
+        <input type="number" id="exchange_rate" name="exchange_rate"
+               value="{{ voucher.exchange_rate if voucher else '1.0000' }}"
+               step="0.0001" min="0.0001" />
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 2: Line Items -->
+  <div class="form-section">
+    <h3 class="section-title">Line items</h3>
+    <table class="line-items-table" id="line-items">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Qty</th>
+          <th>Unit price</th>
+          <th>Line total</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="line-items-body">
+        {% if voucher and voucher.line_items %}
+          {% for item in voucher.line_items %}
+          <tr class="line-item-row">
+            <td><input type="text" name="line_desc[]" value="{{ item.description }}" /></td>
+            <td><input type="number" name="line_qty[]" value="{{ item.qty }}" step="0.01" min="0" class="line-qty" onchange="recalcLines()" /></td>
+            <td><input type="number" name="line_price[]" value="{{ item.unit_price }}" step="0.01" min="0" class="line-price" onchange="recalcLines()" /></td>
+            <td><input type="number" name="line_total[]" value="{{ item.line_total }}" readonly class="line-total" /></td>
+            <td><button type="button" class="btn-icon" onclick="removeLine(this)">✕</button></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr class="line-item-row">
+            <td><input type="text" name="line_desc[]" placeholder="Item description" /></td>
+            <td><input type="number" name="line_qty[]" value="1" step="0.01" min="0" class="line-qty" onchange="recalcLines()" /></td>
+            <td><input type="number" name="line_price[]" value="0" step="0.01" min="0" class="line-price" onchange="recalcLines()" /></td>
+            <td><input type="number" name="line_total[]" value="0" readonly class="line-total" /></td>
+            <td><button type="button" class="btn-icon" onclick="removeLine(this)">✕</button></td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+    <button type="button" class="btn btn-secondary btn-sm" onclick="addLine()">+ Add line</button>
+  </div>
+
+  <!-- SECTION 3: VAT & Totals -->
+  <div class="form-section">
+    <h3 class="section-title">VAT &amp; totals</h3>
+    <div class="totals-block">
+
+      <div class="total-row">
+        <label>Subtotal</label>
+        <input type="number" id="subtotal" name="subtotal"
+               value="{{ '%.2f'|format(voucher.subtotal) if voucher else '0.00' }}"
+               step="0.01" min="0" onchange="calcVAT()" readonly />
+      </div>
+
+      <div class="total-row">
+        <label>VAT rate</label>
+        <select id="vat_rate" name="vat_rate" onchange="calcVAT()">
+          <option value="0"  {{ 'selected' if voucher and voucher.vat_rate == 0 }}>0% — Exempt</option>
+          <option value="14" {{ 'selected' if not voucher or voucher.vat_rate == 14 }}>14% — Standard</option>
+        </select>
+      </div>
+
+      <div class="total-row">
+        <label>VAT amount</label>
+        <input type="number" id="vat_amount" name="vat_amount"
+               value="{{ '%.2f'|format(voucher.vat_amount) if voucher else '0.00' }}"
+               step="0.01" readonly />
+      </div>
+
+      <div class="total-row total-final">
+        <label><strong>Total amount</strong></label>
+        <input type="number" id="total_amount" name="total_amount"
+               value="{{ '%.2f'|format(voucher.total_amount) if voucher else '0.00' }}"
+               step="0.01" readonly />
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 4: Payment & GL -->
+  <div class="form-section">
+    <h3 class="section-title">Payment &amp; GL</h3>
+    <div class="form-grid-2">
+
+      <div class="field-group">
+        <label for="payment_method">Payment method</label>
+        <select id="payment_method" name="payment_method">
+          <option value="bank_transfer" {{ 'selected' if voucher and voucher.payment_method == 'bank_transfer' }}>Bank transfer</option>
+          <option value="cheque" {{ 'selected' if voucher and voucher.payment_method == 'cheque' }}>Cheque</option>
+          <option value="cash" {{ 'selected' if voucher and voucher.payment_method == 'cash' }}>Cash</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="bank_account_id">Bank account</label>
+        <select id="bank_account_id" name="bank_account_id">
+          <option value="">— Select account —</option>
+          {% for acct in bank_accounts %}
+          <option value="{{ acct.id }}" {{ 'selected' if voucher and voucher.bank_account_id == acct.id }}>
+            {{ acct.account_name }} — {{ acct.account_number }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="expense_account_id">Expense GL account</label>
+        <select id="expense_account_id" name="expense_account_id">
+          <option value="">— Select account —</option>
+          {% for acct in gl_accounts %}
+          <option value="{{ acct.id }}" {{ 'selected' if voucher and voucher.expense_account_id == acct.id }}>
+            {{ acct.account_code }} — {{ acct.account_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="notes">Notes</label>
+        <textarea id="notes" name="notes" rows="2">{{ voucher.notes if voucher else '' }}</textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="form-actions">
+    <a href="{{ url_for('pur_router.list_vouchers') }}" class="btn btn-secondary">Cancel</a>
+    <button type="submit" name="action" value="save_draft" class="btn btn-secondary">Save draft</button>
+    <button type="submit" name="action" value="submit" class="btn btn-primary">Submit for approval</button>
+    {% if voucher and voucher.status == 'submitted' and current_user.can_approve %}
+    <button type="submit" name="action" value="approve" class="btn btn-success">Approve</button>
+    <button type="submit" name="action" value="reject" class="btn btn-danger">Reject</button>
+    {% endif %}
+  </div>
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ─── VAT Auto-Calculation ───────────────────────────────────────────────────
+function calcVAT() {
+  const subtotal   = parseFloat(document.getElementById('subtotal').value) || 0;
+  const vatRate    = parseFloat(document.getElementById('vat_rate').value) || 0;
+  const vatAmount  = Math.round(subtotal * vatRate) / 100;
+  const total      = subtotal + vatAmount;
+  document.getElementById('vat_amount').value  = vatAmount.toFixed(2);
+  document.getElementById('total_amount').value = total.toFixed(2);
+}
+
+// ─── Line Items ─────────────────────────────────────────────────────────────
+function recalcLines() {
+  let subtotal = 0;
+  document.querySelectorAll('.line-item-row').forEach(row => {
+    const qty   = parseFloat(row.querySelector('.line-qty').value)   || 0;
+    const price = parseFloat(row.querySelector('.line-price').value) || 0;
+    const total = Math.round(qty * price * 100) / 100;
+    row.querySelector('.line-total').value = total.toFixed(2);
+    subtotal += total;
+  });
+  document.getElementById('subtotal').value = subtotal.toFixed(2);
+  calcVAT();
+}
+
+function addLine() {
+  const tbody = document.getElementById('line-items-body');
+  const row   = document.createElement('tr');
+  row.className = 'line-item-row';
+  row.innerHTML = `
+    <td><input type="text"   name="line_desc[]"  placeholder="Item description" /></td>
+    <td><input type="number" name="line_qty[]"   value="1"   step="0.01" min="0" class="line-qty"   onchange="recalcLines()" /></td>
+    <td><input type="number" name="line_price[]" value="0"   step="0.01" min="0" class="line-price" onchange="recalcLines()" /></td>
+    <td><input type="number" name="line_total[]" value="0"   readonly class="line-total" /></td>
+    <td><button type="button" class="btn-icon" onclick="removeLine(this)">✕</button></td>`;
+  tbody.appendChild(row);
+}
+
+function removeLine(btn) {
+  const rows = document.querySelectorAll('.line-item-row');
+  if (rows.length > 1) { btn.closest('tr').remove(); recalcLines(); }
+}
+
+// ─── Vendor Smart Fill ───────────────────────────────────────────────────────
+function fetchVendorDetails(vendorId) {
+  if (!vendorId) return;
+  const opt = document.querySelector(`#vendor_id option[value="${vendorId}"]`);
+  if (opt) {
+    document.getElementById('vendor_tax_id').value = opt.dataset.taxId || '';
+    const terms = parseInt(opt.dataset.paymentTerms) || 30;
+    const date  = new Date(document.getElementById('voucher_date').value || Date.now());
+    date.setDate(date.getDate() + terms);
+    document.getElementById('due_date').value = date.toISOString().split('T')[0];
+  }
+  // Also fetch fresh data from API
+  fetch(`/api/vendors/${vendorId}`)
+    .then(r => r.json())
+    .then(v => {
+      if (v.tax_id)       document.getElementById('vendor_tax_id').value = v.tax_id;
+      if (v.currency_code) document.getElementById('currency_code').value = v.currency_code;
+    })
+    .catch(() => {});
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  recalcLines();
+  calcVAT();
+  document.getElementById('voucher_date').addEventListener('change', () => {
+    const vid = document.getElementById('vendor_id').value;
+    if (vid) fetchVendorDetails(vid);
+  });
+});
+</script>
+{% endblock %}

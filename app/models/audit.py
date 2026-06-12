@@ -9,7 +9,9 @@ class AuditLog(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     timestamp: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), index=True
+        DateTime,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        index=True,
     )
     actor_id: Mapped[int] = mapped_column(
         Integer, nullable=True, comment="User ID who performed action"
@@ -36,7 +38,9 @@ class AuditLog(Base):
         String(64), nullable=True, comment="SHA-256 hex of this row"
     )
     previous_hash: Mapped[str] = mapped_column(
-        String(64), nullable=True, comment="SHA-256 hex of previous row (NULL for genesis)"
+        String(64),
+        nullable=True,
+        comment="SHA-256 hex of previous row (NULL for genesis)",
     )
     chain_verified: Mapped[bool] = mapped_column(
         Boolean, default=False, comment="Whether chain integrity has been verified"

@@ -1,0 +1,27 @@
+{
+  "id": 1,
+  "saved_at": "2026-06-07T09:33:29.713665",
+  "event_id": 0,
+  "analysis_type": "value_chain_analysis",
+  "input_data": {},
+  "results": {
+    "analysis_type": "value_chain_analysis",
+    "total_cost": 0,
+    "total_primary_cost": 0,
+    "total_support_cost": 0,
+    "margin_ratio": 0,
+    "primary_activities": [],
+    "support_activities": [],
+    "linkages": [],
+    "recommendations": [
+      "MARGIN ALERT: Value chain margin below 15%. Review high-cost low-value activities.",
+      "Map client satisfaction scores to cost drivers to identify over/under-investment."
+    ]
+  },
+  "recommendations": [
+    "MARGIN ALERT: Value chain margin below 15%. Review high-cost low-value activities.",
+    "Map client satisfaction scores to cost drivers to identify over/under-investment."
+  ],
+  "confidence_score": 0.0,
+  "created_by": "scm_cost_engine"
+}

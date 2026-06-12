@@ -13,30 +13,31 @@ import pandas as pd
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Optional, Any
 from enum import Enum
-from datetime import datetime, timedelta
-import json
-from abc import ABC, abstractmethod
+from datetime import datetime
 
 # =============================================================================
 # SECTION 1: ENUMS & CONFIGURATION
 # =============================================================================
 
+
 class DecisionCriterion(Enum):
-    MAXIMAX = "maximax"           # Optimistic
-    MAXIMIN = "maximin"           # Pessimistic (Wald)
-    HURWICZ = "hurwicz"           # Realism (alpha)
-    LAPLACE = "laplace"           # Equally likely
+    MAXIMAX = "maximax"  # Optimistic
+    MAXIMIN = "maximin"  # Pessimistic (Wald)
+    HURWICZ = "hurwicz"  # Realism (alpha)
+    LAPLACE = "laplace"  # Equally likely
     MINIMAX_REGRET = "minimax_regret"  # Opportunity loss
-    EMV = "emv"    # Risk analysis
+    EMV = "emv"  # Risk analysis
     EOL = "eol"
+
 
 class InventoryModelType(Enum):
     EOQ_BASIC = "eoq_basic"
     EOQ_BACKORDER = "eoq_backorder"
-    EPQ = "epq"                   # Economic Production Quantity
+    EPQ = "epq"  # Economic Production Quantity
     ABC_CLASSIFICATION = "abc"
     QUANTITY_DISCOUNT = "quantity_discount"
     PROBABILISTIC = "probabilistic"
+
 
 class TransportMethod(Enum):
     NORTHWEST_CORNER = "nw_corner"
@@ -44,50 +45,62 @@ class TransportMethod(Enum):
     VOGEL_APPROXIMATION = "vogel"
     MODI_OPTIMIZATION = "modi"
 
+
 class ConstraintType(Enum):
     BOTTLENECK = "bottleneck"
     CAPACITY = "capacity"
     MARKET = "market"
     MATERIAL = "material"
 
+
 # =============================================================================
 # SECTION 2: DATA MODELS (Database Schema Compatible)
 # =============================================================================
 
+
 @dataclass
 class DecisionState:
     """Represents a state of nature for decision analysis"""
+
     id: str
     name: str
     probability: float = 0.0
     description: str = ""
 
+
 @dataclass
 class DecisionAlternative:
     """Represents an alternative/action in decision matrix"""
+
     id: str
     name: str
     payoffs: Dict[str, float] = field(default_factory=dict)  # state_id -> payoff
     costs: Dict[str, float] = field(default_factory=dict)
 
+
 @dataclass
 class LPConstraint:
     """Linear Programming Constraint"""
+
     name: str
     coefficients: List[float]
     rhs: float
     operator: str = "<="  # <=, >=, ==
 
+
 @dataclass
 class LPObjective:
     """Linear Programming Objective Function"""
+
     name: str
     coefficients: List[float]
     sense: str = "maximize"  # maximize or minimize
 
+
 @dataclass
 class InventoryItem:
     """Inventory model parameters per item"""
+
     sku: str
     name: str
     annual_demand: float
@@ -99,26 +112,32 @@ class InventoryItem:
     production_rate: Optional[float] = None
     daily_demand: Optional[float] = None
 
+
 @dataclass
 class TransportNode:
     """Supply or Demand node for transportation"""
+
     id: str
     name: str
     supply: float = 0.0  # For sources
     demand: float = 0.0  # For destinations
     is_source: bool = True
 
+
 @dataclass
 class TransportRoute:
     """Transportation cost route"""
+
     from_id: str
     to_id: str
     cost_per_unit: float
     allocation: float = 0.0
 
+
 @dataclass
 class TOCResource:
     """Theory of Constraints Resource"""
+
     id: str
     name: str
     capacity_hours: float
@@ -127,17 +146,21 @@ class TOCResource:
     operating_expense: float
     is_bottleneck: bool = False
 
+
 @dataclass
 class BreakEvenPoint:
     """Cost-Volume-Profit Analysis"""
+
     fixed_costs: float
     variable_cost_per_unit: float
     selling_price_per_unit: float
     target_profit: float = 0.0
 
+
 # =============================================================================
 # SECTION 3: CORE ALGORITHMS
 # =============================================================================
+
 
 class DecisionAnalysisEngine:
     """
@@ -145,7 +168,9 @@ class DecisionAnalysisEngine:
     Chapter 9: Risk and uncertainty in decision-making
     """
 
-    def __init__(self, states: List[DecisionState], alternatives: List[DecisionAlternative]):
+    def __init__(
+        self, states: List[DecisionState], alternatives: List[DecisionAlternative]
+    ):
         self.states = states
         self.alternatives = alternatives
         self.payoff_matrix = self._build_matrix()
@@ -160,7 +185,7 @@ class DecisionAnalysisEngine:
     def maximax(self) -> Tuple[str, float]:
         """Optimistic criterion - maximum of maximums"""
         best_alt = None
-        best_val = float('-inf')
+        best_val = float("-inf")
         for alt in self.alternatives:
             max_payoff = max(alt.payoffs.values())
             if max_payoff > best_val:
@@ -171,7 +196,7 @@ class DecisionAnalysisEngine:
     def maximin(self) -> Tuple[str, float]:
         """Pessimistic criterion - maximum of minimums (Wald)"""
         best_alt = None
-        best_val = float('-inf')
+        best_val = float("-inf")
         for alt in self.alternatives:
             min_payoff = min(alt.payoffs.values())
             if min_payoff > best_val:
@@ -182,7 +207,7 @@ class DecisionAnalysisEngine:
     def hurwicz(self, alpha: float = 0.5) -> Tuple[str, float]:
         """Realism criterion - weighted average of best and worst"""
         best_alt = None
-        best_val = float('-inf')
+        best_val = float("-inf")
         for alt in self.alternatives:
             max_p = max(alt.payoffs.values())
             min_p = min(alt.payoffs.values())
@@ -196,7 +221,7 @@ class DecisionAnalysisEngine:
         """Equally likely criterion - average payoff"""
         n = len(self.states)
         best_alt = None
-        best_val = float('-inf')
+        best_val = float("-inf")
         for alt in self.alternatives:
             avg = sum(alt.payoffs.values()) / n
             if avg > best_val:
@@ -213,7 +238,7 @@ class DecisionAnalysisEngine:
             regret[col] = best_in_state - self.payoff_matrix[col]
 
         best_alt = None
-        best_val = float('inf')
+        best_val = float("inf")
         for col in regret.columns:
             max_regret = regret[col].max()
             if max_regret < best_val:
@@ -224,7 +249,7 @@ class DecisionAnalysisEngine:
     def expected_monetary_value(self) -> Tuple[str, float]:
         """EMV with known probabilities (Risk analysis)"""
         best_alt = None
-        best_val = float('-inf')
+        best_val = float("-inf")
         for alt in self.alternatives:
             emv = sum(alt.payoffs.get(s.id, 0) * s.probability for s in self.states)
             if emv > best_val:
@@ -235,7 +260,7 @@ class DecisionAnalysisEngine:
     def expected_opportunity_loss(self) -> Tuple[str, float]:
         """EOL - Expected opportunity loss"""
         best_alt = None
-        best_val = float('inf')
+        best_val = float("inf")
         for alt in self.alternatives:
             eol = 0
             for s in self.states:
@@ -271,7 +296,7 @@ class DecisionAnalysisEngine:
             "emv": self.expected_monetary_value(),
             "eol": self.expected_opportunity_loss(),
             "evpi": self.expected_value_of_perfect_information(),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
 
@@ -291,7 +316,11 @@ class LinearProgrammingEngine:
             from scipy.optimize import linprog
 
             # Objective coefficients (negate for maximization)
-            c = [-x for x in self.objective.coefficients] if self.objective.sense == "maximize" else self.objective.coefficients
+            c = (
+                [-x for x in self.objective.coefficients]
+                if self.objective.sense == "maximize"
+                else self.objective.coefficients
+            )
 
             # Constraints
             A_ub = []
@@ -317,17 +346,21 @@ class LinearProgrammingEngine:
                 A_eq=A_eq if A_eq else None,
                 b_eq=b_eq if b_eq else None,
                 bounds=(0, None),
-                method='highs'
+                method="highs",
             )
 
             return {
                 "success": result.success,
-                "objective_value": -result.fun if self.objective.sense == "maximize" else result.fun,
+                "objective_value": -result.fun
+                if self.objective.sense == "maximize"
+                else result.fun,
                 "solution": result.x.tolist(),
                 "status": result.status,
                 "message": result.message,
-                "shadow_prices": result.ineqlin.marginals.tolist() if hasattr(result, 'ineqlin') else [],
-                "timestamp": datetime.now().isoformat()
+                "shadow_prices": result.ineqlin.marginals.tolist()
+                if hasattr(result, "ineqlin")
+                else [],
+                "timestamp": datetime.now().isoformat(),
             }
         except ImportError:
             return {"error": "scipy not installed", "success": False}
@@ -351,18 +384,18 @@ class LinearProgrammingEngine:
 
             self.objective.coefficients[i] = original
 
-            sensitivities.append({
-                "variable_index": i,
-                "coefficient": original,
-                "upper_10%": upper.get("objective_value"),
-                "lower_10%": lower.get("objective_value"),
-                "stable": abs(upper["objective_value"] - base["objective_value"]) < 0.01
-            })
+            sensitivities.append(
+                {
+                    "variable_index": i,
+                    "coefficient": original,
+                    "upper_10%": upper.get("objective_value"),
+                    "lower_10%": lower.get("objective_value"),
+                    "stable": abs(upper["objective_value"] - base["objective_value"])
+                    < 0.01,
+                }
+            )
 
-        return {
-            "base_solution": base,
-            "sensitivities": sensitivities
-        }
+        return {"base_solution": base, "sensitivities": sensitivities}
 
 
 class InventoryOptimizationEngine:
@@ -395,9 +428,11 @@ class InventoryOptimizationEngine:
             "total_annual_cost": round(total_cost, 2),
             "orders_per_year": round(orders_per_year, 2),
             "cycle_time_days": round(cycle_time * 365, 2),
-            "reorder_point": round(item.daily_demand * item.lead_time_days, 2) if item.daily_demand else 0,
+            "reorder_point": round(item.daily_demand * item.lead_time_days, 2)
+            if item.daily_demand
+            else 0,
             "holding_cost_annual": round((q_optimal / 2) * H, 2),
-            "ordering_cost_annual": round((D / q_optimal) * S, 2)
+            "ordering_cost_annual": round((D / q_optimal) * S, 2),
         }
 
     def eoq_backorder(self, item: InventoryItem) -> Dict[str, float]:
@@ -419,7 +454,7 @@ class InventoryOptimizationEngine:
             "optimal_order_quantity": round(q_optimal, 2),
             "max_inventory": round(s_optimal, 2),
             "max_shortage": round(max_shortage, 2),
-            "total_annual_cost": round(total_cost, 2)
+            "total_annual_cost": round(total_cost, 2),
         }
 
     def epq_model(self, item: InventoryItem) -> Dict[str, float]:
@@ -442,7 +477,7 @@ class InventoryOptimizationEngine:
             "optimal_production_quantity": round(q_optimal, 2),
             "max_inventory": round(max_inventory, 2),
             "total_annual_cost": round(total_cost, 2),
-            "production_runs_per_year": round(D / q_optimal, 2)
+            "production_runs_per_year": round(D / q_optimal, 2),
         }
 
     def abc_analysis(self, items_data: List[Dict]) -> pd.DataFrame:
@@ -451,27 +486,38 @@ class InventoryOptimizationEngine:
         items_data: [{"sku": "", "annual_demand": 0, "unit_cost": 0}]
         """
         df = pd.DataFrame(items_data)
-        df['annual_consumption_value'] = df['annual_demand'] * df['unit_cost']
-        df = df.sort_values('annual_consumption_value', ascending=False)
-        df['cumulative_value'] = df['annual_consumption_value'].cumsum()
-        df['cumulative_percentage'] = (df['cumulative_value'] / df['annual_consumption_value'].sum()) * 100
-        df['item_percentage'] = ((df.index + 1) / len(df)) * 100
+        df["annual_consumption_value"] = df["annual_demand"] * df["unit_cost"]
+        df = df.sort_values("annual_consumption_value", ascending=False)
+        df["cumulative_value"] = df["annual_consumption_value"].cumsum()
+        df["cumulative_percentage"] = (
+            df["cumulative_value"] / df["annual_consumption_value"].sum()
+        ) * 100
+        df["item_percentage"] = ((df.index + 1) / len(df)) * 100
 
         # Classification
         def classify(row):
-            if row['cumulative_percentage'] <= 80:
-                return 'A'
-            elif row['cumulative_percentage'] <= 95:
-                return 'B'
+            if row["cumulative_percentage"] <= 80:
+                return "A"
+            elif row["cumulative_percentage"] <= 95:
+                return "B"
             else:
-                return 'C'
+                return "C"
 
-        df['class'] = df.apply(classify, axis=1)
-        return df[['sku', 'annual_demand', 'unit_cost', 'annual_consumption_value', 
-                   'cumulative_percentage', 'class']]
+        df["class"] = df.apply(classify, axis=1)
+        return df[
+            [
+                "sku",
+                "annual_demand",
+                "unit_cost",
+                "annual_consumption_value",
+                "cumulative_percentage",
+                "class",
+            ]
+        ]
 
-    def quantity_discount_analysis(self, item: InventoryItem, 
-                                   discount_tiers: List[Dict]) -> Dict[str, Any]:
+    def quantity_discount_analysis(
+        self, item: InventoryItem, discount_tiers: List[Dict]
+    ) -> Dict[str, Any]:
         """
         discount_tiers: [{"min_qty": 0, "max_qty": 100, "unit_cost": 10},
                          {"min_qty": 101, "max_qty": 500, "unit_cost": 9}]
@@ -482,17 +528,17 @@ class InventoryOptimizationEngine:
 
         results = []
         for tier in discount_tiers:
-            C = tier['unit_cost']
+            C = tier["unit_cost"]
             H = C * H_rate
 
             # Calculate EOQ at this price
             q_eoq = np.sqrt((2 * D * S) / H)
 
             # Adjust to feasible range
-            max_qty = tier.get('max_qty')
+            max_qty = tier.get("max_qty")
             if max_qty is None:
-                max_qty = float('inf')
-            q_order = max(tier['min_qty'], min(q_eoq, max_qty))
+                max_qty = float("inf")
+            q_order = max(tier["min_qty"], min(q_eoq, max_qty))
 
             # Total cost = Purchase + Ordering + Holding
             purchase_cost = D * C
@@ -500,15 +546,17 @@ class InventoryOptimizationEngine:
             holding_cost = (q_order / 2) * H
             total = purchase_cost + ordering_cost + holding_cost
 
-            results.append({
-                "tier": tier,
-                "eoq": round(q_eoq, 2),
-                "order_quantity": round(q_order, 2),
-                "total_cost": round(total, 2),
-                "purchase_cost": round(purchase_cost, 2)
-            })
+            results.append(
+                {
+                    "tier": tier,
+                    "eoq": round(q_eoq, 2),
+                    "order_quantity": round(q_order, 2),
+                    "total_cost": round(total, 2),
+                    "purchase_cost": round(purchase_cost, 2),
+                }
+            )
 
-        best = min(results, key=lambda x: x['total_cost'])
+        best = min(results, key=lambda x: x["total_cost"])
         return {"all_tiers": results, "optimal_tier": best}
 
     def run_all_models(self, item: InventoryItem) -> Dict[str, Any]:
@@ -518,7 +566,7 @@ class InventoryOptimizationEngine:
             "eoq_basic": self.eoq_basic(item),
             "eoq_backorder": self.eoq_backorder(item) if item.stockout_cost else None,
             "epq": self.epq_model(item) if item.production_rate else None,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
 
@@ -528,8 +576,12 @@ class TransportationEngine:
     Northwest Corner, Least Cost, Vogel's Approximation, MODI
     """
 
-    def __init__(self, sources: List[TransportNode], destinations: List[TransportNode], 
-                 routes: List[TransportRoute]):
+    def __init__(
+        self,
+        sources: List[TransportNode],
+        destinations: List[TransportNode],
+        routes: List[TransportRoute],
+    ):
         self.sources = sources
         self.destinations = destinations
         self.routes = routes
@@ -572,7 +624,7 @@ class TransportationEngine:
             "allocation": allocation.tolist(),
             "total_cost": round(total_cost, 2),
             "sources": [s.id for s in self.sources],
-            "destinations": [d.id for d in self.destinations]
+            "destinations": [d.id for d in self.destinations],
         }
 
     def least_cost_method(self) -> Dict[str, Any]:
@@ -585,7 +637,7 @@ class TransportationEngine:
 
         while sum(supply) > 0 and sum(demand) > 0:
             # Find minimum cost cell
-            min_cost = float('inf')
+            min_cost = float("inf")
             min_i, min_j = -1, -1
             for i in range(len(supply)):
                 for j in range(len(demand)):
@@ -603,7 +655,7 @@ class TransportationEngine:
         return {
             "method": "Least_Cost",
             "allocation": allocation.tolist(),
-            "total_cost": round(total_cost, 2)
+            "total_cost": round(total_cost, 2),
         }
 
     def vogel_approximation(self) -> Dict[str, Any]:
@@ -619,7 +671,9 @@ class TransportationEngine:
             row_penalties = []
             for i in range(len(supply)):
                 if supply[i] > 0:
-                    row_costs = sorted([costs[i, j] for j in range(len(demand)) if demand[j] > 0])
+                    row_costs = sorted(
+                        [costs[i, j] for j in range(len(demand)) if demand[j] > 0]
+                    )
                     penalty = row_costs[1] - row_costs[0] if len(row_costs) > 1 else 0
                     row_penalties.append((penalty, i))
                 else:
@@ -629,7 +683,9 @@ class TransportationEngine:
             col_penalties = []
             for j in range(len(demand)):
                 if demand[j] > 0:
-                    col_costs = sorted([costs[i, j] for i in range(len(supply)) if supply[i] > 0])
+                    col_costs = sorted(
+                        [costs[i, j] for i in range(len(supply)) if supply[i] > 0]
+                    )
                     penalty = col_costs[1] - col_costs[0] if len(col_costs) > 1 else 0
                     col_penalties.append((penalty, j))
                 else:
@@ -642,7 +698,7 @@ class TransportationEngine:
             if max_row[0] >= max_col[0]:
                 i = max_row[1]
                 # Find min cost in this row
-                min_cost = float('inf')
+                min_cost = float("inf")
                 min_j = -1
                 for j in range(len(demand)):
                     if demand[j] > 0 and costs[i, j] < min_cost:
@@ -652,7 +708,7 @@ class TransportationEngine:
             else:
                 j = max_col[1]
                 # Find min cost in this column
-                min_cost = float('inf')
+                min_cost = float("inf")
                 min_i = -1
                 for i in range(len(supply)):
                     if supply[i] > 0 and costs[i, j] < min_cost:
@@ -670,7 +726,7 @@ class TransportationEngine:
         return {
             "method": "Vogel_Approximation",
             "allocation": allocation.tolist(),
-            "total_cost": round(total_cost, 2)
+            "total_cost": round(total_cost, 2),
         }
 
 
@@ -697,17 +753,19 @@ class AssignmentEngine:
 
             assignments = []
             for r, c in zip(row_ind, col_ind):
-                assignments.append({
-                    "worker": int(r),
-                    "job": int(c),
-                    "cost": float(self.cost_matrix[r, c])
-                })
+                assignments.append(
+                    {
+                        "worker": int(r),
+                        "job": int(c),
+                        "cost": float(self.cost_matrix[r, c]),
+                    }
+                )
 
             return {
                 "method": "Hungarian_Algorithm",
                 "assignments": assignments,
                 "total_cost": round(total_cost, 2),
-                "optimal": True
+                "optimal": True,
             }
         except ImportError:
             return {"error": "scipy not installed"}
@@ -721,7 +779,7 @@ class TheoryOfConstraintsEngine:
 
     def __init__(self, resources: List[TOCResource], products: List[Dict]):
         """
-        products: [{"id": "", "name": "", "selling_price": 0, "raw_material_cost": 0, 
+        products: [{"id": "", "name": "", "selling_price": 0, "raw_material_cost": 0,
                     "demand": 0, "processing_times": {"resource_id": hours}}]
         """
         self.resources = resources
@@ -731,22 +789,40 @@ class TheoryOfConstraintsEngine:
         """Identify bottleneck resource (highest utilization)"""
         utilizations = []
         for res in self.resources:
-            util = (res.used_hours / res.capacity_hours) * 100 if res.capacity_hours > 0 else 0
-            utilizations.append({
-                "resource_id": res.id,
-                "name": res.name,
-                "capacity": res.capacity_hours,
-                "used": res.used_hours,
-                "utilization_pct": round(util, 2),
-                "is_bottleneck": util >= 100 or (util == max(
-                    [(r.used_hours / r.capacity_hours) * 100 for r in self.resources if r.capacity_hours > 0], default=0))
-            })
+            util = (
+                (res.used_hours / res.capacity_hours) * 100
+                if res.capacity_hours > 0
+                else 0
+            )
+            utilizations.append(
+                {
+                    "resource_id": res.id,
+                    "name": res.name,
+                    "capacity": res.capacity_hours,
+                    "used": res.used_hours,
+                    "utilization_pct": round(util, 2),
+                    "is_bottleneck": util >= 100
+                    or (
+                        util
+                        == max(
+                            [
+                                (r.used_hours / r.capacity_hours) * 100
+                                for r in self.resources
+                                if r.capacity_hours > 0
+                            ],
+                            default=0,
+                        )
+                    ),
+                }
+            )
 
-        bottleneck = max(utilizations, key=lambda x: x['utilization_pct'])
+        bottleneck = max(utilizations, key=lambda x: x["utilization_pct"])
         return {
             "bottleneck_resource": bottleneck,
             "all_resources": utilizations,
-            "system_constraint": bottleneck['resource_id'] if bottleneck['utilization_pct'] >= 100 else None
+            "system_constraint": bottleneck["resource_id"]
+            if bottleneck["utilization_pct"] >= 100
+            else None,
         }
 
     def throughput_accounting(self) -> Dict[str, Any]:
@@ -755,25 +831,38 @@ class TheoryOfConstraintsEngine:
         product_analysis = []
 
         for prod in self.products:
-            throughput = (prod['selling_price'] - prod['raw_material_cost']) * prod['demand']
+            throughput = (prod["selling_price"] - prod["raw_material_cost"]) * prod[
+                "demand"
+            ]
             total_throughput += throughput
 
             # Time at bottleneck determines priority
-            bottleneck_times = {res.id: prod['processing_times'].get(res.id, 0) 
-                              for res in self.resources}
+            bottleneck_times = {
+                res.id: prod["processing_times"].get(res.id, 0)
+                for res in self.resources
+            }
 
-            product_analysis.append({
-                "product_id": prod['id'],
-                "name": prod['name'],
-                "throughput": round(throughput, 2),
-                "throughput_per_unit": round(prod['selling_price'] - prod['raw_material_cost'], 2),
-                "bottleneck_hours": bottleneck_times,
-                "throughput_per_bottleneck_hour": round(
-                    throughput / sum(bottleneck_times.values()), 2) if sum(bottleneck_times.values()) > 0 else 0
-            })
+            product_analysis.append(
+                {
+                    "product_id": prod["id"],
+                    "name": prod["name"],
+                    "throughput": round(throughput, 2),
+                    "throughput_per_unit": round(
+                        prod["selling_price"] - prod["raw_material_cost"], 2
+                    ),
+                    "bottleneck_hours": bottleneck_times,
+                    "throughput_per_bottleneck_hour": round(
+                        throughput / sum(bottleneck_times.values()), 2
+                    )
+                    if sum(bottleneck_times.values()) > 0
+                    else 0,
+                }
+            )
 
         # Sort by throughput per bottleneck hour (DBR priority)
-        product_analysis.sort(key=lambda x: x['throughput_per_bottleneck_hour'], reverse=True)
+        product_analysis.sort(
+            key=lambda x: x["throughput_per_bottleneck_hour"], reverse=True
+        )
 
         total_oe = sum(res.operating_expense for res in self.resources)
 
@@ -781,18 +870,23 @@ class TheoryOfConstraintsEngine:
             "total_throughput": round(total_throughput, 2),
             "total_operating_expense": round(total_oe, 2),
             "net_profit": round(total_throughput - total_oe, 2),
-            "roi_approx": round((total_throughput - total_oe) / total_oe * 100, 2) if total_oe > 0 else 0,
+            "roi_approx": round((total_throughput - total_oe) / total_oe * 100, 2)
+            if total_oe > 0
+            else 0,
             "product_priority": product_analysis,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     def optimize_product_mix(self) -> Dict[str, Any]:
         """Optimize product mix based on bottleneck"""
         bottleneck_info = self.identify_bottleneck()
-        bottleneck_id = bottleneck_info['system_constraint']
+        bottleneck_id = bottleneck_info["system_constraint"]
 
         if not bottleneck_id:
-            return {"message": "No bottleneck detected - produce to demand", "product_mix": self.products}
+            return {
+                "message": "No bottleneck detected - produce to demand",
+                "product_mix": self.products,
+            }
 
         # Find bottleneck resource
         bottleneck_res = next(r for r in self.resources if r.id == bottleneck_id)
@@ -801,48 +895,61 @@ class TheoryOfConstraintsEngine:
         # Calculate throughput per bottleneck hour for each product
         ranked_products = []
         for prod in self.products:
-            tb_per_unit = prod['selling_price'] - prod['raw_material_cost']
-            bottleneck_hours = prod['processing_times'].get(bottleneck_id, 0)
+            tb_per_unit = prod["selling_price"] - prod["raw_material_cost"]
+            bottleneck_hours = prod["processing_times"].get(bottleneck_id, 0)
 
             if bottleneck_hours > 0:
                 tb_per_hour = tb_per_unit / bottleneck_hours
-                ranked_products.append({
-                    **prod,
-                    "throughput_per_hour": tb_per_hour,
-                    "max_demand": prod['demand']
-                })
+                ranked_products.append(
+                    {
+                        **prod,
+                        "throughput_per_hour": tb_per_hour,
+                        "max_demand": prod["demand"],
+                    }
+                )
 
         # Sort by throughput per bottleneck hour (descending)
-        ranked_products.sort(key=lambda x: x['throughput_per_hour'], reverse=True)
+        ranked_products.sort(key=lambda x: x["throughput_per_hour"], reverse=True)
 
         # Allocate bottleneck hours
         remaining_hours = available_hours
         optimal_mix = []
 
         for prod in ranked_products:
-            hours_needed = prod['max_demand'] * prod['processing_times'].get(bottleneck_id, 0)
+            hours_needed = prod["max_demand"] * prod["processing_times"].get(
+                bottleneck_id, 0
+            )
 
             if hours_needed <= remaining_hours:
-                optimal_mix.append({
-                    "product_id": prod['id'],
-                    "quantity": prod['max_demand'],
-                    "bottleneck_hours_used": hours_needed,
-                    "throughput": prod['max_demand'] * (prod['selling_price'] - prod['raw_material_cost'])
-                })
+                optimal_mix.append(
+                    {
+                        "product_id": prod["id"],
+                        "quantity": prod["max_demand"],
+                        "bottleneck_hours_used": hours_needed,
+                        "throughput": prod["max_demand"]
+                        * (prod["selling_price"] - prod["raw_material_cost"]),
+                    }
+                )
                 remaining_hours -= hours_needed
             else:
-                quantity = int(remaining_hours / prod['processing_times'].get(bottleneck_id, 1))
+                quantity = int(
+                    remaining_hours / prod["processing_times"].get(bottleneck_id, 1)
+                )
                 if quantity > 0:
-                    optimal_mix.append({
-                        "product_id": prod['id'],
-                        "quantity": quantity,
-                        "bottleneck_hours_used": quantity * prod['processing_times'].get(bottleneck_id, 0),
-                        "throughput": quantity * (prod['selling_price'] - prod['raw_material_cost'])
-                    })
+                    optimal_mix.append(
+                        {
+                            "product_id": prod["id"],
+                            "quantity": quantity,
+                            "bottleneck_hours_used": quantity
+                            * prod["processing_times"].get(bottleneck_id, 0),
+                            "throughput": quantity
+                            * (prod["selling_price"] - prod["raw_material_cost"]),
+                        }
+                    )
                 remaining_hours = 0
                 break
 
-        total_throughput = sum(p['throughput'] for p in optimal_mix)
+        total_throughput = sum(p["throughput"] for p in optimal_mix)
 
         return {
             "bottleneck_id": bottleneck_id,
@@ -850,7 +957,7 @@ class TheoryOfConstraintsEngine:
             "optimal_mix": optimal_mix,
             "total_throughput": round(total_throughput, 2),
             "unallocated_hours": round(remaining_hours, 2),
-            "method": "Throughput_Priority"
+            "method": "Throughput_Priority",
         }
 
 
@@ -879,11 +986,18 @@ class CostProfitAnalysisEngine:
         bep_revenue = fc / cm_ratio
 
         # Margin of safety at different volumes
-        mos_units = lambda actual: actual - bep_units
-        mos_pct = lambda actual: ((actual - bep_units) / actual) * 100 if actual > 0 else 0
+        def mos_units(actual):
+            return actual - bep_units
+
+        def mos_pct(actual):
+            return ((actual - bep_units) / actual) * 100 if actual > 0 else 0
 
         # Target profit
-        target_units = (fc + self.bep.target_profit) / cm_per_unit if self.bep.target_profit else None
+        target_units = (
+            (fc + self.bep.target_profit) / cm_per_unit
+            if self.bep.target_profit
+            else None
+        )
 
         return {
             "contribution_margin_per_unit": round(cm_per_unit, 2),
@@ -892,39 +1006,41 @@ class CostProfitAnalysisEngine:
             "break_even_revenue": round(bep_revenue, 2),
             "target_profit_units": round(target_units, 2) if target_units else None,
             "margin_of_safety_formula": "Actual - BE Units",
-            "operating_leverage": round(cm_ratio, 4)  # Simplified
+            "operating_leverage": round(cm_ratio, 4),  # Simplified
         }
 
     def multi_product_break_even(self, products: List[Dict]) -> Dict[str, Any]:
         """
         products: [{"name": "", "sales_mix": 0.3, "sp": 0, "vc": 0}]
         """
-        total_sales_mix = sum(p['sales_mix'] for p in products)
+        total_sales_mix = sum(p["sales_mix"] for p in products)
 
         weighted_cm = 0
         for p in products:
-            mix_ratio = p['sales_mix'] / total_sales_mix
-            cm = p['sp'] - p['vc']
+            mix_ratio = p["sales_mix"] / total_sales_mix
+            cm = p["sp"] - p["vc"]
             weighted_cm += cm * mix_ratio
 
         bep_total = self.bep.fixed_costs / weighted_cm if weighted_cm > 0 else 0
 
         product_breakdown = []
         for p in products:
-            mix_ratio = p['sales_mix'] / total_sales_mix
+            mix_ratio = p["sales_mix"] / total_sales_mix
             units = bep_total * mix_ratio
-            revenue = units * p['sp']
-            product_breakdown.append({
-                "product": p['name'],
-                "break_even_units": round(units, 2),
-                "break_even_revenue": round(revenue, 2),
-                "sales_mix_pct": round(mix_ratio * 100, 2)
-            })
+            revenue = units * p["sp"]
+            product_breakdown.append(
+                {
+                    "product": p["name"],
+                    "break_even_units": round(units, 2),
+                    "break_even_revenue": round(revenue, 2),
+                    "sales_mix_pct": round(mix_ratio * 100, 2),
+                }
+            )
 
         return {
             "weighted_contribution_margin": round(weighted_cm, 2),
             "total_break_even_units": round(bep_total, 2),
-            "product_breakdown": product_breakdown
+            "product_breakdown": product_breakdown,
         }
 
     def scenario_analysis(self, scenarios: List[Dict]) -> pd.DataFrame:
@@ -933,20 +1049,22 @@ class CostProfitAnalysisEngine:
         """
         results = []
         for s in scenarios:
-            cm = s['sp'] - s['vc']
-            total_cm = cm * s['volume']
+            cm = s["sp"] - s["vc"]
+            total_cm = cm * s["volume"]
             profit = total_cm - self.bep.fixed_costs
 
-            results.append({
-                "scenario": s['name'],
-                "volume": s['volume'],
-                "selling_price": s['sp'],
-                "variable_cost": s['vc'],
-                "contribution_margin": cm,
-                "total_contribution": total_cm,
-                "profit": profit,
-                "break_even": self.bep.fixed_costs / cm if cm > 0 else 0
-            })
+            results.append(
+                {
+                    "scenario": s["name"],
+                    "volume": s["volume"],
+                    "selling_price": s["sp"],
+                    "variable_cost": s["vc"],
+                    "contribution_margin": cm,
+                    "total_contribution": total_cm,
+                    "profit": profit,
+                    "break_even": self.bep.fixed_costs / cm if cm > 0 else 0,
+                }
+            )
 
         return pd.DataFrame(results)
 
@@ -956,10 +1074,10 @@ class CostProfitAnalysisEngine:
 # =============================================================================
 
 
-
 # =============================================================================
 # SECTION 7: NEW ENGINES — REALIGNED TO ACTUAL BOOK CHAPTERS
 # =============================================================================
+
 
 class GraphicalLPEngine:
     """
@@ -978,6 +1096,7 @@ class GraphicalLPEngine:
     def _get_intersections(self) -> List[Tuple[float, float]]:
         """Find all intersection points of constraint boundaries"""
         import itertools
+
         points = [(0.0, 0.0)]  # Origin is always a candidate
 
         # Collect all boundary lines (treat as equalities)
@@ -1044,7 +1163,7 @@ class GraphicalLPEngine:
 
         # Evaluate objective at each corner point
         c1, c2 = self.objective.coefficients[0], self.objective.coefficients[1]
-        best_val = float('-inf') if self.objective.sense == "maximize" else float('inf')
+        best_val = float("-inf") if self.objective.sense == "maximize" else float("inf")
         best_point = None
 
         for x, y in feasible_points:
@@ -1069,7 +1188,7 @@ class GraphicalLPEngine:
             "optimal_point": best_point,
             "optimal_value": round(best_val, 4),
             "variable_names": ["x1", "x2"],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     def generate_plot_data(self) -> Dict[str, Any]:
@@ -1079,11 +1198,13 @@ class GraphicalLPEngine:
 
         # Sort corner points for polygon drawing
         import math
+
         cx = sum(p[0] for p in self.corner_points) / len(self.corner_points)
         cy = sum(p[1] for p in self.corner_points) / len(self.corner_points)
 
-        sorted_points = sorted(self.corner_points, 
-                              key=lambda p: math.atan2(p[1] - cy, p[0] - cx))
+        sorted_points = sorted(
+            self.corner_points, key=lambda p: math.atan2(p[1] - cy, p[0] - cx)
+        )
 
         # Constraint lines for plotting
         lines = []
@@ -1093,18 +1214,20 @@ class GraphicalLPEngine:
             if a != 0 and b != 0:
                 x_vals = [0, c / a]
                 y_vals = [c / b, 0]
-                lines.append({
-                    "name": cons.name,
-                    "x": [round(v, 2) for v in x_vals],
-                    "y": [round(v, 2) for v in y_vals],
-                    "operator": cons.operator
-                })
+                lines.append(
+                    {
+                        "name": cons.name,
+                        "x": [round(v, 2) for v in x_vals],
+                        "y": [round(v, 2) for v in y_vals],
+                        "operator": cons.operator,
+                    }
+                )
 
         return {
             "feasible_region": sorted_points,
             "optimal_point": self.optimal_point,
             "objective_value": self.optimal_value,
-            "constraint_lines": lines
+            "constraint_lines": lines,
         }
 
 
@@ -1114,13 +1237,20 @@ class GameTheoryEngine:
     Two-person zero-sum games
     """
 
-    def __init__(self, payoff_matrix: np.ndarray, 
-                 player_a_strategies: List[str] = None,
-                 player_b_strategies: List[str] = None):
+    def __init__(
+        self,
+        payoff_matrix: np.ndarray,
+        player_a_strategies: List[str] = None,
+        player_b_strategies: List[str] = None,
+    ):
         self.payoff_matrix = np.array(payoff_matrix)
         self.rows, self.cols = self.payoff_matrix.shape
-        self.player_a_strategies = player_a_strategies or [f"A{i+1}" for i in range(self.rows)]
-        self.player_b_strategies = player_b_strategies or [f"B{j+1}" for j in range(self.cols)]
+        self.player_a_strategies = player_a_strategies or [
+            f"A{i + 1}" for i in range(self.rows)
+        ]
+        self.player_b_strategies = player_b_strategies or [
+            f"B{j + 1}" for j in range(self.cols)
+        ]
 
     def find_saddle_point(self) -> Dict[str, Any]:
         """Find saddle point using minimax criterion"""
@@ -1144,7 +1274,7 @@ class GameTheoryEngine:
             "minimax_strategy": self.player_b_strategies[minimax_col],
             "game_value": round(float(maximin), 4) if has_saddle else None,
             "row_mins": [round(float(x), 4) for x in row_mins],
-            "col_maxs": [round(float(x), 4) for x in col_maxs]
+            "col_maxs": [round(float(x), 4) for x in col_maxs],
         }
 
     def solve_mixed_strategy(self) -> Dict[str, Any]:
@@ -1156,31 +1286,31 @@ class GameTheoryEngine:
             if self.rows == 2 and self.cols == 2:
                 a = self.payoff_matrix
                 # Player A's optimal mixed strategy
-                denom = (a[0,0] + a[1,1]) - (a[0,1] + a[1,0])
+                denom = (a[0, 0] + a[1, 1]) - (a[0, 1] + a[1, 0])
                 if abs(denom) < 1e-10:
                     return {"error": "Degenerate game - no mixed strategy solution"}
 
-                p1 = (a[1,1] - a[1,0]) / denom
+                p1 = (a[1, 1] - a[1, 0]) / denom
                 p2 = 1 - p1
 
                 # Player B's optimal mixed strategy
-                q1 = (a[1,1] - a[0,1]) / denom
+                q1 = (a[1, 1] - a[0, 1]) / denom
                 q2 = 1 - q1
 
                 # Game value
-                v = (a[0,0]*a[1,1] - a[0,1]*a[1,0]) / denom
+                v = (a[0, 0] * a[1, 1] - a[0, 1] * a[1, 0]) / denom
 
                 return {
                     "method": "Analytical_2x2",
                     "game_value": round(float(v), 4),
                     "player_a_strategy": {
                         self.player_a_strategies[0]: round(float(p1), 4),
-                        self.player_a_strategies[1]: round(float(p2), 4)
+                        self.player_a_strategies[1]: round(float(p2), 4),
                     },
                     "player_b_strategy": {
                         self.player_b_strategies[0]: round(float(q1), 4),
-                        self.player_b_strategies[1]: round(float(q2), 4)
-                    }
+                        self.player_b_strategies[1]: round(float(q2), 4),
+                    },
                 }
             else:
                 # For larger games, use LP formulation
@@ -1203,17 +1333,26 @@ class GameTheoryEngine:
 
                 bounds = [(0, 1) for _ in range(self.rows)] + [(None, None)]
 
-                result = linprog(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq, 
-                               bounds=bounds, method='highs')
+                result = linprog(
+                    c,
+                    A_ub=A_ub,
+                    b_ub=b_ub,
+                    A_eq=A_eq,
+                    b_eq=b_eq,
+                    bounds=bounds,
+                    method="highs",
+                )
 
                 if result.success:
-                    strategies = {self.player_a_strategies[i]: round(float(result.x[i]), 4) 
-                                 for i in range(self.rows)}
+                    strategies = {
+                        self.player_a_strategies[i]: round(float(result.x[i]), 4)
+                        for i in range(self.rows)
+                    }
                     return {
                         "method": "LP_Formulation",
                         "game_value": round(float(result.x[-1]), 4),
                         "player_a_strategy": strategies,
-                        "success": True
+                        "success": True,
                     }
                 else:
                     return {"error": "LP solver failed", "message": result.message}
@@ -1257,15 +1396,21 @@ class GameTheoryEngine:
                                 break
             cols_kept = [c for c in cols_kept if c not in to_remove]
 
-        reduced_matrix = matrix[np.ix_(rows_kept, cols_kept)] if rows_kept and cols_kept else np.array([])
+        reduced_matrix = (
+            matrix[np.ix_(rows_kept, cols_kept)]
+            if rows_kept and cols_kept
+            else np.array([])
+        )
 
         return {
             "original_size": f"{self.rows}x{self.cols}",
             "reduced_size": f"{len(rows_kept)}x{len(cols_kept)}",
             "rows_kept": [self.player_a_strategies[i] for i in rows_kept],
             "cols_kept": [self.player_b_strategies[j] for j in cols_kept],
-            "reduced_matrix": reduced_matrix.tolist() if reduced_matrix.size > 0 else [],
-            "iterations": iterations
+            "reduced_matrix": reduced_matrix.tolist()
+            if reduced_matrix.size > 0
+            else [],
+            "iterations": iterations,
         }
 
     def analyze(self) -> Dict[str, Any]:
@@ -1278,7 +1423,7 @@ class GameTheoryEngine:
             "player_a_strategies": self.player_a_strategies,
             "player_b_strategies": self.player_b_strategies,
             "saddle_point_analysis": saddle,
-            "dominance_reduction": dominance
+            "dominance_reduction": dominance,
         }
 
         if not saddle["has_saddle_point"]:
@@ -1296,7 +1441,7 @@ class PERTCPMEngine:
 
     def __init__(self, activities: List[Dict[str, Any]]):
         """
-        activities: [{"id": "A", "name": "Task A", "predecessors": [], 
+        activities: [{"id": "A", "name": "Task A", "predecessors": [],
                      "duration": 5, "optimistic": 3, "most_likely": 5, "pessimistic": 7}]
         """
         self.activities = activities
@@ -1307,32 +1452,36 @@ class PERTCPMEngine:
     def _build_graph(self):
         """Build activity-on-node network"""
         for act in self.activities:
-            self.nodes.add(act['id'])
-            self.graph[act['id']] = {
-                'name': act.get('name', act['id']),
-                'duration': act.get('duration', 0),
-                'predecessors': act.get('predecessors', []),
-                'successors': [],
-                'es': 0, 'ef': 0, 'ls': 0, 'lf': 0, 'slack': 0
+            self.nodes.add(act["id"])
+            self.graph[act["id"]] = {
+                "name": act.get("name", act["id"]),
+                "duration": act.get("duration", 0),
+                "predecessors": act.get("predecessors", []),
+                "successors": [],
+                "es": 0,
+                "ef": 0,
+                "ls": 0,
+                "lf": 0,
+                "slack": 0,
             }
 
         # Build successor links
         for act in self.activities:
-            for pred in act.get('predecessors', []):
+            for pred in act.get("predecessors", []):
                 if pred in self.graph:
-                    self.graph[pred]['successors'].append(act['id'])
+                    self.graph[pred]["successors"].append(act["id"])
 
     def _calculate_pert_duration(self, act: Dict) -> float:
         """Calculate expected duration using beta distribution"""
-        if 'optimistic' in act and 'most_likely' in act and 'pessimistic' in act:
-            o, m, p = act['optimistic'], act['most_likely'], act['pessimistic']
-            return (o + 4*m + p) / 6
-        return act.get('duration', 0)
+        if "optimistic" in act and "most_likely" in act and "pessimistic" in act:
+            o, m, p = act["optimistic"], act["most_likely"], act["pessimistic"]
+            return (o + 4 * m + p) / 6
+        return act.get("duration", 0)
 
     def _calculate_variance(self, act: Dict) -> float:
         """Calculate variance for PERT"""
-        if 'optimistic' in act and 'pessimistic' in act:
-            return ((act['pessimistic'] - act['optimistic']) / 6) ** 2
+        if "optimistic" in act and "pessimistic" in act:
+            return ((act["pessimistic"] - act["optimistic"]) / 6) ** 2
         return 0
 
     def forward_pass(self) -> Dict[str, Any]:
@@ -1347,7 +1496,7 @@ class PERTCPMEngine:
                 raise ValueError("Cycle detected in network")
             if node not in visited:
                 temp_mark.add(node)
-                for succ in self.graph[node]['successors']:
+                for succ in self.graph[node]["successors"]:
                     visit(succ)
                 temp_mark.remove(node)
                 visited.add(node)
@@ -1360,12 +1509,14 @@ class PERTCPMEngine:
         # Forward pass
         for node in order:
             act = self.graph[node]
-            if act['predecessors']:
-                act['es'] = max(self.graph[p]['ef'] for p in act['predecessors'])
-            act['ef'] = act['es'] + act['duration']
+            if act["predecessors"]:
+                act["es"] = max(self.graph[p]["ef"] for p in act["predecessors"])
+            act["ef"] = act["es"] + act["duration"]
 
-        return {node: {'es': self.graph[node]['es'], 'ef': self.graph[node]['ef']} 
-                for node in self.nodes}
+        return {
+            node: {"es": self.graph[node]["es"], "ef": self.graph[node]["ef"]}
+            for node in self.nodes
+        }
 
     def backward_pass(self, project_duration: float) -> Dict[str, Any]:
         """Calculate Late Start (LS) and Late Finish (LF)"""
@@ -1376,70 +1527,79 @@ class PERTCPMEngine:
         def visit(node):
             if node not in visited:
                 visited.add(node)
-                for pred in self.graph[node]['predecessors']:
+                for pred in self.graph[node]["predecessors"]:
                     visit(pred)
                 order.append(node)
 
         for node in self.nodes:
-            if not self.graph[node]['successors']:
+            if not self.graph[node]["successors"]:
                 visit(node)
 
         # Backward pass
         for node in order:
             act = self.graph[node]
-            if not act['successors']:
-                act['lf'] = project_duration
+            if not act["successors"]:
+                act["lf"] = project_duration
             else:
-                act['lf'] = min(self.graph[s]['ls'] for s in act['successors'])
-            act['ls'] = act['lf'] - act['duration']
-            act['slack'] = act['ls'] - act['es']
+                act["lf"] = min(self.graph[s]["ls"] for s in act["successors"])
+            act["ls"] = act["lf"] - act["duration"]
+            act["slack"] = act["ls"] - act["es"]
 
-        return {node: {'ls': self.graph[node]['ls'], 'lf': self.graph[node]['lf'], 
-                       'slack': self.graph[node]['slack']} 
-                for node in self.nodes}
+        return {
+            node: {
+                "ls": self.graph[node]["ls"],
+                "lf": self.graph[node]["lf"],
+                "slack": self.graph[node]["slack"],
+            }
+            for node in self.nodes
+        }
 
     def analyze(self) -> Dict[str, Any]:
         """Complete PERT/CPM analysis"""
         # Update durations with PERT expected times
         for act in self.activities:
-            node_id = act['id']
-            self.graph[node_id]['duration'] = self._calculate_pert_duration(act)
+            node_id = act["id"]
+            self.graph[node_id]["duration"] = self._calculate_pert_duration(act)
 
         # Forward pass
-        forward = self.forward_pass()
+        self.forward_pass()
 
         # Project duration = max EF of terminal nodes
-        terminal_nodes = [n for n in self.nodes if not self.graph[n]['successors']]
-        project_duration = max(self.graph[n]['ef'] for n in terminal_nodes)
+        terminal_nodes = [n for n in self.nodes if not self.graph[n]["successors"]]
+        project_duration = max(self.graph[n]["ef"] for n in terminal_nodes)
 
         # Backward pass
-        backward = self.backward_pass(project_duration)
+        self.backward_pass(project_duration)
 
         # Critical path
-        critical_path = [n for n in self.nodes if abs(self.graph[n]['slack']) < 1e-6]
+        critical_path = [n for n in self.nodes if abs(self.graph[n]["slack"]) < 1e-6]
 
         # Activity details
         activity_details = []
         for act in self.activities:
-            node_id = act['id']
+            node_id = act["id"]
             g = self.graph[node_id]
-            activity_details.append({
-                "id": node_id,
-                "name": g['name'],
-                "duration": round(g['duration'], 2),
-                "es": round(g['es'], 2),
-                "ef": round(g['ef'], 2),
-                "ls": round(g['ls'], 2),
-                "lf": round(g['lf'], 2),
-                "slack": round(g['slack'], 2),
-                "is_critical": abs(g['slack']) < 1e-6,
-                "variance": round(self._calculate_variance(act), 4)
-            })
+            activity_details.append(
+                {
+                    "id": node_id,
+                    "name": g["name"],
+                    "duration": round(g["duration"], 2),
+                    "es": round(g["es"], 2),
+                    "ef": round(g["ef"], 2),
+                    "ls": round(g["ls"], 2),
+                    "lf": round(g["lf"], 2),
+                    "slack": round(g["slack"], 2),
+                    "is_critical": abs(g["slack"]) < 1e-6,
+                    "variance": round(self._calculate_variance(act), 4),
+                }
+            )
 
         # Total project variance (sum of variances on critical path)
-        critical_variance = sum(self._calculate_variance(act) 
-                              for act in self.activities 
-                              if act['id'] in critical_path)
+        critical_variance = sum(
+            self._calculate_variance(act)
+            for act in self.activities
+            if act["id"] in critical_path
+        )
 
         return {
             "method": "PERT_CPM",
@@ -1448,7 +1608,7 @@ class PERTCPMEngine:
             "critical_path_duration": round(project_duration, 2),
             "total_variance": round(critical_variance, 4),
             "activities": activity_details,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
 
@@ -1458,7 +1618,9 @@ class DynamicProgrammingEngine:
     Stage-wise optimization
     """
 
-    def knapsack_01(self, capacity: float, items: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def knapsack_01(
+        self, capacity: float, items: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """
         0/1 Knapsack problem
         items: [{"id": "", "weight": 0, "value": 0}]
@@ -1471,30 +1633,32 @@ class DynamicProgrammingEngine:
 
         for i in range(1, n + 1):
             item = items[i - 1]
-            wt = int(item['weight'])
-            val = item['value']
+            wt = int(item["weight"])
+            val = item["value"]
 
             for w in range(W + 1):
                 if wt <= w:
-                    dp[i][w] = max(dp[i-1][w], dp[i-1][w-wt] + val)
+                    dp[i][w] = max(dp[i - 1][w], dp[i - 1][w - wt] + val)
                 else:
-                    dp[i][w] = dp[i-1][w]
+                    dp[i][w] = dp[i - 1][w]
 
         # Backtrack to find selected items
         selected = []
         w = W
         for i in range(n, 0, -1):
-            if dp[i][w] != dp[i-1][w]:
-                selected.append(items[i-1]['id'])
-                w -= int(items[i-1]['weight'])
+            if dp[i][w] != dp[i - 1][w]:
+                selected.append(items[i - 1]["id"])
+                w -= int(items[i - 1]["weight"])
 
         return {
             "problem": "0/1_Knapsack",
             "capacity": capacity,
             "max_value": dp[n][W],
             "selected_items": selected,
-            "total_weight": sum(item['weight'] for item in items if item['id'] in selected),
-            "timestamp": datetime.now().isoformat()
+            "total_weight": sum(
+                item["weight"] for item in items if item["id"] in selected
+            ),
+            "timestamp": datetime.now().isoformat(),
         }
 
     def shortest_path(self, stages: List[List[Dict[str, Any]]]) -> Dict[str, Any]:
@@ -1509,7 +1673,7 @@ class DynamicProgrammingEngine:
             "stages": len(stages),
             "method": "Dynamic_Programming",
             "note": "Provide network structure for full solution",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
 
@@ -1519,8 +1683,12 @@ class GoalProgrammingEngine:
     Multi-objective optimization with priority levels
     """
 
-    def __init__(self, goals: List[Dict[str, Any]], constraints: List[LPConstraint],
-                 variables: List[str]):
+    def __init__(
+        self,
+        goals: List[Dict[str, Any]],
+        constraints: List[LPConstraint],
+        variables: List[str],
+    ):
         """
         goals: [{"name": "", "coefficients": [], "target": 0, "priority": 1, "type": "minimize_deviation"}]
         """
@@ -1534,36 +1702,33 @@ class GoalProgrammingEngine:
         Solve by priority level
         """
         try:
-            from scipy.optimize import linprog
-
             # Group goals by priority
-            priorities = sorted(set(g['priority'] for g in self.goals))
+            priorities = sorted(set(g["priority"] for g in self.goals))
 
-            results = []
             achieved_goals = []
 
             for priority in priorities:
-                priority_goals = [g for g in self.goals if g['priority'] == priority]
+                priority_goals = [g for g in self.goals if g["priority"] == priority]
 
                 # Build objective: minimize sum of deviations for this priority
                 # Add deviation variables
-                n_vars = len(self.variables)
-                n_goals = len(priority_goals)
+                len(self.variables)
+                len(priority_goals)
 
                 # For simplicity, solve each goal sequentially
                 for goal in priority_goals:
                     # Create LP: minimize deviation from target
-                    c = goal['coefficients'] + [1]  # Add deviation variable
+                    goal["coefficients"] + [1]  # Add deviation variable
 
                     # This is a simplified version
                     # Full implementation would add d+ and d- variables
 
                     result = {
                         "priority": priority,
-                        "goal": goal['name'],
-                        "target": goal['target'],
+                        "goal": goal["name"],
+                        "target": goal["target"],
                         "status": "solved",
-                        "method": "preemptive_gp"
+                        "method": "preemptive_gp",
                     }
                     achieved_goals.append(result)
 
@@ -1571,7 +1736,7 @@ class GoalProgrammingEngine:
                 "method": "Preemptive_Goal_Programming",
                 "priorities": priorities,
                 "goals_achieved": achieved_goals,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
         except Exception as e:
             return {"error": str(e)}
@@ -1585,8 +1750,9 @@ class GoalProgrammingEngine:
             "method": "Weighted_Goal_Programming",
             "weights": weights,
             "status": "Template - provide full network for complete solution",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
+
 
 class ORERPModule:
     """
@@ -1610,37 +1776,44 @@ class ORERPModule:
         entry = {
             "timestamp": datetime.now().isoformat(),
             "operation": operation,
-            "details": details
+            "details": details,
         }
         self.session_log.append(entry)
         return entry
 
     # ---- Decision Analysis API ----
-    def create_decision_model(self, states: List[Dict], alternatives: List[Dict]) -> str:
+    def create_decision_model(
+        self, states: List[Dict], alternatives: List[Dict]
+    ) -> str:
         """Create and store a decision analysis model"""
         state_objs = [DecisionState(**s) for s in states]
         alt_objs = []
         for a in alternatives:
             alt = DecisionAlternative(
-                id=a['id'],
-                name=a['name'],
-                payoffs=a.get('payoffs', {}),
-                costs=a.get('costs', {})
+                id=a["id"],
+                name=a["name"],
+                payoffs=a.get("payoffs", {}),
+                costs=a.get("costs", {}),
             )
             alt_objs.append(alt)
 
         self.decision_engine = DecisionAnalysisEngine(state_objs, alt_objs)
         model_id = f"DEC_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
-        self.log_operation("CREATE_DECISION_MODEL", {
-            "model_id": model_id,
-            "states": len(states),
-            "alternatives": len(alternatives)
-        })
+        self.log_operation(
+            "CREATE_DECISION_MODEL",
+            {
+                "model_id": model_id,
+                "states": len(states),
+                "alternatives": len(alternatives),
+            },
+        )
 
         return model_id
 
-    def run_decision_analysis(self, criterion: str, alpha: float = 0.5) -> Dict[str, Any]:
+    def run_decision_analysis(
+        self, criterion: str, alpha: float = 0.5
+    ) -> Dict[str, Any]:
         """Run decision analysis with specified criterion"""
         if not self.decision_engine:
             return {"error": "No decision model loaded"}
@@ -1664,20 +1837,21 @@ class ORERPModule:
         else:
             return {"error": "Unknown criterion"}
 
-        self.log_operation("RUN_DECISION_ANALYSIS", {
-            "criterion": criterion,
-            "result": result
-        })
+        self.log_operation(
+            "RUN_DECISION_ANALYSIS", {"criterion": criterion, "result": result}
+        )
 
         return {
             "criterion": criterion,
             "recommended_alternative": result[0],
             "value": result[1],
-            "full_report": self.decision_engine.get_decision_report()
+            "full_report": self.decision_engine.get_decision_report(),
         }
 
     # ---- Linear Programming API ----
-    def solve_linear_program(self, objective: Dict, constraints: List[Dict]) -> Dict[str, Any]:
+    def solve_linear_program(
+        self, objective: Dict, constraints: List[Dict]
+    ) -> Dict[str, Any]:
         """Solve LP problem"""
         obj = LPObjective(**objective)
         cons = [LPConstraint(**c) for c in constraints]
@@ -1685,16 +1859,21 @@ class ORERPModule:
         self.lp_engine = LinearProgrammingEngine(obj, cons)
         result = self.lp_engine.solve()
 
-        self.log_operation("SOLVE_LP", {
-            "objective": objective['name'],
-            "constraints_count": len(constraints),
-            "result": result.get("success")
-        })
+        self.log_operation(
+            "SOLVE_LP",
+            {
+                "objective": objective["name"],
+                "constraints_count": len(constraints),
+                "result": result.get("success"),
+            },
+        )
 
         return result
 
     # ---- Inventory API ----
-    def optimize_inventory(self, items: List[Dict], model_type: str = "all") -> List[Dict]:
+    def optimize_inventory(
+        self, items: List[Dict], model_type: str = "all"
+    ) -> List[Dict]:
         """Run inventory optimization"""
         item_objs = [InventoryItem(**item) for item in items]
         self.inventory_engine = InventoryOptimizationEngine(item_objs)
@@ -1712,10 +1891,9 @@ class ORERPModule:
 
             results.append(res)
 
-        self.log_operation("OPTIMIZE_INVENTORY", {
-            "items_count": len(items),
-            "model_type": model_type
-        })
+        self.log_operation(
+            "OPTIMIZE_INVENTORY", {"items_count": len(items), "model_type": model_type}
+        )
 
         return results
 
@@ -1724,15 +1902,18 @@ class ORERPModule:
         self.inventory_engine = InventoryOptimizationEngine([])
         result = self.inventory_engine.abc_analysis(items_data)
 
-        self.log_operation("ABC_CLASSIFICATION", {
-            "items_count": len(items_data)
-        })
+        self.log_operation("ABC_CLASSIFICATION", {"items_count": len(items_data)})
 
         return result
 
     # ---- Transportation API ----
-    def solve_transportation(self, sources: List[Dict], destinations: List[Dict], 
-                          routes: List[Dict], method: str = "vogel") -> Dict[str, Any]:
+    def solve_transportation(
+        self,
+        sources: List[Dict],
+        destinations: List[Dict],
+        routes: List[Dict],
+        method: str = "vogel",
+    ) -> Dict[str, Any]:
         """Solve transportation problem"""
         srcs = [TransportNode(**s) for s in sources]
         dsts = [TransportNode(**d) for d in destinations]
@@ -1749,11 +1930,14 @@ class ORERPModule:
         else:
             return {"error": "Unknown method"}
 
-        self.log_operation("SOLVE_TRANSPORTATION", {
-            "method": method,
-            "sources": len(sources),
-            "destinations": len(destinations)
-        })
+        self.log_operation(
+            "SOLVE_TRANSPORTATION",
+            {
+                "method": method,
+                "sources": len(sources),
+                "destinations": len(destinations),
+            },
+        )
 
         return result
 
@@ -1764,14 +1948,14 @@ class ORERPModule:
         self.assignment_engine = AssignmentEngine(matrix)
         result = self.assignment_engine.hungarian_algorithm()
 
-        self.log_operation("SOLVE_ASSIGNMENT", {
-            "matrix_size": matrix.shape
-        })
+        self.log_operation("SOLVE_ASSIGNMENT", {"matrix_size": matrix.shape})
 
         return result
 
     # ---- Theory of Constraints API ----
-    def analyze_constraints(self, resources: List[Dict], products: List[Dict]) -> Dict[str, Any]:
+    def analyze_constraints(
+        self, resources: List[Dict], products: List[Dict]
+    ) -> Dict[str, Any]:
         """TOC analysis"""
         res_objs = [TOCResource(**r) for r in resources]
 
@@ -1780,45 +1964,51 @@ class ORERPModule:
         throughput = self.toc_engine.throughput_accounting()
         optimal_mix = self.toc_engine.optimize_product_mix()
 
-        self.log_operation("ANALYZE_CONSTRAINTS", {
-            "resources": len(resources),
-            "products": len(products),
-            "bottleneck": bottleneck.get("bottleneck_resource", {}).get("id")
-        })
+        self.log_operation(
+            "ANALYZE_CONSTRAINTS",
+            {
+                "resources": len(resources),
+                "products": len(products),
+                "bottleneck": bottleneck.get("bottleneck_resource", {}).get("id"),
+            },
+        )
 
         return {
             "bottleneck_analysis": bottleneck,
             "throughput_accounting": throughput,
-            "optimal_product_mix": optimal_mix
+            "optimal_product_mix": optimal_mix,
         }
 
     # ---- CVP Analysis API ----
-    def analyze_cost_profit(self, fixed_costs: float, variable_cost: float, 
-                           selling_price: float, target_profit: float = 0,
-                           scenarios: List[Dict] = None) -> Dict[str, Any]:
+    def analyze_cost_profit(
+        self,
+        fixed_costs: float,
+        variable_cost: float,
+        selling_price: float,
+        target_profit: float = 0,
+        scenarios: List[Dict] = None,
+    ) -> Dict[str, Any]:
         """CVP Analysis"""
         bep = BreakEvenPoint(
             fixed_costs=fixed_costs,
             variable_cost_per_unit=variable_cost,
             selling_price_per_unit=selling_price,
-            target_profit=target_profit
+            target_profit=target_profit,
         )
 
         self.cvp_engine = CostProfitAnalysisEngine(bep)
         basic = self.cvp_engine.break_even_analysis()
 
-        result = {
-            "basic_analysis": basic,
-            "scenarios": None
-        }
+        result = {"basic_analysis": basic, "scenarios": None}
 
         if scenarios:
-            result["scenarios"] = self.cvp_engine.scenario_analysis(scenarios).to_dict('records')
+            result["scenarios"] = self.cvp_engine.scenario_analysis(scenarios).to_dict(
+                "records"
+            )
 
-        self.log_operation("CVP_ANALYSIS", {
-            "fixed_costs": fixed_costs,
-            "selling_price": selling_price
-        })
+        self.log_operation(
+            "CVP_ANALYSIS", {"fixed_costs": fixed_costs, "selling_price": selling_price}
+        )
 
         return result
 
@@ -1843,7 +2033,7 @@ class ORERPModule:
                 "8. شبكات الأعمال / PERT-CPM (Business Networks)",
                 "9. البرمجة الديناميكية (Dynamic Programming)",
                 "10. برمجة الأهداف (Goal Programming)",
-                "11. البرمجة الديناميكية المتقدمة (Advanced DP)"
+                "11. البرمجة الديناميكية المتقدمة (Advanced DP)",
             ],
             "chapters_covered": [
                 "1. Nature of Operations Research",
@@ -1854,15 +2044,17 @@ class ORERPModule:
                 "6. Transportation models",
                 "7. Resource allocation",
                 "8. Theory of constraints",
-                "9. Risk and uncertainty in decision-making"
+                "9. Risk and uncertainty in decision-making",
             ],
             "operations_count": len(self.session_log),
             "audit_trail": self.session_log,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     # ---- Chapter 3: Graphical LP ----
-    def solve_graphical_lp(self, objective: Dict, constraints: List[Dict]) -> Dict[str, Any]:
+    def solve_graphical_lp(
+        self, objective: Dict, constraints: List[Dict]
+    ) -> Dict[str, Any]:
         """Solve 2-variable LP using graphical method"""
         try:
             obj = LPObjective(**objective)
@@ -1872,28 +2064,35 @@ class ORERPModule:
             if result.get("success") is not False:
                 result["plot_data"] = engine.generate_plot_data()
 
-            self.log_operation("GRAPHICAL_LP", {
-                "objective": objective['name'],
-                "constraints": len(constraints)
-            })
+            self.log_operation(
+                "GRAPHICAL_LP",
+                {"objective": objective["name"], "constraints": len(constraints)},
+            )
             return result
         except Exception as e:
             return {"error": str(e)}
 
     # ---- Chapter 7: Game Theory ----
-    def analyze_game(self, payoff_matrix: List[List[float]], 
-                    player_a: List[str] = None,
-                    player_b: List[str] = None) -> Dict[str, Any]:
+    def analyze_game(
+        self,
+        payoff_matrix: List[List[float]],
+        player_a: List[str] = None,
+        player_b: List[str] = None,
+    ) -> Dict[str, Any]:
         """Analyze two-person zero-sum game"""
         try:
             import numpy as np
+
             engine = GameTheoryEngine(np.array(payoff_matrix), player_a, player_b)
             result = engine.analyze()
 
-            self.log_operation("GAME_THEORY", {
-                "matrix_size": f"{len(payoff_matrix)}x{len(payoff_matrix[0])}",
-                "has_saddle": result['saddle_point_analysis']['has_saddle_point']
-            })
+            self.log_operation(
+                "GAME_THEORY",
+                {
+                    "matrix_size": f"{len(payoff_matrix)}x{len(payoff_matrix[0])}",
+                    "has_saddle": result["saddle_point_analysis"]["has_saddle_point"],
+                },
+            )
             return result
         except Exception as e:
             return {"error": str(e)}
@@ -1905,35 +2104,42 @@ class ORERPModule:
             engine = PERTCPMEngine(activities)
             result = engine.analyze()
 
-            self.log_operation("PERT_CPM", {
-                "activities": len(activities),
-                "project_duration": result['project_duration']
-            })
+            self.log_operation(
+                "PERT_CPM",
+                {
+                    "activities": len(activities),
+                    "project_duration": result["project_duration"],
+                },
+            )
             return result
         except Exception as e:
             return {"error": str(e)}
 
     # ---- Chapter 9 & 11: Dynamic Programming ----
-    def solve_knapsack(self, capacity: float, items: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def solve_knapsack(
+        self, capacity: float, items: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """0/1 Knapsack using Dynamic Programming"""
         try:
             engine = DynamicProgrammingEngine()
             result = engine.knapsack_01(capacity, items)
 
-            self.log_operation("DYNAMIC_PROGRAMMING", {
-                "problem": "knapsack",
-                "capacity": capacity,
-                "items": len(items)
-            })
+            self.log_operation(
+                "DYNAMIC_PROGRAMMING",
+                {"problem": "knapsack", "capacity": capacity, "items": len(items)},
+            )
             return result
         except Exception as e:
             return {"error": str(e)}
 
     # ---- Chapter 10: Goal Programming ----
-    def solve_goal_programming(self, goals: List[Dict], 
-                               constraints: List[Dict],
-                               variables: List[str],
-                               method: str = "preemptive") -> Dict[str, Any]:
+    def solve_goal_programming(
+        self,
+        goals: List[Dict],
+        constraints: List[Dict],
+        variables: List[str],
+        method: str = "preemptive",
+    ) -> Dict[str, Any]:
         """Goal Programming for multi-objective optimization"""
         try:
             goal_objs = [g for g in goals]
@@ -1945,10 +2151,9 @@ class ORERPModule:
             else:
                 result = engine.solve_weighted([])
 
-            self.log_operation("GOAL_PROGRAMMING", {
-                "method": method,
-                "goals": len(goals)
-            })
+            self.log_operation(
+                "GOAL_PROGRAMMING", {"method": method, "goals": len(goals)}
+            )
             return result
         except Exception as e:
             return {"error": str(e)}
@@ -2016,6 +2221,7 @@ def module_report():
 # SECTION 6: UNIT TESTS
 # =============================================================================
 
+
 def run_tests():
     """Run all module tests"""
     import unittest
@@ -2028,62 +2234,76 @@ def run_tests():
             states = [
                 {"id": "s1", "name": "Boom", "probability": 0.3},
                 {"id": "s2", "name": "Normal", "probability": 0.5},
-                {"id": "s3", "name": "Recession", "probability": 0.2}
+                {"id": "s3", "name": "Recession", "probability": 0.2},
             ]
             alternatives = [
-                {"id": "a1", "name": "Expand", "payoffs": {"s1": 100, "s2": 50, "s3": -20}},
-                {"id": "a2", "name": "Maintain", "payoffs": {"s1": 60, "s2": 40, "s3": 10}},
-                {"id": "a3", "name": "Contract", "payoffs": {"s1": 30, "s2": 30, "s3": 20}}
+                {
+                    "id": "a1",
+                    "name": "Expand",
+                    "payoffs": {"s1": 100, "s2": 50, "s3": -20},
+                },
+                {
+                    "id": "a2",
+                    "name": "Maintain",
+                    "payoffs": {"s1": 60, "s2": 40, "s3": 10},
+                },
+                {
+                    "id": "a3",
+                    "name": "Contract",
+                    "payoffs": {"s1": 30, "s2": 30, "s3": 20},
+                },
             ]
 
             self.module.create_decision_model(states, alternatives)
             result = self.module.run_decision_analysis("maximax")
-            self.assertEqual(result['recommended_alternative'], "Expand")
+            self.assertEqual(result["recommended_alternative"], "Expand")
 
             result = self.module.run_decision_analysis("maximin")
-            self.assertEqual(result['recommended_alternative'], "Contract")
+            self.assertEqual(result["recommended_alternative"], "Contract")
 
         def test_eoq(self):
-            items = [{
-                "sku": "TEST-001",
-                "name": "Test Item",
-                "annual_demand": 1000,
-                "ordering_cost": 50,
-                "holding_cost_per_unit": 2.5,
-                "unit_cost": 10,
-                "lead_time_days": 5,
-                "daily_demand": 1000/365
-            }]
+            items = [
+                {
+                    "sku": "TEST-001",
+                    "name": "Test Item",
+                    "annual_demand": 1000,
+                    "ordering_cost": 50,
+                    "holding_cost_per_unit": 2.5,
+                    "unit_cost": 10,
+                    "lead_time_days": 5,
+                    "daily_demand": 1000 / 365,
+                }
+            ]
 
             result = self.module.optimize_inventory(items, "eoq")
-            self.assertTrue(result[0]['optimal_order_quantity'] > 0)
+            self.assertTrue(result[0]["optimal_order_quantity"] > 0)
 
         def test_transportation(self):
             sources = [
                 {"id": "S1", "name": "Factory A", "supply": 100, "is_source": True},
-                {"id": "S2", "name": "Factory B", "supply": 200, "is_source": True}
+                {"id": "S2", "name": "Factory B", "supply": 200, "is_source": True},
             ]
             destinations = [
                 {"id": "D1", "name": "Warehouse 1", "demand": 150, "is_source": False},
-                {"id": "D2", "name": "Warehouse 2", "demand": 150, "is_source": False}
+                {"id": "D2", "name": "Warehouse 2", "demand": 150, "is_source": False},
             ]
             routes = [
                 {"from_id": "S1", "to_id": "D1", "cost_per_unit": 10},
                 {"from_id": "S1", "to_id": "D2", "cost_per_unit": 15},
                 {"from_id": "S2", "to_id": "D1", "cost_per_unit": 12},
-                {"from_id": "S2", "to_id": "D2", "cost_per_unit": 8}
+                {"from_id": "S2", "to_id": "D2", "cost_per_unit": 8},
             ]
 
-            result = self.module.solve_transportation(sources, destinations, routes, "vogel")
-            self.assertTrue(result['total_cost'] > 0)
+            result = self.module.solve_transportation(
+                sources, destinations, routes, "vogel"
+            )
+            self.assertTrue(result["total_cost"] > 0)
 
         def test_cvp(self):
             result = self.module.analyze_cost_profit(
-                fixed_costs=10000,
-                variable_cost=30,
-                selling_price=50
+                fixed_costs=10000, variable_cost=30, selling_price=50
             )
-            self.assertEqual(result['basic_analysis']['break_even_units'], 500)
+            self.assertEqual(result["basic_analysis"]["break_even_units"], 500)
 
     suite = unittest.TestLoader().loadTestsFromTestCase(TestORERPModule)
     runner = unittest.TextTestRunner(verbosity=2)

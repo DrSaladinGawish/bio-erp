@@ -12,7 +12,6 @@ Every test is isolated — database changes roll back automatically.
 
 from __future__ import annotations
 
-import pytest
 from httpx import AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # ═══════════════════════════════════════════════════════════════════
 #  Category 1 — Root / Health  (3)
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestRootHealth:
     async def test_root_returns_200(self, client: AsyncClient):
@@ -41,6 +41,7 @@ class TestRootHealth:
 # ═══════════════════════════════════════════════════════════════════
 #  Category 2 — Auth Login  (5)
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestAuthLogin:
     async def test_login_valid_credentials_returns_200(self, client: AsyncClient):
@@ -86,17 +87,30 @@ class TestAuthLogin:
 #  Category 3 — Ledger Inquiry  (4)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestLedgerInquiry:
-    async def test_ledger_inquiry_returns_200(self, client: AsyncClient, auth_headers: dict):
-        resp = await client.get("/api/v1/accounting/ledger-inquiry", headers=auth_headers)
+    async def test_ledger_inquiry_returns_200(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        resp = await client.get(
+            "/api/v1/accounting/ledger-inquiry", headers=auth_headers
+        )
         assert resp.status_code == 200
 
-    async def test_ledger_inquiry_returns_html(self, client: AsyncClient, auth_headers: dict):
-        resp = await client.get("/api/v1/accounting/ledger-inquiry", headers=auth_headers)
+    async def test_ledger_inquiry_returns_html(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        resp = await client.get(
+            "/api/v1/accounting/ledger-inquiry", headers=auth_headers
+        )
         assert "text/html" in resp.headers.get("content-type", "")
 
-    async def test_ledger_inquiry_contains_table_structure(self, client: AsyncClient, auth_headers: dict):
-        resp = await client.get("/api/v1/accounting/ledger-inquiry", headers=auth_headers)
+    async def test_ledger_inquiry_contains_table_structure(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        resp = await client.get(
+            "/api/v1/accounting/ledger-inquiry", headers=auth_headers
+        )
         html = resp.text
         assert "Ledger Inquiry" in html
         assert "<table" in html or "table" in html.lower()
@@ -110,13 +124,22 @@ class TestLedgerInquiry:
 #  Category 4 — Ledger Entries  (3)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestLedgerEntries:
-    async def test_ledger_entries_returns_200(self, client: AsyncClient, auth_headers: dict):
-        resp = await client.get("/api/v1/accounting/ledger-entries", headers=auth_headers)
+    async def test_ledger_entries_returns_200(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        resp = await client.get(
+            "/api/v1/accounting/ledger-entries", headers=auth_headers
+        )
         assert resp.status_code == 200
 
-    async def test_ledger_entries_has_htmx_headers_or_fragment(self, client: AsyncClient, auth_headers: dict):
-        resp = await client.get("/api/v1/accounting/ledger-entries", headers=auth_headers)
+    async def test_ledger_entries_has_htmx_headers_or_fragment(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        resp = await client.get(
+            "/api/v1/accounting/ledger-entries", headers=auth_headers
+        )
         assert "text/html" in resp.headers.get("content-type", "")
         assert "<table" in resp.text or "table-responsive" in resp.text
 
@@ -128,6 +151,7 @@ class TestLedgerEntries:
 # ═══════════════════════════════════════════════════════════════════
 #  Category 5 — DB Integrity  (2)
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestDatabaseIntegrity:
     async def test_db_session_active(self, db_session: AsyncSession):

@@ -1,4 +1,5 @@
 """Execute live sync: start Bio-ERP + EventCore, push data, verify"""
+
 import subprocess, time, httpx, sys, os
 
 BASE = "D:/ERP System/BIO_ERP"
@@ -7,8 +8,19 @@ EC_BASE = "D:/EventCore_ERP"
 # 1. Start Bio-ERP
 print("[1] Starting Bio-ERP on port 8000...")
 bio_proc = subprocess.Popen(
-    [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"],
-    cwd=BASE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    [
+        sys.executable,
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+    ],
+    cwd=BASE,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
 )
 
 # Wait for it
@@ -17,7 +29,7 @@ for i in range(20):
     try:
         r = httpx.get("http://localhost:8000/health", timeout=2)
         if r.status_code == 200:
-            print(f"  Bio-ERP OK (attempt {i+1})")
+            print(f"  Bio-ERP OK (attempt {i + 1})")
             break
     except:
         pass
@@ -29,8 +41,19 @@ else:
 # 2. Start EventCore
 print("[2] Starting EventCore on port 8001...")
 ec_proc = subprocess.Popen(
-    [sys.executable, "-m", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8001"],
-    cwd=EC_BASE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    [
+        sys.executable,
+        "-m",
+        "uvicorn",
+        "backend.app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8001",
+    ],
+    cwd=EC_BASE,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
 )
 
 for i in range(15):
@@ -38,7 +61,7 @@ for i in range(15):
     try:
         r = httpx.get("http://localhost:8001/api/v1/health", timeout=2)
         if r.status_code == 200:
-            print(f"  EventCore OK (attempt {i+1})")
+            print(f"  EventCore OK (attempt {i + 1})")
             break
     except:
         pass
@@ -51,7 +74,9 @@ else:
 print("\n[3] Verifying organs...")
 try:
     r = httpx.get("http://localhost:8000/api/v1/scm/health", timeout=3)
-    print(f"  SCM organ: {r.status_code} {r.json()['status']} ({len(r.json()['engines_ready'])} engines)")
+    print(
+        f"  SCM organ: {r.status_code} {r.json()['status']} ({len(r.json()['engines_ready'])} engines)"
+    )
 
     r = httpx.get("http://localhost:8000/api/v1/or/health", timeout=3)
     print(f"  OR organ: {r.status_code} {r.json()['status']}")
@@ -69,8 +94,12 @@ try:
         d = r.json()
         print(f"  Batch: {d.get('batch_id')}")
         for res in d.get("results", []):
-            emoji = "OK" if res.get("accepted", 0) > 0 or res.get("sent", 0) == 0 else "!!"
-            print(f"  {emoji} {res['entity']}: sent={res['sent']} accepted={res.get('accepted',0)} rejected={res.get('rejected',0)}")
+            emoji = (
+                "OK" if res.get("accepted", 0) > 0 or res.get("sent", 0) == 0 else "!!"
+            )
+            print(
+                f"  {emoji} {res['entity']}: sent={res['sent']} accepted={res.get('accepted', 0)} rejected={res.get('rejected', 0)}"
+            )
     else:
         print(f"  Sync FAILED: {r.status_code} {r.text[:200]}")
 except Exception as e:
@@ -79,7 +108,10 @@ except Exception as e:
 # 5. Test SCM endpoint
 print("\n[5] Testing SCM prescription...")
 try:
-    r = httpx.post("http://localhost:8000/api/v1/scm/roi-eva/quick?nopat=180000&capital_employed=4000000&wacc_pct=10", timeout=5)
+    r = httpx.post(
+        "http://localhost:8000/api/v1/scm/roi-eva/quick?nopat=180000&capital_employed=4000000&wacc_pct=10",
+        timeout=5,
+    )
     print(f"  SCM ROI/EVA quick: {r.status_code} eva={r.json().get('eva')}")
 except Exception as e:
     print(f"  SCM test failed: {e}")

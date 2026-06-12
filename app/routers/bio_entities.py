@@ -20,6 +20,7 @@ router = APIRouter(prefix="/api/v1/manufacturing", tags=["manufacturing"])
 
 # ── Pydantic schemas ─────────────────────────────────────────────
 
+
 class BioreactorCreate(BaseModel):
     reactor_code: str
     name: str
@@ -31,6 +32,7 @@ class BioreactorCreate(BaseModel):
     agitation_rpm: Optional[int] = None
     aeration_rate_vvm: Optional[float] = None
     status: str = "available"
+
 
 class BioreactorUpdate(BaseModel):
     reactor_code: Optional[str] = None
@@ -44,6 +46,7 @@ class BioreactorUpdate(BaseModel):
     aeration_rate_vvm: Optional[float] = None
     status: Optional[str] = None
 
+
 class CellLineCreate(BaseModel):
     cell_code: str
     name: str
@@ -53,6 +56,7 @@ class CellLineCreate(BaseModel):
     max_density_cells_per_ml: Optional[float] = None
     viability_threshold: float = 80.0
     atp_maintenance_cost: float = 0
+
 
 class CellLineUpdate(BaseModel):
     cell_code: Optional[str] = None
@@ -64,6 +68,7 @@ class CellLineUpdate(BaseModel):
     viability_threshold: Optional[float] = None
     atp_maintenance_cost: Optional[float] = None
 
+
 class GeneConstructCreate(BaseModel):
     construct_code: str
     name: str
@@ -73,6 +78,7 @@ class GeneConstructCreate(BaseModel):
     promoter: Optional[str] = None
     resistance_marker: Optional[str] = None
     construction_cost_egp: float = 0
+
 
 class GeneConstructUpdate(BaseModel):
     construct_code: Optional[str] = None
@@ -84,6 +90,7 @@ class GeneConstructUpdate(BaseModel):
     resistance_marker: Optional[str] = None
     construction_cost_egp: Optional[float] = None
 
+
 class RawMaterialCreate(BaseModel):
     material_code: str
     name: str
@@ -91,6 +98,7 @@ class RawMaterialCreate(BaseModel):
     unit_cost_egp: float = 0
     atp_per_mol: float = 0
     density_g_per_l: Optional[float] = None
+
 
 class RawMaterialUpdate(BaseModel):
     material_code: Optional[str] = None
@@ -102,6 +110,7 @@ class RawMaterialUpdate(BaseModel):
 
 
 # ── Helpers ──────────────────────────────────────────────────────
+
 
 def _serialize(obj):
     d = {}
@@ -120,20 +129,28 @@ async def _paginated_list(model, db, page, page_size, search=None, name_field="n
     if search and hasattr(model, name_field):
         query = query.where(getattr(model, name_field).ilike(f"%{search}%"))
     query = query.order_by(model.created_at.desc())
-    total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar() or 0
+    total = (
+        await db.execute(select(func.count()).select_from(query.subquery()))
+    ).scalar() or 0
     result = await db.execute(query.offset((page - 1) * page_size).limit(page_size))
     return {
         "data": [_serialize(i) for i in result.scalars().all()],
-        "total": total, "page": page, "page_size": page_size,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
         "total_pages": (total + page_size - 1) // page_size if page_size else 0,
     }
 
 
 async def _get_or_404(model, entity_id, db):
-    result = await db.execute(select(model).where(model.id == entity_id, model.deleted_at.is_(None)))
+    result = await db.execute(
+        select(model).where(model.id == entity_id, model.deleted_at.is_(None))
+    )
     obj = result.scalar_one_or_none()
     if not obj:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{model.__name__} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"{model.__name__} not found"
+        )
     return obj
 
 
@@ -171,40 +188,52 @@ async def _delete_entity(obj, db):
 #  BIOREACTORS
 # ═══════════════════════════════════════════════════════════════════
 
+
 @router.get("/bioreactors")
 async def list_bioreactors(
-    page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     search: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return await _paginated_list(Bioreactor, db, page, page_size, search)
+
 
 @router.get("/bioreactors/{entity_id}")
 async def get_bioreactor(
     entity_id: int,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return _serialize(await _get_or_404(Bioreactor, entity_id, db))
+
 
 @router.post("/bioreactors", status_code=status.HTTP_201_CREATED)
 async def create_bioreactor(
     payload: BioreactorCreate,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return _serialize(await _create_entity(Bioreactor, payload, db))
 
+
 @router.put("/bioreactors/{entity_id}")
 async def update_bioreactor(
-    entity_id: int, payload: BioreactorUpdate,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    entity_id: int,
+    payload: BioreactorUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     obj = await _get_or_404(Bioreactor, entity_id, db)
     return _serialize(await _update_entity(obj, payload, db))
 
+
 @router.delete("/bioreactors/{entity_id}")
 async def delete_bioreactor(
     entity_id: int,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     obj = await _get_or_404(Bioreactor, entity_id, db)
     await _delete_entity(obj, db)
@@ -215,40 +244,52 @@ async def delete_bioreactor(
 #  CELL LINES
 # ═══════════════════════════════════════════════════════════════════
 
+
 @router.get("/cell-lines")
 async def list_cell_lines(
-    page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     search: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return await _paginated_list(CellLine, db, page, page_size, search)
+
 
 @router.get("/cell-lines/{entity_id}")
 async def get_cell_line(
     entity_id: int,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return _serialize(await _get_or_404(CellLine, entity_id, db))
+
 
 @router.post("/cell-lines", status_code=status.HTTP_201_CREATED)
 async def create_cell_line(
     payload: CellLineCreate,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return _serialize(await _create_entity(CellLine, payload, db))
 
+
 @router.put("/cell-lines/{entity_id}")
 async def update_cell_line(
-    entity_id: int, payload: CellLineUpdate,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    entity_id: int,
+    payload: CellLineUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     obj = await _get_or_404(CellLine, entity_id, db)
     return _serialize(await _update_entity(obj, payload, db))
 
+
 @router.delete("/cell-lines/{entity_id}")
 async def delete_cell_line(
     entity_id: int,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     obj = await _get_or_404(CellLine, entity_id, db)
     await _delete_entity(obj, db)
@@ -259,40 +300,52 @@ async def delete_cell_line(
 #  GENE CONSTRUCTS
 # ═══════════════════════════════════════════════════════════════════
 
+
 @router.get("/gene-constructs")
 async def list_gene_constructs(
-    page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     search: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return await _paginated_list(GeneConstruct, db, page, page_size, search)
+
 
 @router.get("/gene-constructs/{entity_id}")
 async def get_gene_construct(
     entity_id: int,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return _serialize(await _get_or_404(GeneConstruct, entity_id, db))
+
 
 @router.post("/gene-constructs", status_code=status.HTTP_201_CREATED)
 async def create_gene_construct(
     payload: GeneConstructCreate,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return _serialize(await _create_entity(GeneConstruct, payload, db))
 
+
 @router.put("/gene-constructs/{entity_id}")
 async def update_gene_construct(
-    entity_id: int, payload: GeneConstructUpdate,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    entity_id: int,
+    payload: GeneConstructUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     obj = await _get_or_404(GeneConstruct, entity_id, db)
     return _serialize(await _update_entity(obj, payload, db))
 
+
 @router.delete("/gene-constructs/{entity_id}")
 async def delete_gene_construct(
     entity_id: int,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     obj = await _get_or_404(GeneConstruct, entity_id, db)
     await _delete_entity(obj, db)
@@ -303,40 +356,52 @@ async def delete_gene_construct(
 #  RAW MATERIALS
 # ═══════════════════════════════════════════════════════════════════
 
+
 @router.get("/raw-materials")
 async def list_raw_materials(
-    page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     search: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return await _paginated_list(RawMaterial, db, page, page_size, search)
+
 
 @router.get("/raw-materials/{entity_id}")
 async def get_raw_material(
     entity_id: int,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return _serialize(await _get_or_404(RawMaterial, entity_id, db))
+
 
 @router.post("/raw-materials", status_code=status.HTTP_201_CREATED)
 async def create_raw_material(
     payload: RawMaterialCreate,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return _serialize(await _create_entity(RawMaterial, payload, db))
 
+
 @router.put("/raw-materials/{entity_id}")
 async def update_raw_material(
-    entity_id: int, payload: RawMaterialUpdate,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    entity_id: int,
+    payload: RawMaterialUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     obj = await _get_or_404(RawMaterial, entity_id, db)
     return _serialize(await _update_entity(obj, payload, db))
 
+
 @router.delete("/raw-materials/{entity_id}")
 async def delete_raw_material(
     entity_id: int,
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     obj = await _get_or_404(RawMaterial, entity_id, db)
     await _delete_entity(obj, db)

@@ -25,4 +25,5 @@ Public API surface:
     from app.organs.incentivehouse_organ.intelligence.or_module import run_or_solver
     from app.organs.incentivehouse_organ.intelligence.scm import run_scm_analysis
 """
+
 __version__ = "2.3.0"

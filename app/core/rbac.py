@@ -1,4 +1,4 @@
-﻿from functools import wraps
+from functools import wraps
 from fastapi import Depends, HTTPException, status
 from app.middleware.auth import get_current_user
 from app.models import User

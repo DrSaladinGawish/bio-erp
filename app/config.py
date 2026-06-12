@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     JWT_ACCESS_TTL: int = 900
     JWT_REFRESH_TTL: int = 2592000
 
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres123@localhost:5432/bio_erp"
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres123@localhost:5432/bio_erp"
+    )
     SYNC_DATABASE_URL: str = "postgresql://postgres:postgres123@localhost:5432/bio_erp"
 
     TEMPLATES_DIR: str = str(Path(__file__).parent / "templates")

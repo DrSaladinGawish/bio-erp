@@ -1,8 +1,18 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, Date, Numeric, BigInteger, ForeignKey, Identity
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    Text,
+    Date,
+    Numeric,
+    BigInteger,
+    ForeignKey,
+)
+from sqlalchemy.orm import relationship
 
-from app.database import Base
+from app.database import IHEBase as Base
 
 
 def _utcnow() -> datetime:
@@ -10,6 +20,7 @@ def _utcnow() -> datetime:
 
 
 # ── Dimension Tables ──────────────────────────────────────────
+
 
 class Currency(Base):
     __tablename__ = "Currency"
@@ -99,7 +110,11 @@ class ServiceSubCategory(Base):
     __tablename__ = "ServiceSubCategory"
     __table_args__ = {"schema": "dbo"}
     SubCategoryCode = Column(String(20), primary_key=True)
-    MainCategoryCode = Column(String(10), ForeignKey("dbo.ServiceMainCategory.MainCategoryCode"), nullable=False)
+    MainCategoryCode = Column(
+        String(10),
+        ForeignKey("dbo.ServiceMainCategory.MainCategoryCode"),
+        nullable=False,
+    )
     SubCategoryName = Column(String(200), nullable=False)
     DefaultVendorCode = Column(String(10), nullable=True)
     GLAccount = Column(String(20), nullable=True)
@@ -114,7 +129,9 @@ class ServiceType(Base):
     ServiceTypeCode = Column(String(10), primary_key=True)
     ServiceName = Column(String(200), nullable=False)
     CostAccount = Column(String(20), nullable=True)
-    SubCategoryCode = Column(String(20), ForeignKey("dbo.ServiceSubCategory.SubCategoryCode"), nullable=True)
+    SubCategoryCode = Column(
+        String(20), ForeignKey("dbo.ServiceSubCategory.SubCategoryCode"), nullable=True
+    )
 
     sub_category = relationship("ServiceSubCategory", back_populates="service_types")
 
@@ -163,6 +180,7 @@ class ClientEmployee(Base):
 
 # ── Transaction Tables ────────────────────────────────────────
 
+
 class PNRBudgetLineItem(Base):
     __tablename__ = "PNRBudgetLineItem"
     __table_args__ = {"schema": "dbo"}
@@ -176,9 +194,9 @@ class PNRBudgetLineItem(Base):
     SubCategoryCode = Column(String(20), nullable=True)
     ClientCode = Column(String(10), nullable=True)
     Description = Column(Text, nullable=True)
-    Quantity = Column(Numeric(18,2), nullable=True)
-    UnitPrice = Column(Numeric(18,2), nullable=True)
-    Amount = Column(Numeric(18,2), nullable=True)
+    Quantity = Column(Numeric(18, 2), nullable=True)
+    UnitPrice = Column(Numeric(18, 2), nullable=True)
+    Amount = Column(Numeric(18, 2), nullable=True)
     CurrencyCode = Column(String(3), nullable=True)
     C1 = Column(String(500), nullable=True)
     C2 = Column(String(500), nullable=True)
@@ -213,8 +231,8 @@ class SalesInvoice(Base):
     EventName = Column(String(500), nullable=True)
     InvoiceDate = Column(Date, nullable=True)
     DueDate = Column(Date, nullable=True)
-    TotalValue = Column(Numeric(18,2), nullable=True)
-    CollectedAmount = Column(Numeric(18,2), nullable=True)
+    TotalValue = Column(Numeric(18, 2), nullable=True)
+    CollectedAmount = Column(Numeric(18, 2), nullable=True)
     PaymentStatus = Column(String(20), nullable=True)
     CurrencyCode = Column(String(3), nullable=True)
 
@@ -227,9 +245,13 @@ class SalesInvoiceLine(Base):
     __tablename__ = "SalesInvoiceLine"
     __table_args__ = {"schema": "dbo"}
     InvoiceLineID = Column(Integer, primary_key=True, autoincrement=True)
-    InvoiceID = Column(Integer, ForeignKey("dbo.SalesInvoice.InvoiceID"), nullable=False)
-    ServiceTypeCode = Column(String(10), ForeignKey("dbo.ServiceType.ServiceTypeCode"), nullable=True)
-    LineAmount = Column(Numeric(18,2), nullable=True)
+    InvoiceID = Column(
+        Integer, ForeignKey("dbo.SalesInvoice.InvoiceID"), nullable=False
+    )
+    ServiceTypeCode = Column(
+        String(10), ForeignKey("dbo.ServiceType.ServiceTypeCode"), nullable=True
+    )
+    LineAmount = Column(Numeric(18, 2), nullable=True)
 
     invoice = relationship("SalesInvoice", back_populates="lines")
 
@@ -243,7 +265,7 @@ class PurchaseVoucher(Base):
     PNRNumber = Column(String(50), ForeignKey("dbo.PNRMaster.PNRNumber"), nullable=True)
     EventName = Column(String(500), nullable=True)
     InvoiceDate = Column(Date, nullable=True)
-    TotalValue = Column(Numeric(18,2), nullable=True)
+    TotalValue = Column(Numeric(18, 2), nullable=True)
     CurrencyCode = Column(String(3), nullable=True)
 
     pnr = relationship("PNRMaster", back_populates="purchase_vouchers")
@@ -254,15 +276,19 @@ class PurchaseVoucherLine(Base):
     __tablename__ = "PurchaseVoucherLine"
     __table_args__ = {"schema": "dbo"}
     VoucherLineID = Column(Integer, primary_key=True, autoincrement=True)
-    VoucherID = Column(Integer, ForeignKey("dbo.PurchaseVoucher.VoucherID"), nullable=False)
-    ServiceTypeCode = Column(String(10), ForeignKey("dbo.ServiceType.ServiceTypeCode"), nullable=True)
+    VoucherID = Column(
+        Integer, ForeignKey("dbo.PurchaseVoucher.VoucherID"), nullable=False
+    )
+    ServiceTypeCode = Column(
+        String(10), ForeignKey("dbo.ServiceType.ServiceTypeCode"), nullable=True
+    )
     VendorCode = Column(String(10), ForeignKey("dbo.Vendor.VendorCode"), nullable=True)
     ItemNarration = Column(Text, nullable=True)
-    Quantity = Column(Numeric(18,2), nullable=True)
+    Quantity = Column(Numeric(18, 2), nullable=True)
     NoOfNights = Column(Integer, nullable=True)
-    UnitPrice = Column(Numeric(18,2), nullable=True)
-    SubTotal = Column(Numeric(18,2), nullable=True)
-    VATAmount = Column(Numeric(18,2), nullable=True)
+    UnitPrice = Column(Numeric(18, 2), nullable=True)
+    SubTotal = Column(Numeric(18, 2), nullable=True)
+    VATAmount = Column(Numeric(18, 2), nullable=True)
 
     voucher = relationship("PurchaseVoucher", back_populates="lines")
 
@@ -275,9 +301,9 @@ class BankTransaction(Base):
     Payee = Column(String(200), nullable=True)
     DocumentType = Column(String(100), nullable=True)
     DocumentNumber = Column(String(50), nullable=True)
-    Withdrawal = Column(Numeric(18,2), nullable=True)
-    Deposit = Column(Numeric(18,2), nullable=True)
-    RunningBalance = Column(Numeric(18,2), nullable=True)
+    Withdrawal = Column(Numeric(18, 2), nullable=True)
+    Deposit = Column(Numeric(18, 2), nullable=True)
+    RunningBalance = Column(Numeric(18, 2), nullable=True)
     TransactionType = Column(String(50), nullable=True)
     JVNumber = Column(String(50), nullable=True)
     Narration = Column(Text, nullable=True)
@@ -297,8 +323,8 @@ class JournalVoucher(Base):
     JVNumber = Column(String(50), primary_key=True)
     JVDate = Column(Date, nullable=True)
     Narration = Column(Text, nullable=True)
-    TotalDebit = Column(Numeric(18,2), nullable=True)
-    TotalCredit = Column(Numeric(18,2), nullable=True)
+    TotalDebit = Column(Numeric(18, 2), nullable=True)
+    TotalCredit = Column(Numeric(18, 2), nullable=True)
 
     lines = relationship("JournalVoucherLine", back_populates="jv")
 
@@ -307,10 +333,12 @@ class JournalVoucherLine(Base):
     __tablename__ = "JournalVoucherLine"
     __table_args__ = {"schema": "dbo"}
     JVLineID = Column(Integer, primary_key=True, autoincrement=True)
-    JVNumber = Column(String(50), ForeignKey("dbo.JournalVoucher.JVNumber"), nullable=False)
+    JVNumber = Column(
+        String(50), ForeignKey("dbo.JournalVoucher.JVNumber"), nullable=False
+    )
     AccountCode = Column(String(20), nullable=True)
-    DebitAmount = Column(Numeric(18,2), nullable=True)
-    CreditAmount = Column(Numeric(18,2), nullable=True)
+    DebitAmount = Column(Numeric(18, 2), nullable=True)
+    CreditAmount = Column(Numeric(18, 2), nullable=True)
     Narration = Column(Text, nullable=True)
     PNRNumber = Column(String(50), ForeignKey("dbo.PNRMaster.PNRNumber"), nullable=True)
 

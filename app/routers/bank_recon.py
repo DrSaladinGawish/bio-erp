@@ -9,7 +9,6 @@ from app.models import (
     BankReconciliation,
     BankImportSession,
     BankStaging,
-    BankUnmatched,
     BankAccount,
 )
 from app.services.bank_recon_service import BankReconService
@@ -65,16 +64,18 @@ async def list_import_sessions(
     data = []
     for s in sessions:
         ba = await db.get(BankAccount, s.bank_account_id) if s.bank_account_id else None
-        data.append({
-            "id": s.id,
-            "bank_account": ba.account_name if ba else None,
-            "file_name": s.file_name,
-            "total_transactions": s.total_transactions,
-            "matched_count": s.matched_count,
-            "unmatched_count": s.unmatched_count,
-            "status": s.status,
-            "import_date": s.import_date.isoformat() if s.import_date else None,
-        })
+        data.append(
+            {
+                "id": s.id,
+                "bank_account": ba.account_name if ba else None,
+                "file_name": s.file_name,
+                "total_transactions": s.total_transactions,
+                "matched_count": s.matched_count,
+                "unmatched_count": s.unmatched_count,
+                "status": s.status,
+                "import_date": s.import_date.isoformat() if s.import_date else None,
+            }
+        )
     return data
 
 
@@ -287,7 +288,7 @@ async def get_bank_recon_stats(
         select(func.count(BankStaging.id)).where(BankStaging.is_matched)
     )
     unmatched = await db.scalar(
-        select(func.count(BankStaging.id)).where(BankStaging.is_matched == False)
+        select(func.count(BankStaging.id)).where(not BankStaging.is_matched)
     )
     total_recons = await db.scalar(select(func.count(BankReconciliation.id)))
     approved_recons = await db.scalar(
@@ -314,7 +315,9 @@ async def get_bank_recon_stats(
 @router.post("/auto-reconcile/{session_id}")
 async def auto_reconcile(
     session_id: int,
-    date_window_days: int = Query(3, description="Max days difference for date proximity match"),
+    date_window_days: int = Query(
+        3, description="Max days difference for date proximity match"
+    ),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(RequirePermission("bank_reconciliation.match")),
 ):

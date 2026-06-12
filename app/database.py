@@ -17,6 +17,12 @@ class Base(DeclarativeBase):
     pass
 
 
+class IHEBase(DeclarativeBase):
+    """Separate declarative base for ihe_models (dbo schema, SQL Server compat)."""
+
+    pass
+
+
 def get_async_engine():
     global async_engine
     if async_engine is None:
@@ -45,6 +51,7 @@ class _AsyncSessionLocal:
     def __call__(self):
         return get_async_session_factory()()
 
+
 AsyncSessionLocal = _AsyncSessionLocal()
 
 
@@ -60,7 +67,9 @@ async def get_db():
 def get_sync_engine():
     global sync_engine
     if sync_engine is None:
-        sync_url = settings.DATABASE_URL.replace("+asyncpg", "").replace("+aiosqlite", "")
+        sync_url = settings.DATABASE_URL.replace("+asyncpg", "").replace(
+            "+aiosqlite", ""
+        )
         sync_engine = create_engine(sync_url, echo=settings.DEBUG)
     return sync_engine
 
@@ -73,12 +82,18 @@ def get_sync_session():
 
 
 def init_db():
+    from app.database import IHEBase
     from app.models import Base as ModelsBase
+
     sync_eng = get_sync_engine()
     ModelsBase.metadata.create_all(bind=sync_eng)
+    IHEBase.metadata.create_all(bind=sync_eng)
 
 
 def drop_db():
+    from app.database import IHEBase
     from app.models import Base as ModelsBase
+
     sync_eng = get_sync_engine()
     ModelsBase.metadata.drop_all(bind=sync_eng)
+    IHEBase.metadata.drop_all(bind=sync_eng)

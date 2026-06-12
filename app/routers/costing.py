@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import Optional
@@ -7,7 +7,7 @@ from app.database import get_db
 from app.services.costing_engine import CostingEngine
 from app.models import EventCostAnalysis, Event
 from app.models.auth import User
-from app.middleware.auth import get_current_user, RequirePermission
+from app.middleware.auth import RequirePermission
 
 router = APIRouter(tags=["Costing & Analysis"])
 

@@ -17,12 +17,13 @@ router = APIRouter(prefix="/api/v1/or/planning", tags=["Planning & Analysis"])
 # Initialize analysis engine (read-only from production DB)
 analyzer = ORAnalysisEngine(
     production_db_url="sqlite:///bio_erp.db",  # Will be overridden by env var
-    analysis_dir="./analysis_sandbox"
+    analysis_dir="./analysis_sandbox",
 )
 
 # =============================================================================
 # SCHEMAS
 # =============================================================================
+
 
 class WhatIfInventoryRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
@@ -31,6 +32,7 @@ class WhatIfInventoryRequest(BaseModel):
     holding_cost_change: float = Field(default=0.0, ge=-0.5, le=0.5)
     ordering_cost_change: float = Field(default=0.0, ge=-0.5, le=0.5)
 
+
 class ProductionMixRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
     scenario_name: Optional[str] = "Production Mix"
@@ -38,24 +40,29 @@ class ProductionMixRequest(BaseModel):
     machine_hours_available: Optional[float] = None
     material_a_available: Optional[float] = None
 
+
 class TransportationRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
     scenario_name: Optional[str] = "Transportation Analysis"
     method: str = Field(default="vogel", pattern="^(nw_corner|least_cost|vogel)$")
+
 
 class ProjectScheduleRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
     scenario_name: Optional[str] = "Project Schedule"
     activities: Optional[List[Dict[str, Any]]] = None
 
+
 class ScenarioComparisonRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
     report_name: str = "Scenario Comparison Report"
     scenarios: List[Dict[str, Any]]
 
+
 # =============================================================================
 # ENDPOINTS
 # =============================================================================
+
 
 @router.get("/")
 def planning_info():
@@ -66,14 +73,15 @@ def planning_info():
         "warning": "This module does NOT modify production data",
         "capabilities": [
             "what_if_inventory",
-            "optimize_production_mix", 
+            "optimize_production_mix",
             "analyze_transportation",
             "analyze_project_schedule",
-            "compare_scenarios"
+            "compare_scenarios",
         ],
         "storage": "Disposable files in ./analysis_sandbox",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
+
 
 @router.post("/what-if/inventory")
 def what_if_inventory(req: WhatIfInventoryRequest):
@@ -88,7 +96,7 @@ def what_if_inventory(req: WhatIfInventoryRequest):
             scenario_name=req.scenario_name,
             demand_multiplier=req.demand_multiplier,
             holding_cost_change=req.holding_cost_change,
-            ordering_cost_change=req.ordering_cost_change
+            ordering_cost_change=req.ordering_cost_change,
         )
         return {
             "success": True,
@@ -97,13 +105,14 @@ def what_if_inventory(req: WhatIfInventoryRequest):
                 "id": scenario.id,
                 "name": scenario.name,
                 "parameters": scenario.parameters,
-                "results": scenario.results
+                "results": scenario.results,
             },
             "saved_to": f"{analyzer.analysis_dir}/scenario_{scenario.id}.json",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.post("/optimize/production-mix")
 def optimize_production_mix(req: ProductionMixRequest):
@@ -118,7 +127,7 @@ def optimize_production_mix(req: ProductionMixRequest):
             scenario_name=req.scenario_name,
             labor_hours_available=req.labor_hours_available,
             machine_hours_available=req.machine_hours_available,
-            material_a_available=req.material_a_available
+            material_a_available=req.material_a_available,
         )
         return {
             "success": True,
@@ -127,13 +136,14 @@ def optimize_production_mix(req: ProductionMixRequest):
                 "id": scenario.id,
                 "name": scenario.name,
                 "parameters": scenario.parameters,
-                "results": scenario.results
+                "results": scenario.results,
             },
             "recommendation": f"Optimal profit: ${scenario.results.get('objective_value', 0):,.2f}",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.post("/analyze/transportation")
 def analyze_transportation(req: TransportationRequest):
@@ -145,8 +155,7 @@ def analyze_transportation(req: TransportationRequest):
     """
     try:
         scenario = analyzer.analyze_transportation(
-            scenario_name=req.scenario_name,
-            method=req.method
+            scenario_name=req.scenario_name, method=req.method
         )
         return {
             "success": True,
@@ -155,12 +164,13 @@ def analyze_transportation(req: TransportationRequest):
                 "id": scenario.id,
                 "name": scenario.name,
                 "method": req.method,
-                "results": scenario.results
+                "results": scenario.results,
             },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.post("/analyze/project-schedule")
 def analyze_project_schedule(req: ProjectScheduleRequest):
@@ -172,8 +182,7 @@ def analyze_project_schedule(req: ProjectScheduleRequest):
     """
     try:
         scenario = analyzer.analyze_project_schedule(
-            scenario_name=req.scenario_name,
-            activities=req.activities
+            scenario_name=req.scenario_name, activities=req.activities
         )
         return {
             "success": True,
@@ -181,14 +190,15 @@ def analyze_project_schedule(req: ProjectScheduleRequest):
             "scenario": {
                 "id": scenario.id,
                 "name": scenario.name,
-                "results": scenario.results
+                "results": scenario.results,
             },
             "critical_path": scenario.results.get("critical_path", []),
             "project_duration": scenario.results.get("project_duration"),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.post("/compare-scenarios")
 def compare_scenarios(req: ScenarioComparisonRequest):
@@ -207,13 +217,14 @@ def compare_scenarios(req: ScenarioComparisonRequest):
                 "id": report.report_id,
                 "type": report.report_type,
                 "scenarios_count": len(report.scenarios),
-                "recommendations": report.recommendations
+                "recommendations": report.recommendations,
             },
             "saved_to": f"{analyzer.analysis_dir}/{report.report_id}_scenario_comparison.json",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.get("/scenarios")
 def list_scenarios():
@@ -227,15 +238,18 @@ def list_scenarios():
                 {
                     "id": s.get("id"),
                     "name": s.get("name"),
-                    "type": s.get("description", "").split()[0] if s.get("description") else "unknown",
-                    "created_at": s.get("created_at")
+                    "type": s.get("description", "").split()[0]
+                    if s.get("description")
+                    else "unknown",
+                    "created_at": s.get("created_at"),
                 }
                 for s in scenarios
             ],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.delete("/scenarios/clear")
 def clear_scenarios():
@@ -246,7 +260,7 @@ def clear_scenarios():
             "success": True,
             "message": f"Cleared {count} analysis files",
             "warning": "This only deletes analysis files, NOT production data",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -1,0 +1,372 @@
+/*
+ * Co-Pilot Panel Styles — IncentiveHouse ERP
+ * Add to base template or include as standalone file.
+ *
+ * Usage:
+ *   <link rel="stylesheet" href="/static/css/copilot.css">
+ */
+
+/* ── FAB (Floating Action Button) ───────────────────────────────────── */
+
+.copilot-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    z-index: 10000;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copilot-fab:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 28px rgba(102, 126, 234, 0.5);
+}
+
+.copilot-fab.open {
+    transform: rotate(90deg);
+}
+
+/* ── Panel Container ────────────────────────────────────────────────── */
+
+.copilot-panel {
+    position: fixed;
+    bottom: 90px;
+    right: 24px;
+    width: 380px;
+    max-height: 560px;
+    background: #1a1a2e;
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+    display: none;
+    flex-direction: column;
+    z-index: 10000;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    animation: copilotSlideIn 0.3s ease;
+    overflow: hidden;
+}
+
+.copilot-panel.open {
+    display: flex;
+}
+
+@keyframes copilotSlideIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+
+.copilot-header {
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: move;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.copilot-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.copilot-icon { font-size: 18px; }
+
+.copilot-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+}
+
+.copilot-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    display: inline-block;
+    animation: copilotPulse 2s infinite;
+}
+
+@keyframes copilotPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.copilot-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.copilot-context-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 10px;
+    border-radius: 10px;
+}
+
+.copilot-close-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.copilot-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* ── Body ───────────────────────────────────────────────────────────── */
+
+.copilot-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    max-height: 340px;
+}
+
+.copilot-loading {
+    text-align: center;
+    color: #94a3b8;
+    padding: 20px;
+    font-size: 13px;
+}
+
+.copilot-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ── Cards ──────────────────────────────────────────────────────────── */
+
+.copilot-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+.copilot-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.copilot-card.warning {
+    border-left: 3px solid #eab308;
+}
+
+.copilot-card.error {
+    border-left: 3px solid #ef4444;
+}
+
+.copilot-card.success {
+    border-left: 3px solid #22c55e;
+}
+
+.copilot-card-title {
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.copilot-card-desc {
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.copilot-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+
+.copilot-action-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    color: #cbd5e1;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.copilot-action-btn:hover {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: #667eea;
+    color: #fff;
+}
+
+.copilot-quick-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.copilot-quick-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    background: rgba(102, 126, 234, 0.08);
+    color: #cbd5e1;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.copilot-quick-btn:hover {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: #667eea;
+    color: #fff;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+
+.copilot-footer {
+    padding: 8px 12px 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.copilot-summary {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 6px;
+    padding: 0 4px;
+}
+
+.copilot-input-row {
+    display: flex;
+    gap: 6px;
+}
+
+.copilot-input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #e0e0e0;
+    font-size: 12px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.copilot-input:focus {
+    border-color: #667eea;
+}
+
+.copilot-input::placeholder {
+    color: #64748b;
+}
+
+.copilot-send-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    transition: opacity 0.2s;
+}
+
+.copilot-send-btn:hover {
+    opacity: 0.9;
+}
+
+/* ── Theme Variant: Light ───────────────────────────────────────────── */
+
+.copilot-panel.light .copilot-body {
+    background: #ffffff;
+    color: #1e293b;
+}
+
+.copilot-panel.light .copilot-card {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+.copilot-panel.light .copilot-card-desc {
+    color: #64748b;
+}
+
+.copilot-panel.light .copilot-input {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}
+
+.copilot-panel.light .copilot-footer {
+    border-top-color: #e2e8f0;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+    .copilot-panel {
+        width: calc(100vw - 32px);
+        right: 16px;
+        bottom: 80px;
+        max-height: 60vh;
+    }
+
+    .copilot-fab {
+        right: 16px;
+        bottom: 16px;
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────── */
+
+.copilot-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.copilot-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.copilot-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}

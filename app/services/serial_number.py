@@ -1,4 +1,4 @@
-﻿import random
+import random
 import string
 from datetime import datetime
 from datetime import timezone
@@ -31,7 +31,9 @@ class SerialNumberService:
             padding = seq.padding or length
         else:
             result = await self.session.execute(
-                select(func.count()).select_from(model_class) if model_class else select(func.count())
+                select(func.count()).select_from(model_class)
+                if model_class
+                else select(func.count())
             )
             count = (result.scalar() or 0) + 1
             padding = length

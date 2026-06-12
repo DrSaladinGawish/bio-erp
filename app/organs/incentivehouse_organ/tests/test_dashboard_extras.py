@@ -1,12 +1,12 @@
 """
 IHE-ERP v2.4 - Dashboard extras tests (charts + PDF + new template).
 """
-import pytest
 
 
 def test_dashboard_template_exists():
     """The new Chart.js dashboard template must exist."""
     from pathlib import Path
+
     p = Path(__file__).resolve().parent.parent / "templates" / "dashboard.html"
     assert p.exists(), f"Missing {p}"
     body = p.read_text(encoding="utf-8")
@@ -15,7 +15,14 @@ def test_dashboard_template_exists():
     assert 'id="expenseChart"' in body
     assert 'id="cashflowChart"' in body
     # Must have KPI divs with expected ids
-    for kid in ("kpi-revenue", "kpi-expenses", "kpi-profit", "kpi-pnrs", "kpi-bank", "kpi-pending"):
+    for kid in (
+        "kpi-revenue",
+        "kpi-expenses",
+        "kpi-profit",
+        "kpi-pnrs",
+        "kpi-bank",
+        "kpi-pending",
+    ):
         assert f'id="{kid}"' in body, f"Missing KPI id {kid}"
     # Must reference Chart.js CDN
     assert "chart.js" in body or "chart.umd" in body
@@ -31,6 +38,7 @@ def test_dashboard_template_exists():
 
 def test_dashboard_js_exists():
     from pathlib import Path
+
     p = Path(__file__).resolve().parent.parent / "static" / "js" / "dashboard.js"
     assert p.exists()
     body = p.read_text(encoding="utf-8")
@@ -45,6 +53,7 @@ def test_pdf_generator_imports():
     from app.organs.incentivehouse_organ.intelligence.pdf_generator import (
         generate_dashboard_pdf,
     )
+
     assert callable(generate_dashboard_pdf)
 
 
@@ -53,6 +62,7 @@ def test_pdf_generator_returns_bytes():
     from app.organs.incentivehouse_organ.intelligence.pdf_generator import (
         generate_dashboard_pdf,
     )
+
     data = {
         "total_revenue": 12345.67,
         "total_expenses": 8000.00,
@@ -87,6 +97,29 @@ def test_pdf_export_endpoint(sync_client):
         body = r.json()
         assert "format" in body
         assert body["format"] == "pdf"
+
+
+def test_dashboard_export_excel(sync_client):
+    r = sync_client.get("/api/dashboard/export?range=YTD&format=xlsx")
+    assert r.status_code == 200
+    ct = r.headers.get("content-type", "")
+    if "spreadsheetml" in ct:
+        assert r.content[:2] == b"PK"
+        assert "attachment" in r.headers.get("content-disposition", "")
+    else:
+        body = r.json()
+        assert body.get("format") == "xlsx"
+
+
+def test_dashboard_export_buttons_range_aware():
+    from pathlib import Path
+
+    p = Path(__file__).resolve().parent.parent / "templates" / "dashboard.html"
+    body = p.read_text(encoding="utf-8")
+    assert "export-link" in body
+    assert 'data-format="pdf"' in body
+    assert 'data-format="xlsx"' in body
+    assert 'data-format="json"' in body
 
 
 def test_dashboard_serves_new_template(sync_client):

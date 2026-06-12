@@ -19,14 +19,18 @@ class TestAdminAuth:
     ]
 
     @pytest.mark.parametrize("path", ENDPOINTS)
-    async def test_list_returns_not_500(self, path: str, client: AsyncClient, auth_headers: dict):
+    async def test_list_returns_not_500(
+        self, path: str, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.get(path, headers=auth_headers)
         assert resp.status_code < 500, f"{path} returned {resp.status_code}"
 
     @pytest.mark.parametrize("path", ENDPOINTS)
     async def test_list_returns_401_without_auth(self, path: str, client: AsyncClient):
         resp = await client.get(path)
-        assert resp.status_code in (401, 403), f"{path} should require auth, got {resp.status_code}"
+        assert resp.status_code in (401, 403), (
+            f"{path} should require auth, got {resp.status_code}"
+        )
 
 
 class TestAuthMe:
@@ -49,7 +53,9 @@ class TestStrategicCost:
     ]
 
     @pytest.mark.parametrize("path", ENDPOINTS)
-    async def test_list_returns_not_500(self, path: str, client: AsyncClient, auth_headers: dict):
+    async def test_list_returns_not_500(
+        self, path: str, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.get(path, headers=auth_headers)
         assert resp.status_code < 500, f"{path} returned {resp.status_code}"
 
@@ -63,6 +69,8 @@ class TestCostingAnalysis:
     ]
 
     @pytest.mark.parametrize("path", ENDPOINTS)
-    async def test_list_returns_not_500(self, path: str, client: AsyncClient, auth_headers: dict):
+    async def test_list_returns_not_500(
+        self, path: str, client: AsyncClient, auth_headers: dict
+    ):
         resp = await client.get(path, headers=auth_headers)
         assert resp.status_code < 500, f"{path} returned {resp.status_code}"

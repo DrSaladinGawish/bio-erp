@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,18 +8,27 @@ from app.middleware.auth import get_current_user
 from app.models.auth import User
 
 from app.ai_ingest.models import (
-    AIDocumentIngestion, AIDocumentAnalysis, AISuggestedTransaction,
-    AINeuralPatternLog, SuggestionStatus,
+    AIDocumentIngestion,
+    AIDocumentAnalysis,
+    AISuggestedTransaction,
+    AINeuralPatternLog,
+    SuggestionStatus,
 )
 from app.ai_ingest.schemas import (
-    DocumentUploadResponse, AnalysisResult, SuggestedTransactionOut,
-    ReviewRequest, ProtocolResult, IngestionStatusOut, PatternLogOut,
+    DocumentUploadResponse,
+    AnalysisResult,
+    SuggestedTransactionOut,
+    ReviewRequest,
+    ProtocolResult,
+    IngestionStatusOut,
+    PatternLogOut,
 )
 from app.ai_ingest.upload import save_upload
-from app.ai_ingest.archiver import archive_file
 from app.ai_ingest.protocols.runner import ProtocolRunner
 from app.ai_ingest.protocols.agent_protocol import (
-    HallucinationError, IncitationError, OmissionError,
+    HallucinationError,
+    IncitationError,
+    OmissionError,
 )
 
 logger = logging.getLogger(__name__)
@@ -92,7 +101,12 @@ async def analyze_document_endpoint(
         await db.rollback()
         raise
 
-    success = result.get("status") in ("completed", "analyzed", "evaluated", "awaiting_user_decision")
+    success = result.get("status") in (
+        "completed",
+        "analyzed",
+        "evaluated",
+        "awaiting_user_decision",
+    )
     return ProtocolResult(
         success=success,
         gate=result.get("status", "unknown"),
@@ -118,9 +132,9 @@ async def get_ingestion_status(
     suggestion = None
     if analysis:
         result = await db.execute(
-            select(AISuggestedTransaction).where(
-                AISuggestedTransaction.analysis_id == analysis.id
-            ).limit(1)
+            select(AISuggestedTransaction)
+            .where(AISuggestedTransaction.analysis_id == analysis.id)
+            .limit(1)
         )
         suggestion = result.scalar_one_or_none()
 
@@ -128,8 +142,12 @@ async def get_ingestion_status(
         document_id=doc.id,
         filename=doc.filename,
         upload_status=doc.status,
-        analysis_status=analysis.status.value if analysis and hasattr(analysis.status, 'value') else (analysis.status if analysis else None),
-        suggestion_status=suggestion.status.value if suggestion and hasattr(suggestion.status, 'value') else (suggestion.status if suggestion else None),
+        analysis_status=analysis.status.value
+        if analysis and hasattr(analysis.status, "value")
+        else (analysis.status if analysis else None),
+        suggestion_status=suggestion.status.value
+        if suggestion and hasattr(suggestion.status, "value")
+        else (suggestion.status if suggestion else None),
         posted_jv_id=suggestion.posted_jv_id if suggestion else None,
     )
 
@@ -142,7 +160,10 @@ async def list_documents(
     _: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(AIDocumentIngestion).order_by(AIDocumentIngestion.id.desc()).offset(skip).limit(limit)
+        select(AIDocumentIngestion)
+        .order_by(AIDocumentIngestion.id.desc())
+        .offset(skip)
+        .limit(limit)
     )
     docs = result.scalars().all()
     return [
@@ -217,7 +238,9 @@ async def review_suggestion(
         message=f"Suggestion {review.action}d",
         data={
             "suggestion_id": suggestion_id,
-            "new_status": str(suggestion.status.value) if hasattr(suggestion.status, 'value') else str(suggestion.status),
+            "new_status": str(suggestion.status.value)
+            if hasattr(suggestion.status, "value")
+            else str(suggestion.status),
         },
     )
 
@@ -229,7 +252,9 @@ async def post_suggestion(
     user: User = Depends(get_current_user),
 ):
     runner = ProtocolRunner(db, performed_by=user.id)
-    result = await runner.execute_approved_suggestion(suggestion_id, user.id, amended=False)
+    result = await runner.execute_approved_suggestion(
+        suggestion_id, user.id, amended=False
+    )
 
     if not result["success"]:
         error_msg = result.get("errors", [result.get("error", "Surgery failed")])
@@ -243,7 +268,9 @@ async def post_suggestion(
     )
 
 
-@router.post("/suggestions/{suggestion_id}/amend-and-post", response_model=ProtocolResult)
+@router.post(
+    "/suggestions/{suggestion_id}/amend-and-post", response_model=ProtocolResult
+)
 async def amend_and_post_suggestion(
     suggestion_id: int,
     review: ReviewRequest,

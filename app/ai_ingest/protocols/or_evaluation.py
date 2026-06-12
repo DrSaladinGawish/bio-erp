@@ -2,13 +2,13 @@
 OR Evaluation Protocol — Incentive House ERP
 Operational Research: AHP MCDM + Sensitivity Analysis for suggestion scoring.
 """
+
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai_ingest.models import AISuggestedTransaction, SuggestionStatus
+from app.ai_ingest.models import AISuggestedTransaction
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,6 @@ class ORScoreCard:
 
 
 class OREvaluationProtocol:
-
     AHP_WEIGHTS = {
         CriteriaWeight.HISTORICAL_MATCH: 0.30,
         CriteriaWeight.AMOUNT_CONFIDENCE: 0.25,
@@ -55,7 +54,8 @@ class OREvaluationProtocol:
         self.sensitivity_variance = 0.05
 
     async def evaluate(
-        self, suggestion: AISuggestedTransaction,
+        self,
+        suggestion: AISuggestedTransaction,
         neural_matches: list[dict] | None = None,
         extracted_entities: dict | None = None,
     ) -> ORScoreCard:
@@ -74,15 +74,27 @@ class OREvaluationProtocol:
         sug_amount = suggestion.total_debit
         if sug_amount and detected_amounts:
             closest = min(detected_amounts, key=lambda x: abs(x - sug_amount))
-            ratio = min(sug_amount, closest) / max(sug_amount, closest) if max(sug_amount, closest) > 0 else 0
+            ratio = (
+                min(sug_amount, closest) / max(sug_amount, closest)
+                if max(sug_amount, closest) > 0
+                else 0
+            )
             criteria[CriteriaWeight.AMOUNT_CONFIDENCE] = ratio
         elif sug_amount:
             criteria[CriteriaWeight.AMOUNT_CONFIDENCE] = 0.5
         else:
             criteria[CriteriaWeight.AMOUNT_CONFIDENCE] = 0.0
 
-        vendor_id = getattr(suggestion, "suggested_vendor_id", None) or getattr(suggestion, "amended_vendor_id", None)
-        v_score = 1.0 if vendor_id else 0.3 if extracted_entities.get("supplier_name") else 0.0
+        vendor_id = getattr(suggestion, "suggested_vendor_id", None) or getattr(
+            suggestion, "amended_vendor_id", None
+        )
+        v_score = (
+            1.0
+            if vendor_id
+            else 0.3
+            if extracted_entities.get("supplier_name")
+            else 0.0
+        )
         criteria[CriteriaWeight.VENDOR_VERIFIABILITY] = v_score
 
         lines = suggestion.journal_lines or []
@@ -95,20 +107,18 @@ class OREvaluationProtocol:
         tax = suggestion.total_credit or 0
         if total > 0:
             expected = total * 0.14
-            tax_ratio = min(tax, expected) / max(tax, expected) if max(tax, expected) > 0 else 0
+            tax_ratio = (
+                min(tax, expected) / max(tax, expected) if max(tax, expected) > 0 else 0
+            )
             criteria[CriteriaWeight.TAX_COMPLIANCE] = tax_ratio
         else:
             criteria[CriteriaWeight.TAX_COMPLIANCE] = 0.0
 
         required = ["transaction_type", "total_debit", "description"]
-        present = sum(
-            1 for f in required if getattr(suggestion, f, None) is not None
-        )
+        present = sum(1 for f in required if getattr(suggestion, f, None) is not None)
         criteria[CriteriaWeight.COMPLETENESS] = present / len(required)
 
-        overall = sum(
-            criteria.get(c, 0.0) * w for c, w in self.AHP_WEIGHTS.items()
-        )
+        overall = sum(criteria.get(c, 0.0) * w for c, w in self.AHP_WEIGHTS.items())
 
         lower, upper = self._sensitivity_analysis(criteria)
 
@@ -117,7 +127,11 @@ class OREvaluationProtocol:
         amend_score = overall * 0.7 + (1 - completeness) * 0.3
         reject_score = 1.0 - overall
 
-        if overall >= self.AUTO_APPROVE_MIN and approve_score > amend_score and approve_score > reject_score:
+        if (
+            overall >= self.AUTO_APPROVE_MIN
+            and approve_score > amend_score
+            and approve_score > reject_score
+        ):
             recommendation = "approve"
         elif overall >= self.AMEND_MIN and amend_score > reject_score:
             recommendation = "amend"
@@ -149,7 +163,9 @@ class OREvaluationProtocol:
             reasoning=reasoning,
         )
 
-    def _sensitivity_analysis(self, criteria: dict[CriteriaWeight, float]) -> tuple[float, float]:
+    def _sensitivity_analysis(
+        self, criteria: dict[CriteriaWeight, float]
+    ) -> tuple[float, float]:
         base = sum(criteria.get(c, 0) * w for c, w in self.AHP_WEIGHTS.items())
         min_val = max_val = base
 
@@ -169,7 +185,8 @@ class OREvaluationProtocol:
         return min_val, max_val
 
     async def evaluate_batch(
-        self, suggestions: list[AISuggestedTransaction],
+        self,
+        suggestions: list[AISuggestedTransaction],
         neural_map: dict[int, list[dict]] | None = None,
         extracted_map: dict[int, dict] | None = None,
     ) -> list[ORScoreCard]:

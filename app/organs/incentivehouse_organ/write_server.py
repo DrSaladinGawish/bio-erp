@@ -1,5 +1,6 @@
-﻿import textwrap
-code = textwrap.dedent(r'''
+import textwrap
+
+code = textwrap.dedent(r"""
 #!/usr/bin/env python3
 \"\"\"IncentiveHouse ERP v2.2.2\"\"\"
 
@@ -282,8 +283,8 @@ if __name__ == "__main__":
     print("[START] IncentiveHouse ERP v2.2.2")
     print("[START] http://127.0.0.1:9001/")
     uvicorn.run(app, host="127.0.0.1", port=9001)
-''').strip()
+""").strip()
 
-with open('incentivehouse_server.py', 'w', encoding='utf-8') as f:
+with open("incentivehouse_server.py", "w", encoding="utf-8") as f:
     f.write(code)
-print('File written successfully')
+print("File written successfully")

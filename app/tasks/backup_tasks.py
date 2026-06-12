@@ -1,4 +1,4 @@
-﻿import os
+import os
 import subprocess
 from datetime import datetime, timezone
 from celery import shared_task

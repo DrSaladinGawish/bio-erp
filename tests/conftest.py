@@ -34,6 +34,7 @@ TEST_DB_URL = os.getenv(
 # ── Override settings BEFORE any app module uses it ───────────────
 os.environ["DATABASE_URL"] = TEST_DB_URL
 from app.config import settings
+
 settings.DATABASE_URL = TEST_DB_URL
 
 # Import app AFTER settings are patched
@@ -48,9 +49,13 @@ _sync_engine = create_engine(_sync_url, echo=False)
 with _sync_engine.connect() as conn:
     conn.execute(text("DROP SCHEMA public CASCADE"))
     conn.execute(text("CREATE SCHEMA public"))
+    conn.execute(text("CREATE SCHEMA IF NOT EXISTS dbo"))
     conn.commit()
+from app.database import IHEBase
 from app.models import Base  # noqa: E402
+
 Base.metadata.create_all(bind=_sync_engine)
+IHEBase.metadata.create_all(bind=_sync_engine)
 
 # Seed admin / currency / branch / category
 from app.auth import hash_password  # noqa: E402
@@ -61,9 +66,18 @@ with SyncSession(_sync_engine) as session:
         cur = session.execute(text("SELECT id FROM currencies WHERE code = 'USD'"))
         currency_id = cur.scalar()
         if not currency_id:
-            session.add(Currency(code="USD", name_en="US Dollar", symbol="$",
-                                 is_base=True, mid_rate=1.0, buy_rate=1.0,
-                                 sell_rate=1.0, decimal_places=2))
+            session.add(
+                Currency(
+                    code="USD",
+                    name_en="US Dollar",
+                    symbol="$",
+                    is_base=True,
+                    mid_rate=1.0,
+                    buy_rate=1.0,
+                    sell_rate=1.0,
+                    decimal_places=2,
+                )
+            )
             session.flush()
             currency_id = session.execute(
                 text("SELECT id FROM currencies WHERE code = 'USD'")
@@ -72,8 +86,16 @@ with SyncSession(_sync_engine) as session:
         br = session.execute(text("SELECT id FROM branches WHERE code = 'HQ'"))
         branch_id = br.scalar()
         if not branch_id:
-            session.add(Branch(code="HQ", name_en="Headquarters", country="US",
-                               currency_id=currency_id, is_hq=True, vat_rate=0.0))
+            session.add(
+                Branch(
+                    code="HQ",
+                    name_en="Headquarters",
+                    country="US",
+                    currency_id=currency_id,
+                    is_hq=True,
+                    vat_rate=0.0,
+                )
+            )
             session.flush()
             branch_id = session.execute(
                 text("SELECT id FROM branches WHERE code = 'HQ'")
@@ -81,12 +103,16 @@ with SyncSession(_sync_engine) as session:
 
         usr = session.execute(text("SELECT id FROM users WHERE username = 'admin'"))
         if not usr.scalar():
-            session.add(User(
-                username="admin", email="admin@bioerp.local",
-                hashed_password=hash_password("admin123"),
-                full_name_en="System Admin", is_superuser=True,
-                branch_id=branch_id,
-            ))
+            session.add(
+                User(
+                    username="admin",
+                    email="admin@bioerp.local",
+                    hashed_password=hash_password("admin123"),
+                    full_name_en="System Admin",
+                    is_superuser=True,
+                    branch_id=branch_id,
+                )
+            )
 
         # COA category (needed for POST /ledger-entries tests)
         cat = session.execute(text("SELECT id FROM coa_categories WHERE code = 'TEST'"))
@@ -102,7 +128,9 @@ with SyncSession(_sync_engine) as session:
         with session2.begin():
             perm_id_map = {}
             for code, name_en, module in FLASK_PERMISSIONS:
-                existing = session2.execute(text("SELECT id FROM permissions WHERE code = :c"), {"c": code}).scalar()
+                existing = session2.execute(
+                    text("SELECT id FROM permissions WHERE code = :c"), {"c": code}
+                ).scalar()
                 if existing:
                     perm_id_map[code] = existing
                 else:
@@ -112,9 +140,13 @@ with SyncSession(_sync_engine) as session:
                     perm_id_map[code] = p.id
 
             for role_name, perm_codes in ROLE_DEFINITIONS.items():
-                existing = session2.execute(text("SELECT id FROM roles WHERE name = :n"), {"n": role_name}).scalar()
+                existing = session2.execute(
+                    text("SELECT id FROM roles WHERE name = :n"), {"n": role_name}
+                ).scalar()
                 if not existing:
-                    r = Role(name=role_name, description=f"Flask-compatible {role_name} role")
+                    r = Role(
+                        name=role_name, description=f"Flask-compatible {role_name} role"
+                    )
                     session2.add(r)
                     session2.flush()
                     existing = r.id
@@ -123,21 +155,27 @@ with SyncSession(_sync_engine) as session:
                     perm_id = perm_id_map.get(code)
                     if perm_id:
                         link = session2.execute(
-                            text("SELECT 1 FROM role_permissions WHERE role_id = :r AND permission_id = :p"),
+                            text(
+                                "SELECT 1 FROM role_permissions WHERE role_id = :r AND permission_id = :p"
+                            ),
                             {"r": existing, "p": perm_id},
                         ).first()
                         if not link:
                             session2.execute(
-                                role_permissions.insert().values(role_id=existing, permission_id=perm_id)
+                                role_permissions.insert().values(
+                                    role_id=existing, permission_id=perm_id
+                                )
                             )
 
 
 # ── Async fixtures (all use the app's async engine) ───────────────
 
+
 @pytest.fixture
 async def db_connection():
     """Per-test connection with transaction rollback."""
     from app.database import get_async_engine
+
     engine = get_async_engine()
     conn = await engine.connect()
     trans = await conn.begin()
@@ -167,10 +205,12 @@ async def client():
         yield ac
     # Dispose the engine pool so the next test starts fresh
     from app.database import get_async_engine
+
     await get_async_engine().dispose()
 
 
 # ── Auth fixtures ─────────────────────────────────────────────────
+
 
 @pytest.fixture
 async def auth_token(client):

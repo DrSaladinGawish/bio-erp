@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IncentiveHouse ERP Control Center</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌊</text></svg>">
+<style>
+:root {
+  --bg-primary: #0a0f1a;
+  --bg-secondary: #0d1321;
+  --bg-card: #111827;
+  --bg-card-hover: #1a2236;
+  --border-color: #1e293b;
+  --border-hover: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-cyan: #06b6d4;
+  --accent-cyan-glow: rgba(6,182,212,0.3);
+  --accent-green: #10b981;
+  --accent-yellow: #f59e0b;
+  --accent-red: #ef4444;
+  --accent-blue: #3b82f6;
+  --header-height: 64px;
+  --footer-height: 36px;
+  --sidebar-width: 220px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Header */
+.header {
+  position: fixed; top:0; left:0; right:0; height: var(--header-height);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-bottom: 1px solid var(--border-color);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; z-index: 1000;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-cyan), #0891b2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; box-shadow: 0 0 20px var(--accent-cyan-glow);
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%,100% { box-shadow: 0 0 20px var(--accent-cyan-glow); }
+  50% { box-shadow: 0 0 40px rgba(6,182,212,0.5); }
+}
+.header-title { display: flex; flex-direction: column; }
+.brand { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; }
+.subtitle { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; }
+.header-center { display: flex; align-items: center; gap: 16px; }
+.system-badge {
+  padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+  display: flex; align-items: center; gap: 6px; transition: all 0.3s;
+}
+.badge-healthy { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.3); }
+.badge-attention { background: rgba(245,158,11,0.15); color: var(--accent-yellow); border: 1px solid rgba(245,158,11,0.3); }
+.badge-critical { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
+.live-indicator { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--accent-green); }
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green);
+  box-shadow: 0 0 10px rgba(16,185,129,0.5);
+  animation: live-pulse 2s ease-in-out infinite;
+}
+@keyframes live-pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(0.8);} }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.header-btn {
+  padding: 8px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 500;
+  border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary);
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+}
+.header-btn:hover { background: var(--bg-card-hover); border-color: var(--border-hover); color: var(--text-primary); }
+
+/* Main Layout */
+.main-layout {
+  display: flex; margin-top: var(--header-height);
+  min-height: calc(100vh - var(--header-height) - var(--footer-height));
+}
+.sidebar {
+  width: var(--sidebar-width); background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color); padding: 16px;
+  display: flex; flex-direction: column; gap: 8px; overflow-y: auto;
+}
+.sidebar-section {
+  font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin: 12px 0 4px 4px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border-radius: 10px; cursor: pointer; transition: all 0.2s;
+  border: 1px solid transparent;
+}
+.nav-item:hover { background: var(--bg-card-hover); border-color: var(--border-hover); }
+.nav-item.active { background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); }
+.nav-item.active .nav-text { color: var(--accent-cyan); }
+.nav-icon { font-size: 1.1rem; width: 24px; text-align: center; }
+.nav-text { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
+.nav-desc { font-size: 0.7rem; color: var(--text-muted); }
+
+.content { flex: 1; padding: 24px; overflow-y: auto; min-width: 0; }
+
+/* Executive Summary */
+.exec-summary { display: grid; grid-template-columns: 280px 1fr; gap: 20px; margin-bottom: 24px; }
+.health-ring-card {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px;
+  padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.health-ring-container { position: relative; width: 140px; height: 140px; }
+.health-ring-svg { transform: rotate(-90deg); }
+.health-ring-bg { fill: none; stroke: var(--border-color); stroke-width: 10; }
+.health-ring-progress {
+  fill: none; stroke: var(--accent-cyan); stroke-width: 10; stroke-linecap: round;
+  stroke-dasharray: 377; stroke-dashoffset: 377;
+  transition: stroke-dashoffset 1.5s ease-out, stroke 0.5s;
+  filter: drop-shadow(0 0 6px var(--accent-cyan-glow));
+}
+.health-ring-value {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-size: 2rem; font-weight: 700; color: var(--accent-cyan);
+}
+.health-ring-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+.metrics-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.metric-card {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
+  padding: 16px; display: flex; flex-direction: column; gap: 6px; transition: all 0.2s;
+}
+.metric-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.metric-icon { font-size: 1.4rem; }
+.metric-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+.metric-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.metric-trend { font-size: 0.7rem; display: flex; align-items: center; gap: 4px; }
+.trend-up { color: var(--accent-green); }
+.trend-down { color: var(--accent-red); }
+
+/* Module Grid Section */
+.module-grid-section { margin-bottom: 24px; }
+.module-grid-title {
+  font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+
+/* Module Card */
+.module-card {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px;
+  padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  transition: all 0.3s; cursor: pointer; position: relative; overflow: hidden;
+}
+.module-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue)); opacity: 0;
+  transition: opacity 0.3s;
+}
+.module-card:hover::before { opacity: 1; }
+.module-card:hover {
+  border-color: var(--border-hover); transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.module-card-emoji { font-size: 2.2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+.module-card-name { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+.module-card-role { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.module-card-ring { width: 60px; height: 60px; position: relative; }
+.module-card-ring svg { transform: rotate(-90deg); }
+.module-card-ring-bg { fill: none; stroke: var(--border-color); stroke-width: 6; }
+.module-card-ring-progress {
+  fill: none; stroke-width: 6; stroke-linecap: round;
+  stroke-dasharray: 169; transition: stroke-dashoffset 1s ease-out;
+}
+.module-card-ring-value {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-size: 0.85rem; font-weight: 700;
+}
+.module-card-status { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 500; }
+.status-online { color: var(--accent-green); }
+.status-offline { color: var(--accent-red); }
+.status-starting { color: var(--accent-yellow); }
+.status-unknown { color: var(--text-muted); }
+.module-card-btn {
+  margin-top: 4px; padding: 6px 16px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;
+  border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+}
+.module-card-btn:hover { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); }
+
+/* Tabs */
+.tabs-header {
+  display: flex; gap: 4px; margin-bottom: 16px;
+  background: var(--bg-card); border-radius: 12px; padding: 6px;
+  border: 1px solid var(--border-color);
+}
+.tab-btn {
+  padding: 10px 20px; border-radius: 8px; border: none; background: transparent;
+  color: var(--text-muted); font-size: 0.85rem; font-weight: 500; cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+}
+.tab-btn:hover { color: var(--text-secondary); background: var(--bg-card-hover); }
+.tab-btn.active { background: rgba(6,182,212,0.15); color: var(--accent-cyan); font-weight: 600; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Score Cards */
+.scores-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.score-card {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px;
+  padding: 20px; display: flex; flex-direction: column; gap: 8px; transition: all 0.2s;
+}
+.score-card:hover { border-color: var(--border-hover); }
+.score-header { display: flex; justify-content: space-between; align-items: center; }
+.score-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.score-value { font-size: 1.8rem; font-weight: 700; }
+.score-value.good { color: var(--accent-green); }
+.score-value.warn { color: var(--accent-yellow); }
+.score-value.bad { color: var(--accent-red); }
+.score-bar-bg { height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease-out; }
+.score-bar-fill.good { background: var(--accent-green); }
+.score-bar-fill.warn { background: var(--accent-yellow); }
+.score-bar-fill.bad { background: var(--accent-red); }
+
+/* Flow Graph */
+.flow-graph-container {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px;
+  padding: 20px; height: 500px; position: relative;
+}
+.flow-legend {
+  position: absolute; bottom: 16px; right: 16px;
+  background: rgba(10,15,26,0.9); border: 1px solid var(--border-color); border-radius: 8px;
+  padding: 10px 14px; font-size: 0.7rem; display: flex; flex-direction: column; gap: 6px;
+}
+.flow-legend-item { display: flex; align-items: center; gap: 8px; }
+.flow-legend-line { width: 20px; height: 2px; border-radius: 1px; }
+.flow-legend-line.solid { background: var(--accent-green); }
+.flow-legend-line.dashed { background: repeating-linear-gradient(90deg, var(--accent-yellow), var(--accent-yellow) 4px, transparent 4px, transparent 8px); }
+.flow-legend-line.error { background: var(--accent-red); }
+
+/* Data Table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.data-table th {
+  text-align: left; padding: 12px 16px; color: var(--text-muted);
+  font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px;
+  border-bottom: 1px solid var(--border-color);
+}
+.data-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.data-table tr:hover td { background: var(--bg-card-hover); }
+.status-badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px;
+  font-size: 0.75rem; font-weight: 600;
+}
+.badge-ok { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+.badge-warn { background: rgba(245,158,11,0.15); color: var(--accent-yellow); }
+.badge-err { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+
+/* Master Grid */
+.master-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.master-card {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px;
+  padding: 16px; display: flex; flex-direction: column; gap: 10px; transition: all 0.2s;
+}
+.master-card:hover { border-color: var(--border-hover); }
+.master-card-header { display: flex; justify-content: space-between; align-items: center; }
+.master-card-name { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+.master-card-module { font-size: 0.7rem; color: var(--text-muted); background: var(--bg-secondary); padding: 2px 8px; border-radius: 4px; }
+.master-card-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.master-stat { text-align: center; }
+.master-stat-value { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+.master-stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
+.master-card-bar { height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden; }
+.master-card-bar-fill { height: 100%; border-radius: 3px; transition: width 1s; }
+.master-card-rec { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
+
+/* Alerts */
+.alert-list { display: flex; flex-direction: column; gap: 8px; }
+.alert-item {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px;
+  padding: 12px 16px; display: flex; align-items: flex-start; gap: 12px; transition: all 0.2s;
+}
+.alert-item:hover { border-color: var(--border-hover); }
+.alert-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+.alert-content { flex: 1; }
+.alert-title { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+.alert-desc { font-size: 0.75rem; color: var(--text-muted); }
+.alert-meta { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; display: flex; gap: 12px; }
+.alert-critical { border-left: 3px solid var(--accent-red); }
+.alert-warning { border-left: 3px solid var(--accent-yellow); }
+.alert-info { border-left: 3px solid var(--accent-blue); }
+
+/* Document Manager */
+.drop-zone {
+  border: 2px dashed var(--border-color); border-radius: 14px;
+  padding: 40px; text-align: center; transition: all 0.3s;
+  background: var(--bg-card); margin-bottom: 20px;
+}
+.drop-zone.dragover {
+  border-color: var(--accent-cyan); background: rgba(6,182,212,0.05);
+  box-shadow: 0 0 20px var(--accent-cyan-glow);
+}
+.drop-zone-icon { font-size: 2.5rem; margin-bottom: 8px; }
+.drop-zone-text { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px; }
+.drop-zone-hint { font-size: 0.75rem; color: var(--text-muted); }
+.file-list { display: flex; flex-direction: column; gap: 10px; }
+.file-item {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
+  padding: 14px 18px; display: flex; align-items: center; gap: 14px; transition: all 0.2s;
+}
+.file-item:hover { border-color: var(--border-hover); }
+.file-icon { font-size: 1.6rem; flex-shrink: 0; }
+.file-info { flex: 1; min-width: 0; }
+.file-name { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-meta { font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 12px; margin-top: 2px; }
+.file-status {
+  padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; flex-shrink: 0;
+}
+.file-status-healthy { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+.file-status-stale { background: rgba(245,158,11,0.15); color: var(--accent-yellow); }
+.file-status-missing { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+.file-actions { display: flex; gap: 6px; }
+.file-btn {
+  padding: 6px 10px; border-radius: 6px; font-size: 0.7rem; border: 1px solid var(--border-color);
+  background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+}
+.file-btn:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+
+/* AI Widget */
+.ai-widget { position: fixed; bottom: 24px; right: 24px; z-index: 999; }
+.ai-toggle {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-cyan), #0891b2);
+  border: none; color: #fff; font-size: 1.5rem; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(6,182,212,0.4);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s; animation: ai-pulse 3s ease-in-out infinite;
+}
+.ai-toggle:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(6,182,212,0.6); }
+@keyframes ai-pulse {
+  0%,100% { box-shadow: 0 4px 20px rgba(6,182,212,0.4); }
+  50% { box-shadow: 0 4px 30px rgba(6,182,212,0.7); }
+}
+.ai-panel {
+  position: absolute; bottom: 70px; right: 0; width: 380px; max-height: 520px;
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5); display: none; flex-direction: column;
+  overflow: hidden; transition: all 0.3s;
+}
+.ai-panel.open { display: flex; }
+.ai-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border-color);
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(135deg, rgba(6,182,212,0.1), transparent);
+}
+.ai-title { font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.ai-close { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+.ai-close:hover { color: var(--text-primary); }
+.ai-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.ai-message {
+  max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; line-height: 1.5;
+}
+.ai-message.bot { background: var(--bg-secondary); color: var(--text-secondary); align-self: flex-start; border-bottom-left-radius: 4px; }
+.ai-message.user { background: linear-gradient(135deg, var(--accent-cyan), #0891b2); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.ai-insight-card {
+  background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px;
+  padding: 10px 12px; font-size: 0.8rem;
+}
+.ai-insight-card .insight-title { font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.ai-insight-card .insight-desc { color: var(--text-muted); }
+.ai-insight-card .insight-action { margin-top: 6px; display: flex; gap: 6px; }
+.ai-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.ai-action-btn {
+  padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 500;
+  border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary);
+  cursor: pointer; transition: all 0.2s;
+}
+.ai-action-btn:hover { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); }
+.ai-input-row {
+  padding: 12px 16px; border-top: 1px solid var(--border-color); display: flex; gap: 8px;
+}
+.ai-input {
+  flex: 1; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px;
+  padding: 8px 12px; color: var(--text-primary); font-size: 0.85rem; outline: none;
+}
+.ai-input:focus { border-color: var(--accent-cyan); }
+.ai-send {
+  padding: 8px 14px; border-radius: 8px; border: none;
+  background: var(--accent-cyan); color: #000; font-weight: 600; cursor: pointer;
+}
+
+/* Footer */
+.footer {
+  position: fixed; bottom: 0; left: 0; right: 0; height: var(--footer-height);
+  background: var(--bg-secondary); border-top: 1px solid var(--border-color);
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  font-size: 0.7rem; color: var(--text-muted); z-index: 1000;
+}
+.footer a { color: var(--accent-cyan); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.footer-sep { color: var(--border-color); }
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .exec-summary { grid-template-columns: 1fr; }
+  .metrics-row { grid-template-columns: repeat(3, 1fr); }
+  .module-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .metrics-row { grid-template-columns: repeat(2, 1fr); }
+  .scores-row { grid-template-columns: repeat(2, 1fr); }
+  .ai-panel { width: calc(100vw - 32px); right: -12px; }
+}
+
+/* Toast */
+.toast-container { position: fixed; top: 80px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px;
+  padding: 12px 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  display: flex; align-items: center; gap: 10px; font-size: 0.85rem;
+  animation: toast-in 0.3s ease-out; min-width: 280px;
+}
+.toast.success { border-left: 3px solid var(--accent-green); }
+.toast.warning { border-left: 3px solid var(--accent-yellow); }
+.toast.error { border-left: 3px solid var(--accent-red); }
+@keyframes toast-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-icon">🌊</div>
+    <div class="header-title">
+      <div class="brand">IncentiveHouse</div>
+      <div class="subtitle">ERP Control Center</div>
+    </div>
+  </div>
+  <div class="header-center">
+    <div class="system-badge badge-attention" id="systemBadge">
+      <span>⚡</span> <span id="systemBadgeText">Attention Needed</span>
+    </div>
+    <div class="live-indicator">
+      <div class="live-dot"></div>
+      <span>Live</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="header-btn" onclick="triggerScan()" title="Capture new snapshot">
+      <span>🔍</span> Scan
+    </button>
+    <button class="header-btn" onclick="refreshAll()" title="Refresh all data">
+      <span>🔄</span> Refresh
+    </button>
+    <button class="header-btn" onclick="toggleAutoRefresh()" id="autoRefreshBtn" title="Toggle auto-refresh">
+      <span>⏱️</span> <span id="autoRefreshText">Auto: ON</span>
+    </button>
+  </div>
+</div>
+
+<!-- Main Layout -->
+<div class="main-layout">
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-section">Views</div>
+  <div class="nav-item active" onclick="switchTab('flow')" data-tab="flow">
+    <span class="nav-icon">🌊</span>
+    <div><div class="nav-text">Data Flow</div><div class="nav-desc">Real-time topology</div></div>
+  </div>
+  <div class="nav-item" onclick="switchTab('locations')" data-tab="locations">
+    <span class="nav-icon">📍</span>
+    <div><div class="nav-text">Data Locations</div><div class="nav-desc">Where data lives</div></div>
+  </div>
+  <div class="nav-item" onclick="switchTab('master')" data-tab="master">
+    <span class="nav-icon">🏛️</span>
+    <div><div class="nav-text">Master Tables</div><div class="nav-desc">Health & integrity</div></div>
+  </div>
+  <div class="nav-item" onclick="switchTab('alerts')" data-tab="alerts">
+    <span class="nav-icon">🚨</span>
+    <div><div class="nav-text">Alerts</div><div class="nav-desc">Critical issues</div></div>
+  </div>
+  <div class="nav-item" onclick="switchTab('documents')" data-tab="documents">
+    <span class="nav-icon">📄</span>
+    <div><div class="nav-text">Documents</div><div class="nav-desc">Files & uploads</div></div>
+  </div>
+
+  <div class="sidebar-section">Quick Filters</div>
+  <div class="nav-item" onclick="filterMaster('all')">
+    <span class="nav-icon">🏷️</span>
+    <div><div class="nav-text">All Masters</div></div>
+  </div>
+  <div class="nav-item" onclick="filterMaster('stale')">
+    <span class="nav-icon">⏰</span>
+    <div><div class="nav-text">Stale Tables</div></div>
+  </div>
+  <div class="nav-item" onclick="filterMaster('critical')">
+    <span class="nav-icon">🔴</span>
+    <div><div class="nav-text">Critical</div></div>
+  </div>
+  <div class="nav-item" onclick="clearFilters()">
+    <span class="nav-icon">🔄</span>
+    <div><div class="nav-text">Clear Filters</div></div>
+  </div>
+</div>
+
+<!-- Content Area -->
+<div class="content">
+
+<!-- Executive Summary -->
+<div class="exec-summary">
+  <div class="health-ring-card">
+    <div class="health-ring-container">
+      <svg class="health-ring-svg" width="140" height="140">
+        <circle class="health-ring-bg" cx="70" cy="70" r="60"/>
+        <circle class="health-ring-progress" id="healthRing" cx="70" cy="70" r="60"/>
+      </svg>
+      <div class="health-ring-value" id="healthValue">--</div>
+    </div>
+    <div class="health-ring-label">System Health</div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-icon">🌐</div>
+      <div class="metric-value" id="metricNodes">--</div>
+      <div class="metric-label">Data Nodes</div>
+      <div class="metric-trend trend-up" id="metricNodesTrend">↑ Active</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">⚡</div>
+      <div class="metric-value" id="metricFlows">--</div>
+      <div class="metric-label">Active Flows</div>
+      <div class="metric-trend trend-up" id="metricFlowsTrend">↑ Flowing</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">🚨</div>
+      <div class="metric-value" id="metricAlerts">--</div>
+      <div class="metric-label">Alerts</div>
+      <div class="metric-trend trend-down" id="metricAlertsTrend">↓ Needs attention</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">🏛️</div>
+      <div class="metric-value" id="metricTables">--</div>
+      <div class="metric-label">Master Tables</div>
+      <div class="metric-trend trend-up" id="metricTablesTrend">↑ Monitored</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">📍</div>
+      <div class="metric-value" id="metricEntities">--</div>
+      <div class="metric-label">Data Entities</div>
+      <div class="metric-trend trend-up" id="metricEntitiesTrend">↑ Mapped</div>
+    </div>
+  </div>
+</div>
+
+<!-- Module Launcher Grid -->
+<div class="module-grid-section">
+  <div class="module-grid-title">
+    <span>🧠</span> ERP Module Launcher
+  </div>
+  <div class="module-grid" id="moduleGrid">
+    <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">
+      Loading modules... ⏳
+    </div>
+  </div>
+</div>
+
+<!-- Tabs Header -->
+<div class="tabs-header">
+  <button class="tab-btn active" onclick="switchTab('flow')" data-tab="flow">
+    <span>🌊</span> Data Flow
+  </button>
+  <button class="tab-btn" onclick="switchTab('locations')" data-tab="locations">
+    <span>📍</span> Locations
+  </button>
+  <button class="tab-btn" onclick="switchTab('master')" data-tab="master">
+    <span>🏛️</span> Master Tables
+  </button>
+  <button class="tab-btn" onclick="switchTab('alerts')" data-tab="alerts">
+    <span>🚨</span> Alerts
+  </button>
+  <button class="tab-btn" onclick="switchTab('documents')" data-tab="documents">
+    <span>📄</span> Documents
+  </button>
+</div>
+
+<!-- TAB: Data Flow -->
+<div class="tab-content active" id="tab-flow">
+  <div class="scores-row">
+    <div class="score-card">
+      <div class="score-header">
+        <span class="score-title">Flow Health</span>
+        <span id="flowScoreBadge">--</span>
+      </div>
+      <div class="score-value" id="flowScore">--</div>
+      <div class="score-bar-bg"><div class="score-bar-fill" id="flowBar"></div></div>
+    </div>
+    <div class="score-card">
+      <div class="score-header">
+        <span class="score-title">Data Health</span>
+        <span id="dataScoreBadge">--</span>
+      </div>
+      <div class="score-value" id="dataScore">--</div>
+      <div class="score-bar-bg"><div class="score-bar-fill" id="dataBar"></div></div>
+    </div>
+    <div class="score-card">
+      <div class="score-header">
+        <span class="score-title">Master Health</span>
+        <span id="masterScoreBadge">--</span>
+      </div>
+      <div class="score-value" id="masterScore">--</div>
+      <div class="score-bar-bg"><div class="score-bar-fill" id="masterBar"></div></div>
+    </div>
+    <div class="score-card">
+      <div class="score-header">
+        <span class="score-title">Alerts</span>
+        <span id="alertScoreBadge">--</span>
+      </div>
+      <div class="score-value" id="alertScore">--</div>
+      <div class="score-bar-bg"><div class="score-bar-fill" id="alertBar"></div></div>
+    </div>
+  </div>
+  <div class="flow-graph-container" id="flowGraph"></div>
+  <div class="flow-legend">
+    <div class="flow-legend-item"><div class="flow-legend-line solid"></div> Flowing</div>
+    <div class="flow-legend-item"><div class="flow-legend-line dashed"></div> Stale</div>
+    <div class="flow-legend-item"><div class="flow-legend-line error"></div> Error/Offline</div>
+  </div>
+</div>
+
+<!-- TAB: Data Locations -->
+<div class="tab-content" id="tab-locations">
+  <div style="margin-bottom:16px; display:flex; gap:12px; align-items:center;">
+    <input type="text" id="locationSearch" placeholder="🔍 Search locations..." 
+           style="flex:1; background:var(--bg-card); border:1px solid var(--border-color); border-radius:10px; padding:10px 14px; color:var(--text-primary); font-size:0.85rem; outline:none;"
+           onkeyup="filterLocations()">
+    <button class="header-btn" onclick="renderLocations()">🔄 Refresh</button>
+  </div>
+  <div id="locationsContainer">
+    <table class="data-table">
+      <thead><tr><th>Entity</th><th>Module</th><th>Type</th><th>Location</th><th>Health</th><th>Records</th><th>Last Update</th></tr></thead>
+      <tbody id="locationsTableBody"><tr><td colspan="7" style="text-align:center; padding:40px; color:var(--text-muted);">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TAB: Master Tables -->
+<div class="tab-content" id="tab-master">
+  <div style="margin-bottom:16px; display:flex; gap:12px; align-items:center;">
+    <input type="text" id="masterSearch" placeholder="🔍 Search tables..." 
+           style="flex:1; background:var(--bg-card); border:1px solid var(--border-color); border-radius:10px; padding:10px 14px; color:var(--text-primary); font-size:0.85rem; outline:none;"
+           onkeyup="filterMasterTables()">
+    <button class="header-btn" onclick="renderMasterTables()">🔄 Refresh</button>
+    <button class="header-btn" onclick="refreshMasterTables()">🔍 Re-Scan</button>
+  </div>
+  <div class="master-grid" id="masterGrid">
+    <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">Loading master tables...</div>
+  </div>
+</div>
+
+<!-- TAB: Alerts -->
+<div class="tab-content" id="tab-alerts">
+  <div style="margin-bottom:16px; display:flex; gap:12px; align-items:center;">
+    <span style="font-size:0.85rem; color:var(--text-muted);">Filter:</span>
+    <button class="header-btn" onclick="filterAlerts('all')">All</button>
+    <button class="header-btn" onclick="filterAlerts('critical')">🔴 Critical</button>
+    <button class="header-btn" onclick="filterAlerts('warning')">🟡 Warning</button>
+    <button class="header-btn" onclick="filterAlerts('info')">🔵 Info</button>
+  </div>
+  <div class="alert-list" id="alertList">
+    <div style="text-align:center; padding:40px; color:var(--text-muted);">Loading alerts...</div>
+  </div>
+</div>
+
+<!-- TAB: Documents -->
+<div class="tab-content" id="tab-documents">
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-zone-icon">📁</div>
+    <div class="drop-zone-text">Drag Excel files here to upload</div>
+    <div class="drop-zone-hint">Data_Base_Mtbls.xlsx, Bnk_TRNX SOURCE.xlsx, Bnk_Trnx_Sub_Key.xlsx</div>
+  </div>
+  <div class="file-list" id="fileList">
+    <div style="text-align:center; padding:40px; color:var(--text-muted);">Scanning for files...</div>
+  </div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /main-layout -->
+
+<!-- Footer -->
+<div class="footer">
+  <span>© 2026 IncentiveHouse</span>
+  <span class="footer-sep">|</span>
+  <a href="/docs" target="_blank">API Docs</a>
+  <span class="footer-sep">|</span>
+  <span>ERP Builder Protocol v2.2</span>
+  <span class="footer-sep">|</span>
+  <span>BIO-ERP v5.1</span>
+</div>
+
+<!-- AI Smart Window -->
+<div class="ai-widget">
+  <button class="ai-toggle" onclick="toggleAI()" title="ERP AI Assistant">🤖</button>
+  <div class="ai-panel" id="aiPanel">
+    <div class="ai-header">
+      <div class="ai-title"><span>🤖</span> ERP AI Assistant</div>
+      <button class="ai-close" onclick="toggleAI()">×</button>
+    </div>
+    <div class="ai-body" id="aiBody">
+      <div class="ai-message bot" id="aiWelcome">
+        Welcome to the IncentiveHouse ERP Control Center! I am your AI assistant. I can help you understand system health, data flows, and recommend actions.
+      </div>
+    </div>
+    <div class="ai-input-row">
+      <input type="text" class="ai-input" id="aiInput" placeholder="Ask me anything..." onkeypress="if(event.key==='Enter')sendAIMessage()">
+      <button class="ai-send" onclick="sendAIMessage()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<script>
+// Global State
+let currentTab = 'flow';
+let autoRefreshEnabled = true;
+let autoRefreshInterval = null;
+let ws = null;
+let wsConnected = false;
+let lastSnapshot = null;
+let allAlerts = [];
+let allLocations = [];
+let allMasters = [];
+let allFiles = [];
+let alertFilter = 'all';
+
+// Tab Switching
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + tab)?.classList.add('active');
+  document.querySelector('.tab-btn[data-tab="' + tab + '"]')?.classList.add('active');
+  document.querySelector('.nav-item[data-tab="' + tab + '"]')?.classList.add('active');
+  updateAIContext(tab);
+}
+
+// Auto Refresh
+function toggleAutoRefresh() {
+  autoRefreshEnabled = !autoRefreshEnabled;
+  document.getElementById('autoRefreshText').textContent = autoRefreshEnabled ? 'Auto: ON' : 'Auto: OFF';
+  if (autoRefreshEnabled) { startAutoRefresh(); showToast('Auto-refresh enabled', 'success'); }
+  else { stopAutoRefresh(); showToast('Auto-refresh disabled', 'warning'); }
+}
+function startAutoRefresh() {
+  if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+  autoRefreshInterval = setInterval(refreshAll, 30000);
+}
+function stopAutoRefresh() {
+  if (autoRefreshInterval) { clearInterval(autoRefreshInterval); autoRefreshInterval = null; }
+}
+
+// Refresh All
+async function refreshAll() {
+  showToast('Refreshing data...', 'success');
+  await Promise.all([
+    loadSnapshot(), loadModules(), loadLocations(),
+    loadMasterTables(), loadAlerts(), loadFiles(), loadAIInsights()
+  ]);
+  showToast('All data refreshed', 'success');
+}
+
+// Snapshot & Scores
+async function loadSnapshot() {
+  try {
+    const res = await fetch('flow/snapshot');
+    const data = await res.json();
+    lastSnapshot = data;
+    updateScores(data);
+    updateHealthRing(data);
+    updateMetrics(data);
+    if (data.nodes && data.edges) renderFlowGraph(data.nodes, data.edges);
+    allAlerts = data.critical_alerts || [];
+    renderAlerts();
+  } catch (e) { console.error('Snapshot error:', e); }
+}
+
+function updateScores(data) {
+  const fh = data.overall_flow_health ?? 0;
+  const dh = data.overall_data_health ?? 0;
+  const mh = data.overall_master_health ?? 0;
+  const ac = data.critical_alerts?.length ?? 0;
+  setScore('flow', fh); setScore('data', dh); setScore('master', mh);
+  document.getElementById('alertScore').textContent = ac;
+  document.getElementById('alertBar').style.width = Math.min(ac * 5, 100) + '%';
+  document.getElementById('alertBar').className = 'score-bar-fill ' + (ac === 0 ? 'good' : ac < 5 ? 'warn' : 'bad');
+  document.getElementById('alertScoreBadge').textContent = ac === 0 ? '✅ Clear' : ac + ' issues';
+  updateSystemBadge(fh, dh, mh, ac);
+}
+
+function setScore(id, value) {
+  const el = document.getElementById(id + 'Score');
+  const bar = document.getElementById(id + 'Bar');
+  const badge = document.getElementById(id + 'ScoreBadge');
+  el.textContent = value + '/100';
+  bar.style.width = value + '%';
+  bar.className = 'score-bar-fill ' + (value >= 80 ? 'good' : value >= 50 ? 'warn' : 'bad');
+  badge.textContent = value >= 80 ? '✅ Good' : value >= 50 ? '⚠️ Fair' : '🔴 Poor';
+  el.className = 'score-value ' + (value >= 80 ? 'good' : value >= 50 ? 'warn' : 'bad');
+}
+
+function updateSystemBadge(fh, dh, mh, ac) {
+  const badge = document.getElementById('systemBadge');
+  const text = document.getElementById('systemBadgeText');
+  if (ac > 5 || fh < 30 || dh < 30 || mh < 30) {
+    badge.className = 'system-badge badge-critical'; text.textContent = 'Critical';
+  } else if (ac > 0 || fh < 60 || dh < 60 || mh < 60) {
+    badge.className = 'system-badge badge-attention'; text.textContent = 'Attention Needed';
+  } else {
+    badge.className = 'system-badge badge-healthy'; text.textContent = 'System Healthy';
+  }
+}
+
+function updateHealthRing(data) {
+  const fh = data.overall_flow_health ?? 0;
+  const dh = data.overall_data_health ?? 0;
+  const mh = data.overall_master_health ?? 0;
+  const overall = Math.round((fh + dh + mh) / 3);
+  const ring = document.getElementById('healthRing');
+  const val = document.getElementById('healthValue');
+  const circumference = 2 * Math.PI * 60;
+  const offset = circumference - (overall / 100) * circumference;
+  ring.style.strokeDashoffset = offset;
+  ring.style.stroke = overall >= 80 ? 'var(--accent-green)' : overall >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+  val.textContent = overall + '%';
+  val.style.color = overall >= 80 ? 'var(--accent-green)' : overall >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+}
+
+function updateMetrics(data) {
+  document.getElementById('metricNodes').textContent = data.nodes?.length ?? '--';
+  document.getElementById('metricFlows').textContent = data.edges?.length ?? '--';
+  document.getElementById('metricAlerts').textContent = data.critical_alerts?.length ?? '--';
+  document.getElementById('metricTables').textContent = data.master_tables?.length ?? '--';
+  document.getElementById('metricEntities').textContent = data.data_locations?.length ?? '--';
+}
+
+// Flow Graph - Neural Theme (Vis.js Hierarchical)
+let flowNetwork = null;
+
+function renderFlowGraph(nodes, edges) {
+  const container = document.getElementById('flowGraph');
+  if (!container) return;
+  if (flowNetwork) { flowNetwork.destroy(); flowNetwork = null; }
+
+  const levelMap = {
+    'brain': 0, 'core': 0, 'root': 0,
+    'module': 1, 'organ': 1, 'database': 1, 'database_table': 1,
+    'cell': 2, 'file': 2, 'api': 2, 'endpoint': 2, 'staging': 2
+  };
+
+  const visNodes = nodes.map(n => ({
+    id: n.id,
+    label: n.label || n.id,
+    title: n.description || n.id,
+    level: levelMap[n.type] ?? levelMap[n.group] ?? 1,
+    shape: n.type === 'brain' || n.type === 'core' ? 'box' :
+           n.type === 'module' || n.type === 'organ' ? 'dot' : 'diamond',
+    size: n.type === 'brain' || n.type === 'core' ? 40 :
+          n.type === 'module' || n.type === 'organ' ? 28 : 18,
+    color: {
+      background: n.status === 'online' || n.status === 'flowing' ? '#10b981' :
+                  n.status === 'stale' || n.status === 'degraded' ? '#f59e0b' : '#ef4444',
+      border: n.status === 'online' || n.status === 'flowing' ? '#059669' :
+              n.status === 'stale' || n.status === 'degraded' ? '#d97706' : '#dc2626',
+      highlight: { background: '#06b6d4', border: '#0891b2' }
+    },
+    font: { color: '#f1f5f9', size: 14, face: 'Segoe UI' },
+    borderWidth: 2,
+    shadow: { enabled: true, color: 'rgba(0,0,0,0.5)', size: 10, x: 0, y: 0 }
+  }));
+
+  const visEdges = edges.map(e => ({
+    from: e.from, to: e.to,
+    label: e.label || '',
+    title: e.description || '',
+    width: e.status === 'flowing' ? 3 : e.status === 'stale' ? 2 : 1,
+    color: {
+      color: e.status === 'flowing' ? '#10b981' : e.status === 'stale' ? '#f59e0b' : '#ef4444',
+      highlight: '#06b6d4'
+    },
+    dashes: e.status === 'stale',
+    arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+    smooth: { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.4 }
+  }));
+
+  const data = { nodes: new vis.DataSet(visNodes), edges: new vis.DataSet(visEdges) };
+
+  const options = {
+    layout: {
+      hierarchical: {
+        direction: 'UD',
+        sortMethod: 'directed',
+        levelSeparation: 120,
+        nodeSpacing: 180,
+        treeSpacing: 250,
+        shakeTowards: 'roots'
+      }
+    },
+    physics: { enabled: false },
+    interaction: { hover: true, tooltipDelay: 200, zoomView: true, dragView: true },
+    nodes: { borderWidth: 2, shadow: true },
+    edges: { shadow: true }
+  };
+
+  flowNetwork = new vis.Network(container, data, options);
+}
+
+// Module Launcher Grid
+async function loadModules() {
+  try {
+    const res = await fetch('modules');
+    const data = await res.json();
+    renderModuleGrid(data.modules || []);
+  } catch (e) { console.error('Modules error:', e); }
+}
+
+function renderModuleGrid(modules) {
+  const grid = document.getElementById('moduleGrid');
+  if (!modules.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">No modules found</div>'; return; }
+
+  grid.innerHTML = modules.map(m => {
+    const health = m.health ?? 0;
+    const circumference = 2 * Math.PI * 24;
+    const offset = circumference - (health / 100) * circumference;
+    const statusClass = m.status === 'online' ? 'status-online' : m.status === 'starting' ? 'status-starting' : m.status === 'offline' ? 'status-offline' : 'status-unknown';
+    const statusIcon = m.status === 'online' ? '🟢' : m.status === 'starting' ? '🟡' : m.status === 'offline' ? '🔴' : '⚪';
+    const btnText = m.status === 'online' ? 'Open' : m.status === 'offline' ? 'Start' : 'Check';
+    const btnAction = m.status === 'online' && m.url ? `window.open('${m.url}', '_blank')` : `showToast('${m.name} is ${m.status}', 'warning')`;
+
+    return `
+      <div class="module-card" onclick="${btnAction}">
+        <div class="module-card-emoji">${m.emoji || '📦'}</div>
+        <div class="module-card-name">${m.name}</div>
+        <div class="module-card-role">${m.role || 'Module'}</div>
+        <div class="module-card-ring">
+          <svg width="60" height="60">
+            <circle class="module-card-ring-bg" cx="30" cy="30" r="24"/>
+            <circle class="module-card-ring-progress" cx="30" cy="30" r="24"
+              stroke="${health >= 80 ? 'var(--accent-green)' : health >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)'}"
+              stroke-dashoffset="${offset}"/>
+          </svg>
+          <div class="module-card-ring-value" style="color:${health >= 80 ? 'var(--accent-green)' : health >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)'}">${health}%</div>
+        </div>
+        <div class="module-card-status ${statusClass}">${statusIcon} ${m.status || 'unknown'}</div>
+        <button class="module-card-btn" onclick="event.stopPropagation();${btnAction}">${btnText} →</button>
+      </div>
+    `;
+  }).join('');
+}
+
+// Data Locations
+async function loadLocations() {
+  try {
+    const res = await fetch('locations');
+    const data = await res.json();
+    allLocations = data.locations || [];
+    renderLocations();
+  } catch (e) { console.error('Locations error:', e); }
+}
+
+function renderLocations() {
+  const tbody = document.getElementById('locationsTableBody');
+  const search = document.getElementById('locationSearch')?.value?.toLowerCase() || '';
+  const filtered = allLocations.filter(l =>
+    (l.entity_name || '').toLowerCase().includes(search) ||
+    (l.primary_module || '').toLowerCase().includes(search)
+  );
+
+  tbody.innerHTML = filtered.map(l => `
+    <tr>
+      <td><strong>${l.entity_name}</strong></td>
+      <td>${l.primary_module}</td>
+      <td>${l.entity_type}</td>
+      <td><code style="background:var(--bg-secondary);padding:2px 6px;border-radius:4px;font-size:0.75rem;">${l.location}</code></td>
+      <td><span class="status-badge badge-${l.health_status === 'healthy' ? 'ok' : l.health_status === 'stale' ? 'warn' : 'err'}">${l.health_status}</span></td>
+      <td>${l.record_count?.toLocaleString() ?? 'N/A'}</td>
+      <td>${l.last_update ? new Date(l.last_update).toLocaleString() : 'N/A'}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">No locations found</td></tr>';
+}
+
+function filterLocations() { renderLocations(); }
+
+// Master Tables
+async function loadMasterTables() {
+  try {
+    const res = await fetch('master-tables');
+    const data = await res.json();
+    allMasters = data.tables || [];
+    renderMasterTables();
+  } catch (e) { console.error('Master tables error:', e); }
+}
+
+function renderMasterTables() {
+  const grid = document.getElementById('masterGrid');
+  const search = document.getElementById('masterSearch')?.value?.toLowerCase() || '';
+  const filtered = allMasters.filter(m =>
+    (m.table_name || '').toLowerCase().includes(search) ||
+    (m.module || '').toLowerCase().includes(search)
+  );
+
+  grid.innerHTML = filtered.map(m => {
+    const health = m.health_score ?? 0;
+    const barColor = health >= 80 ? 'var(--accent-green)' : health >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+    return `
+      <div class="master-card">
+        <div class="master-card-header">
+          <span class="master-card-name">${m.table_name}</span>
+          <span class="master-card-module">${m.module}</span>
+        </div>
+        <div class="master-card-stats">
+          <div class="master-stat"><div class="master-stat-value">${m.row_count?.toLocaleString() ?? 'N/A'}</div><div class="master-stat-label">Rows</div></div>
+          <div class="master-stat"><div class="master-stat-value">${m.duplicate_count ?? 0}</div><div class="master-stat-label">Dups</div></div>
+          <div class="master-stat"><div class="master-stat-value">${m.null_count ?? 0}</div><div class="master-stat-label">Nulls</div></div>
+        </div>
+        <div class="master-card-bar"><div class="master-card-bar-fill" style="width:${health}%;background:${barColor}"></div></div>
+        <div class="master-card-rec">${m.recommendation || 'No issues detected'}</div>
+      </div>
+    `;
+  }).join('') || '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">No tables found</div>';
+}
+
+function filterMasterTables() { renderMasterTables(); }
+async function refreshMasterTables() {
+  showToast('Re-scanning master tables...', 'success');
+  try {
+    await fetch('master-tables/refresh', { method: 'POST' });
+    await loadMasterTables();
+    showToast('Master tables refreshed', 'success');
+  } catch (e) { showToast('Refresh failed', 'error'); }
+}
+
+// Alerts
+function renderAlerts() {
+  const list = document.getElementById('alertList');
+  const filtered = alertFilter === 'all' ? allAlerts :
+    allAlerts.filter(a => (a.severity || '').toLowerCase() === alertFilter);
+
+  list.innerHTML = filtered.map(a => `
+    <div class="alert-item alert-${a.severity?.toLowerCase() || 'info'}">
+      <div class="alert-icon">${a.severity === 'CRITICAL' ? '🔴' : a.severity === 'WARNING' ? '🟡' : '🔵'}</div>
+      <div class="alert-content">
+        <div class="alert-title">${a.title}</div>
+        <div class="alert-desc">${a.description}</div>
+        <div class="alert-meta">
+          <span>📍 ${a.module || 'System'}</span>
+          <span>⏰ ${a.timestamp ? new Date(a.timestamp).toLocaleString() : 'Now'}</span>
+        </div>
+      </div>
+    </div>
+  `).join('') || '<div style="text-align:center;padding:40px;color:var(--text-muted)">No alerts</div>';
+}
+
+function filterAlerts(severity) {
+  alertFilter = severity;
+  renderAlerts();
+}
+
+// Documents
+async function loadFiles() {
+  try {
+    const res = await fetch('files');
+    const data = await res.json();
+    allFiles = data.files || [];
+    renderFiles();
+  } catch (e) { console.error('Files error:', e); }
+}
+
+function renderFiles() {
+  const list = document.getElementById('fileList');
+  if (!allFiles.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">No files found</div>'; return; }
+
+  list.innerHTML = allFiles.map(f => `
+    <div class="file-item">
+      <div class="file-icon">📊</div>
+      <div class="file-info">
+        <div class="file-name">${f.name}</div>
+        <div class="file-meta">
+          <span>📦 ${f.size_mb} MB</span>
+          <span>📝 ${f.records?.toLocaleString() ?? 'N/A'} records</span>
+          <span>📑 ${f.sheets ?? 'N/A'} sheets</span>
+          <span>⏰ ${f.last_modified ? new Date(f.last_modified).toLocaleString() : 'N/A'}</span>
+        </div>
+      </div>
+      <span class="file-status file-status-${f.status}">${f.status === 'healthy' ? '✅ Healthy' : f.status === 'stale' ? '⚠️ Stale' : '❌ Missing'}</span>
+      <div class="file-actions">
+        <button class="file-btn" onclick="showToast('Reload ${f.name}', 'success')">↻ Reload</button>
+        <button class="file-btn" onclick="showToast('View ${f.name}', 'success')">👁 View</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Drag & Drop
+const dropZone = document.getElementById('dropZone');
+if (dropZone) {
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    for (const file of files) uploadFile(file);
+  });
+}
+
+async function uploadFile(file) {
+  showToast(`Uploading ${file.name}...`, 'success');
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const res = await fetch('files/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    showToast(`Uploaded ${data.filename} (${data.size_mb} MB)`, 'success');
+    await loadFiles();
+  } catch (e) { showToast('Upload failed', 'error'); }
+}
+
+// AI Smart Window
+function toggleAI() {
+  const panel = document.getElementById('aiPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) updateAIContext(currentTab);
+}
+
+function updateAIContext(tab) {
+  const body = document.getElementById('aiBody');
+  const welcome = document.getElementById('aiWelcome');
+  if (!welcome) return;
+
+  let context = '';
+  if (tab === 'flow') context = 'You are viewing the Data Flow tab. This shows real-time topology of how data moves between Bio-ERP modules.';
+  else if (tab === 'locations') context = 'You are viewing Data Locations. This maps where each entity lives across modules.';
+  else if (tab === 'master') context = 'You are viewing Master Tables. These are the core reference tables for the ERP system.';
+  else if (tab === 'alerts') context = 'You are viewing Alerts. These are critical issues requiring attention.';
+  else if (tab === 'documents') context = 'You are viewing Documents. These are the Excel files that feed the ERP system.';
+
+  welcome.textContent = `Welcome! ${context} I can help you understand health scores, recommend actions, or explain data flows. What would you like to know?`;
+}
+
+function sendAIMessage() {
+  const input = document.getElementById('aiInput');
+  const body = document.getElementById('aiBody');
+  const text = input.value.trim();
+  if (!text) return;
+
+  // User message
+  const userDiv = document.createElement('div');
+  userDiv.className = 'ai-message user';
+  userDiv.textContent = text;
+  body.appendChild(userDiv);
+  input.value = '';
+  body.scrollTop = body.scrollHeight;
+
+  // Simulated AI response based on context
+  setTimeout(() => {
+    const botDiv = document.createElement('div');
+    botDiv.className = 'ai-message bot';
+    botDiv.innerHTML = generateAIResponse(text);
+    body.appendChild(botDiv);
+    body.scrollTop = body.scrollHeight;
+  }, 600);
+}
+
+function generateAIResponse(text) {
+  const lower = text.toLowerCase();
+  if (lower.includes('health') || lower.includes('status')) {
+    const snap = lastSnapshot;
+    if (!snap) return 'I need a snapshot first. Please wait for data to load or click Refresh.';
+    const overall = Math.round(((snap.overall_flow_health || 0) + (snap.overall_data_health || 0) + (snap.overall_master_health || 0)) / 3);
+    return `Current system health is <strong>${overall}%</strong>. Flow: ${snap.overall_flow_health || 0}%, Data: ${snap.overall_data_health || 0}%, Master: ${snap.overall_master_health || 0}%. ${snap.critical_alerts?.length ? 'There are ' + snap.critical_alerts.length + ' alerts requiring attention.' : 'All systems nominal.'}`;
+  }
+  if (lower.includes('alert') || lower.includes('issue')) {
+    if (!allAlerts.length) return 'No alerts detected. System is running smoothly.';
+    const critical = allAlerts.filter(a => a.severity === 'CRITICAL').length;
+    return `There are ${allAlerts.length} total alerts (${critical} critical). The most recent: "${allAlerts[0]?.title}". Check the Alerts tab for details.`;
+  }
+  if (lower.includes('file') || lower.includes('document') || lower.includes('excel')) {
+    if (!allFiles.length) return 'No documents loaded. Upload files via the Documents tab.';
+    const stale = allFiles.filter(f => f.status === 'stale').length;
+    return `${allFiles.length} document(s) tracked. ${stale ? stale + ' are stale and may need refreshing.' : 'All documents are up to date.'}`;
+  }
+  if (lower.includes('module') || lower.includes('erp')) {
+    return 'The ERP system has 5 core modules: Bio-ERP Core (Brain), IncentiveHouse (IH), EventCore (EC), OR-ERP (Operations Research), and SCM (Supply Chain). Each can be launched from the Module Grid above.';
+  }
+  if (lower.includes('flow') || lower.includes('data')) {
+    return 'Data flows from source Excel files into staging tables, then through validation, reconciliation, and finally into production modules. The Flow tab visualizes this in real-time.';
+  }
+  return 'I understand. I can help with system health, alerts, data flows, file management, and module status. Try asking about "health", "alerts", "files", or "modules".';
+}
+
+// WebSocket
+function connectWebSocket() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = protocol + '//' + window.location.host + '/ws';
+  ws = new WebSocket(wsUrl);
+  ws.onopen = () => { wsConnected = true; console.log('WS connected'); };
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'snapshot') {
+      lastSnapshot = msg.payload;
+      updateScores(msg.payload);
+      updateHealthRing(msg.payload);
+      updateMetrics(msg.payload);
+      allAlerts = msg.payload.critical_alerts || [];
+      renderAlerts();
+    }
+  };
+  ws.onclose = () => { wsConnected = false; setTimeout(connectWebSocket, 5000); };
+  ws.onerror = (e) => console.error('WS error:', e);
+}
+
+// Toast
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.innerHTML = `<span>${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '❌'}</span> <span>${message}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// Trigger Scan
+async function triggerScan() {
+  showToast('Capturing snapshot...', 'success');
+  try {
+    await fetch('flow/snapshot', { method: 'POST' });
+    await loadSnapshot();
+    showToast('Snapshot captured', 'success');
+  } catch (e) { showToast('Scan failed', 'error'); }
+}
+
+// AI Insights
+async function loadAIInsights() {
+  try {
+    const res = await fetch('ai/insights');
+    const data = await res.json();
+    // Could populate AI widget with pre-computed insights
+  } catch (e) { console.error('AI insights error:', e); }
+}
+
+// Filter Masters
+function filterMaster(type) {
+  if (type === 'all') { document.getElementById('masterSearch').value = ''; }
+  else if (type === 'stale') { document.getElementById('masterSearch').value = 'stale'; }
+  else if (type === 'critical') { document.getElementById('masterSearch').value = 'critical'; }
+  filterMasterTables();
+}
+function clearFilters() {
+  document.getElementById('masterSearch').value = '';
+  document.getElementById('locationSearch').value = '';
+  filterMasterTables();
+  filterLocations();
+}
+
+// Init
+async function init() {
+  await refreshAll();
+  startAutoRefresh();
+  connectWebSocket();
+}
+
+// Wait for DOM
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

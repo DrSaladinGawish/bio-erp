@@ -19,6 +19,7 @@ class CurrencyService:
 
     async def _refresh_rates(self) -> None:
         import httpx
+
         try:
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.get(self.base_url)
@@ -43,7 +44,9 @@ class CurrencyService:
             raise ValueError(f"Unsupported currency: {from_currency} → {to_currency}")
         return to_rate / from_rate
 
-    async def convert(self, amount: float, from_currency: str, to_currency: str) -> dict:
+    async def convert(
+        self, amount: float, from_currency: str, to_currency: str
+    ) -> dict:
         rate = await self.get_rate(from_currency, to_currency)
         return {
             "original_amount": amount,

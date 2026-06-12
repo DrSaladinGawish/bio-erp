@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import httpx
 from datetime import datetime
 from datetime import timezone
@@ -101,7 +101,8 @@ class ETAProductionClient:
                 signed_docs.append(signed)
             except FileNotFoundError:
                 raise ETAProductionError(
-                    "T2", "Digital signature key missing â€” cannot submit to production"
+                    "T2",
+                    "Digital signature key missing â€” cannot submit to production",
                 )
 
         token = await ETAClient._get_token()

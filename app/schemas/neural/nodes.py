@@ -5,7 +5,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class PredictionCreate(BaseModel):
-    prediction_type: str = Field(..., pattern=r"^(cash_flow|client_churn|pnr_overrun|transaction_anomaly)$")
+    prediction_type: str = Field(
+        ..., pattern=r"^(cash_flow|client_churn|pnr_overrun|transaction_anomaly)$"
+    )
     prediction_key: str
     predicted_value: float
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
@@ -44,7 +46,9 @@ class FeatureStoreResponse(FeatureStoreCreate):
 class TrainingCreate(BaseModel):
     model_name: str
     model_version: str = "1.0.0"
-    training_type: str = Field(default="full", pattern=r"^(full|incremental|cross_validation)$")
+    training_type: str = Field(
+        default="full", pattern=r"^(full|incremental|cross_validation)$"
+    )
     dataset_size: int = 0
     parameters: dict[str, Any] | None = None
 
@@ -85,7 +89,9 @@ class MemoryResponse(MemoryCreate):
 
 
 class PredictionRequest(BaseModel):
-    prediction_type: str = Field(..., pattern=r"^(cash_flow|client_churn|pnr_overrun|transaction_anomaly)$")
+    prediction_type: str = Field(
+        ..., pattern=r"^(cash_flow|client_churn|pnr_overrun|transaction_anomaly)$"
+    )
     entity_id: str
     context: dict[str, Any] | None = None
 

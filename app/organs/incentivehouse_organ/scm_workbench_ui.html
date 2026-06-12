@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCM Cost Engine Workbench — IncentiveHouse ERP</title>
+    <style>
+        :root {
+            --primary: #1a237e;
+            --secondary: #3949ab;
+            --accent: #00bcd4;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --bg: #f5f5f5;
+            --card: #ffffff;
+            --text: #212121;
+            --border: #e0e0e0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header h1 { font-size: 1.4rem; font-weight: 600; }
+        .header .badge {
+            background: var(--accent);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 1.5rem;
+        }
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+        }
+        .card h3 {
+            font-size: 0.95rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .engine-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .engine-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .engine-btn:hover {
+            border-color: var(--secondary);
+            background: #e8eaf6;
+        }
+        .engine-btn.active {
+            border-color: var(--accent);
+            background: #e0f7fa;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .engine-btn .icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+        }
+        .engine-btn.active .icon { background: var(--accent); color: white; }
+        .engine-btn:not(.active) .icon { background: #f5f5f5; color: #666; }
+        .engine-type {
+            font-size: 0.7rem;
+            color: #888;
+            margin-left: auto;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 0.35rem;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+        .btn {
+            padding: 0.6rem 1.25rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background: var(--secondary);
+            color: white;
+        }
+        .btn-primary:hover { background: var(--primary); }
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        .btn-success:hover { background: #388e3c; }
+        .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-header h2 { font-size: 1.1rem; color: var(--primary); }
+        .status-bar {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+        .status-dot.warn { background: var(--warning); }
+        .status-dot.error { background: var(--danger); }
+        .json-editor {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            min-height: 400px;
+            background: #fafafa;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            resize: vertical;
+        }
+        .result-panel {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Consolas', monospace;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .result-panel .key { color: #9cdcfe; }
+        .result-panel .string { color: #ce9178; }
+        .result-panel .number { color: #b5cea8; }
+        .result-panel .boolean { color: #569cd6; }
+        .result-panel .null { color: #569cd6; }
+        .tabs {
+            display: flex;
+            gap: 0.25rem;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 1rem;
+        }
+        .tab {
+            padding: 0.6rem 1rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--accent);
+            font-weight: 600;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .recommendation-card {
+            background: #fff8e1;
+            border-left: 4px solid var(--warning);
+            padding: 0.75rem 1rem;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .recommendation-card.alert {
+            background: #ffebee;
+            border-left-color: var(--danger);
+        }
+        .recommendation-card.success {
+            background: #e8f5e9;
+            border-left-color: var(--success);
+        }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .metric-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .metric-label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 0.25rem;
+        }
+        .loading {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--secondary);
+            font-size: 0.9rem;
+        }
+        .loading.active { display: flex; }
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div style="display:flex;align-items:center;gap:1rem;">
+            <h1>🔬 SCM Cost Engine Workbench</h1>
+            <span class="badge">v2.2.2</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:1rem;font-size:0.85rem;">
+            <span>IncentiveHouse ERP</span>
+            <span class="badge" style="background:var(--success);">190 Tests Pass</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <!-- Sidebar: Engine Selector + Quick Inputs -->
+            <div class="sidebar">
+                <div class="card">
+                    <h3>📊 Analysis Engines</h3>
+                    <div class="engine-list" id="engineList">
+                        <button class="engine-btn active" data-engine="full" data-endpoint="/api/v1/scm/cost-engine/analyze/event/full">
+                            <span class="icon">🎯</span>
+                            <span>Full Event Analysis</span>
+                            <span class="engine-type">All</span>
+                        </button>
+                        <button class="engine-btn" data-engine="value-chain" data-endpoint="/api/v1/scm/cost-engine/analyze/value-chain">
+                            <span class="icon">🔗</span>
+                            <span>Value Chain</span>
+                            <span class="engine-type">Strategic</span>
+                        </button>
+                        <button class="engine-btn" data-engine="target-costing" data-endpoint="/api/v1/scm/cost-engine/analyze/target-costing">
+                            <span class="icon">🎯</span>
+                            <span>Target Costing</span>
+                            <span class="engine-type">Strategic</span>
+                        </button>
+                        <button class="engine-btn" data-engine="sustainability" data-endpoint="/api/v1/scm/cost-engine/analyze/sustainability">
+                            <span class="icon">🌱</span>
+                            <span>Sustainability</span>
+                            <span class="engine-type">Environmental</span>
+                        </button>
+                        <button class="engine-btn" data-engine="profitability" data-endpoint="/api/v1/scm/cost-engine/analyze/profitability">
+                            <span class="icon">💰</span>
+                            <span>Profitability</span>
+                            <span class="engine-type">Financial</span>
+                        </button>
+                        <button class="engine-btn" data-engine="cvp" data-endpoint="/api/v1/scm/cost-engine/analyze/cvp">
+                            <span class="icon">📈</span>
+                            <span>CVP Analysis</span>
+                            <span class="engine-type">Operational</span>
+                        </button>
+                        <button class="engine-btn" data-engine="abc" data-endpoint="/api/v1/scm/cost-engine/analyze/abc">
+                            <span class="icon">⚙️</span>
+                            <span>ABC</span>
+                            <span class="engine-type">Operational</span>
+                        </button>
+                        <button class="engine-btn" data-engine="vendor-scorecard" data-endpoint="/api/v1/scm/cost-engine/analyze/vendor-scorecard">
+                            <span class="icon">⭐</span>
+                            <span>Vendor Scorecard</span>
+                            <span class="engine-type">Procurement</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>⚡ Quick Event</h3>
+                    <div class="form-group">
+                        <label>Event ID</label>
+                        <input type="number" id="quickEventId" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Event Name</label>
+                        <input type="text" id="quickEventName" value="Cisco Annual Meeting">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Gross Sales (EGP)</label>
+                            <input type="number" id="quickGrossSales" value="250000">
+                        </div>
+                        <div class="form-group">
+                            <label>Budget (EGP)</label>
+                            <input type="number" id="quickBudget" value="200000">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Actual Cost (EGP)</label>
+                        <input type="number" id="quickActualCost" value="195000">
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="loadQuickEvent()" style="width:100%;">
+                        📝 Load into Editor
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h3>🔧 System</h3>
+                    <button class="btn btn-success btn-sm" onclick="checkHealth()" style="width:100%;margin-bottom:0.5rem;">
+                        🏥 Health Check
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="listEngines()" style="width:100%;">
+                        📋 List Engines
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Panel: JSON Editor + Results -->
+            <div class="main-panel">
+                <div class="card">
+                    <div class="panel-header">
+                        <h2 id="panelTitle">🎯 Full Event Analysis</h2>
+                        <div class="status-bar">
+                            <div class="status-item">
+                                <span class="status-dot" id="apiStatusDot"></span>
+                                <span id="apiStatusText">Checking...</span>
+                            </div>
+                            <div class="loading" id="loadingIndicator">
+                                <div class="spinner"></div>
+                                <span>Analyzing...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('request')">📤 Request JSON</button>
+                        <button class="tab" onclick="switchTab('response')">📥 Response</button>
+                        <button class="tab" onclick="switchTab('visual')">📊 Visual Summary</button>
+                    </div>
+
+                    <div class="tab-content active" id="tab-request">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                            <span style="font-size:0.8rem;color:#888;">POST <span id="endpointDisplay">/api/v1/scm/cost-engine/analyze/event/full</span></span>
+                            <div style="display:flex;gap:0.5rem;">
+                                <button class="btn btn-sm" onclick="formatJson()" style="background:#f5f5f5;">🎨 Format</button>
+                                <button class="btn btn-primary btn-sm" onclick="runAnalysis()">▶️ Run Analysis</button>
+                            </div>
+                        </div>
+                        <textarea class="json-editor" id="requestEditor" spellcheck="false"></textarea>
+                    </div>
+
+                    <div class="tab-content" id="tab-response">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                            <span style="font-size:0.8rem;color:#888;">Response</span>
+                            <button class="btn btn-sm" onclick="copyResponse()" style="background:#f5f5f5;">📋 Copy</button>
+                        </div>
+                        <div class="result-panel" id="responsePanel">// Run an analysis to see results...</div>
+                    </div>
+
+                    <div class="tab-content" id="tab-visual">
+                        <div id="visualSummary">
+                            <div style="text-align:center;padding:3rem;color:#888;">
+                                <div style="font-size:3rem;margin-bottom:1rem;">📊</div>
+                                <p>Run an analysis to generate visual summary</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── CONFIG ──
+        const API_BASE = window.location.origin; // Auto-detect (localhost:8001, etc.)
+        let currentEndpoint = '/api/v1/scm/cost-engine/analyze/event/full';
+        let currentEngine = 'full';
+
+        // ── DEFAULT PAYLOADS ──
+        const DEFAULT_PAYLOADS = {
+            'full': {
+                event_id: 1, event_code: "EVT-2026-001", event_name: "Cisco Annual Meeting",
+                client_id: 84, client_name: "CISCO", gross_sales: 250000, budget: 200000, actual_cost: 195000,
+                primary_activities: [
+                    {name: "Venue & Setup", category: "primary", cost_egp: 45000, revenue_attributable_egp: 60000, client_satisfaction_score: 8.5, competitive_advantage: 7.0},
+                    {name: "Catering", category: "primary", cost_egp: 35000, revenue_attributable_egp: 40000, client_satisfaction_score: 9.0, competitive_advantage: 6.5},
+                    {name: "AV & Entertainment", category: "primary", cost_egp: 25000, revenue_attributable_egp: 35000, client_satisfaction_score: 8.0, competitive_advantage: 8.5},
+                    {name: "Transport & Logistics", category: "primary", cost_egp: 20000, revenue_attributable_egp: 25000, client_satisfaction_score: 7.5, competitive_advantage: 6.0},
+                    {name: "Guest Services", category: "primary", cost_egp: 15000, revenue_attributable_egp: 20000, client_satisfaction_score: 9.5, competitive_advantage: 7.5}
+                ],
+                support_activities: [
+                    {name: "Event Planning", category: "support", cost_egp: 20000, revenue_attributable_egp: 30000, client_satisfaction_score: 8.0, competitive_advantage: 7.0},
+                    {name: "HR & Staffing", category: "support", cost_egp: 15000, revenue_attributable_egp: 18000, client_satisfaction_score: 7.0, competitive_advantage: 5.5},
+                    {name: "Technology Platform", category: "support", cost_egp: 10000, revenue_attributable_egp: 25000, client_satisfaction_score: 8.5, competitive_advantage: 9.0},
+                    {name: "Procurement", category: "support", cost_egp: 8000, revenue_attributable_egp: 12000, client_satisfaction_score: 7.5, competitive_advantage: 6.0}
+                ],
+                sustainability_costs: [
+                    {category: "Carbon Emissions", cost_egp: 5000, externality_egp: 8000, mitigation_cost_egp: 3000, regulatory_risk: "medium"},
+                    {category: "Waste Management", cost_egp: 3000, externality_egp: 2000, mitigation_cost_egp: 1500, regulatory_risk: "low"},
+                    {category: "Social Impact", cost_egp: 2000, externality_egp: 0, mitigation_cost_egp: 500, regulatory_risk: "low"}
+                ],
+                cost_drivers: [
+                    {name: "Event Scale", driver_type: "structural", current_level: 150, optimal_level: 200, unit: "attendees", impact_on_cost_pct: 15.0},
+                    {name: "Workforce Skill", driver_type: "executional", current_level: 75, optimal_level: 90, unit: "training_hours", impact_on_cost_pct: 8.0}
+                ]
+            },
+            'value-chain': null, // Uses full event payload
+            'target-costing': null,
+            'sustainability': null,
+            'profitability': null,
+            'cvp': {
+                fixed_costs: 50000,
+                variable_cost_per_unit: 800,
+                selling_price_per_unit: 1500,
+                current_volume: 200,
+                target_profit: 30000
+            },
+            'abc': {
+                activities: [
+                    {name: "Event Planning", hours: 40, rate: 500},
+                    {name: "On-site Coordination", hours: 24, rate: 400},
+                    {name: "Post-event Reporting", hours: 8, rate: 350}
+                ],
+                cost_pools: [
+                    {pool: "Admin Overhead", total_cost: 50000, driver: "event_count", volume: 10},
+                    {pool: "Facility Depreciation", total_cost: 30000, driver: "event_hours", volume: 500}
+                ]
+            },
+            'vendor-scorecard': {
+                vendor_id: 1,
+                vendor_name: "Grand Nile Venue",
+                quality_score: 88,
+                delivery_score: 92,
+                price_score: 75,
+                service_score: 85
+            }
+        };
+
+        // ── ENGINE SELECTOR ──
+        document.getElementById('engineList').addEventListener('click', (e) => {
+            const btn = e.target.closest('.engine-btn');
+            if (!btn) return;
+            document.querySelectorAll('.engine-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentEngine = btn.dataset.engine;
+            currentEndpoint = btn.dataset.endpoint;
+            document.getElementById('panelTitle').textContent = btn.querySelector('span:nth-child(2)').textContent;
+            document.getElementById('endpointDisplay').textContent = currentEndpoint;
+            loadPayload(currentEngine);
+        });
+
+        function loadPayload(engine) {
+            const payload = DEFAULT_PAYLOADS[engine] || DEFAULT_PAYLOADS['full'];
+            document.getElementById('requestEditor').value = JSON.stringify(payload, null, 2);
+        }
+
+        function loadQuickEvent() {
+            const id = document.getElementById('quickEventId').value;
+            const name = document.getElementById('quickEventName').value;
+            const sales = parseFloat(document.getElementById('quickGrossSales').value);
+            const budget = parseFloat(document.getElementById('quickBudget').value);
+            const cost = parseFloat(document.getElementById('quickActualCost').value);
+
+            let payload = JSON.parse(document.getElementById('requestEditor').value);
+            payload.event_id = parseInt(id);
+            payload.event_name = name;
+            payload.gross_sales = sales;
+            payload.budget = budget;
+            payload.actual_cost = cost;
+            document.getElementById('requestEditor').value = JSON.stringify(payload, null, 2);
+        }
+
+        // ── TABS ──
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        }
+
+        function formatJson() {
+            try {
+                const val = document.getElementById('requestEditor').value;
+                document.getElementById('requestEditor').value = JSON.stringify(JSON.parse(val), null, 2);
+            } catch (e) {
+                alert('Invalid JSON: ' + e.message);
+            }
+        }
+
+        function copyResponse() {
+            const text = document.getElementById('responsePanel').textContent;
+            navigator.clipboard.writeText(text).then(() => alert('Copied!'));
+        }
+
+        // ── API CALLS ──
+        async function runAnalysis() {
+            const editor = document.getElementById('requestEditor');
+            const loading = document.getElementById('loadingIndicator');
+            const responsePanel = document.getElementById('responsePanel');
+
+            let payload;
+            try {
+                payload = JSON.parse(editor.value);
+            } catch (e) {
+                responsePanel.textContent = '❌ Invalid JSON in request: ' + e.message;
+                switchTab('response');
+                return;
+            }
+
+            loading.classList.add('active');
+            responsePanel.textContent = 'Loading...';
+            switchTab('response');
+
+            try {
+                const res = await fetch(API_BASE + currentEndpoint, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                responsePanel.innerHTML = syntaxHighlight(JSON.stringify(data, null, 2));
+                if (res.ok) {
+                    renderVisual(data);
+                }
+            } catch (e) {
+                responsePanel.textContent = '❌ Error: ' + e.message;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                const res = await fetch(API_BASE + '/api/v1/scm/cost-engine/health');
+                const data = await res.json();
+                alert(`🏥 Health: ${data.status}\nEngines: ${data.engines_loaded.length}\nFallback: ${data.fallback_writable ? 'Writable' : 'Read-only'}\nBridge: ${data.bridge_available ? 'Connected' : 'Fallback'}`);
+            } catch (e) {
+                alert('❌ Health check failed: ' + e.message);
+            }
+        }
+
+        async function listEngines() {
+            try {
+                const res = await fetch(API_BASE + '/api/v1/scm/cost-engine/engines');
+                const data = await res.json();
+                alert(`📋 ${data.total} engines available:\n${data.engines.map(e => `• ${e.name} (${e.type})`).join('\n')}`);
+            } catch (e) {
+                alert('❌ Failed: ' + e.message);
+            }
+        }
+
+        // ── VISUAL RENDERER ──
+        function renderVisual(data) {
+            const container = document.getElementById('visualSummary');
+            let html = '';
+
+            // If full analysis with multiple engines
+            if (data.analyses) {
+                html += '<div class="metric-grid">';
+                if (data.analyses.profitability) {
+                    const p = data.analyses.profitability;
+                    html += `<div class="metric-card"><div class="metric-value">${p.gross_margin_pct?.toFixed(1) || '--'}%</div><div class="metric-label">Gross Margin</div></div>`;
+                    html += `<div class="metric-card"><div class="metric-value">${p.total_cost?.toLocaleString() || '--'}</div><div class="metric-label">Total Cost (EGP)</div></div>`;
+                }
+                if (data.analyses.target_costing) {
+                    const t = data.analyses.target_costing;
+                    html += `<div class="metric-card"><div class="metric-value" style="color:${t.cost_gap > 0 ? 'var(--danger)' : 'var(--success)'}">${t.cost_gap > 0 ? '+' : ''}${t.cost_gap?.toLocaleString() || '--'}</div><div class="metric-label">Cost Gap (EGP)</div></div>`;
+                }
+                html += `<div class="metric-card"><div class="metric-value">${data.overall_confidence?.toFixed(2) || '--'}</div><div class="metric-label">Confidence</div></div>`;
+                html += '</div>';
+
+                // Recommendations
+                html += '<h3 style="margin:1rem 0 0.5rem;color:var(--primary);">📋 Recommendations</h3>';
+                Object.entries(data.analyses).forEach(([key, analysis]) => {
+                    if (analysis.recommendations) {
+                        analysis.recommendations.forEach(rec => {
+                            const alertClass = rec.includes('ALERT') || rec.includes('CRITICAL') || rec.includes('URGENT') ? 'alert' : 
+                                              rec.includes('surplus') || rec.includes('healthy') ? 'success' : '';
+                            html += `<div class="recommendation-card ${alertClass}"><strong>${key.replace(/_/g, ' ').toUpperCase()}:</strong> ${rec}</div>`;
+                        });
+                    }
+                });
+            }
+            // Single engine result
+            else if (data.analysis) {
+                const a = data.analysis;
+                html += '<div class="metric-grid">';
+                if (a.overall_score !== undefined) {
+                    html += `<div class="metric-card"><div class="metric-value">${a.overall_score?.toFixed(1) || '--'}</div><div class="metric-label">Overall Score</div></div>`;
+                    html += `<div class="metric-card"><div class="metric-value">${a.grade || '--'}</div><div class="metric-label">Grade</div></div>`;
+                }
+                if (a.gross_profit !== undefined) {
+                    html += `<div class="metric-card"><div class="metric-value">${a.gross_profit?.toLocaleString() || '--'}</div><div class="metric-label">Gross Profit</div></div>`;
+                }
+                if (a.break_even_units !== undefined) {
+                    html += `<div class="metric-card"><div class="metric-value">${Math.round(a.break_even_units)?.toLocaleString() || '--'}</div><div class="metric-label">Break-Even Units</div></div>`;
+                }
+                html += '</div>';
+
+                if (a.recommendations) {
+                    html += '<h3 style="margin:1rem 0 0.5rem;color:var(--primary);">📋 Recommendations</h3>';
+                    a.recommendations.forEach(rec => {
+                        const alertClass = rec.includes('ALERT') || rec.includes('CRITICAL') ? 'alert' : '';
+                        html += `<div class="recommendation-card ${alertClass}">${rec}</div>`;
+                    });
+                }
+            }
+
+            container.innerHTML = html || '<div style="text-align:center;padding:2rem;color:#888;">No visual data available</div>';
+            switchTab('visual');
+        }
+
+        // ── JSON SYNTAX HIGHLIGHTER ──
+        function syntaxHighlight(json) {
+            return json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/("(\u[a-zA-Z0-9]{4}|\[^u]|[^\"])*"(\s*:)?)/g, (match) => {
+                    let cls = 'string';
+                    if (/:$/.test(match)) { cls = 'key'; match = match.slice(0, -1) + '</span>:'; }
+                    return '<span class="' + cls + '">' + match;
+                })
+                .replace(/(true|false)/g, '<span class="boolean">$1</span>')
+                .replace(/(null)/g, '<span class="null">$1</span>')
+                .replace(/(\d+\.?\d*)/g, '<span class="number">$1</span>');
+        }
+
+        // ── API STATUS CHECK ──
+        async function checkApiStatus() {
+            const dot = document.getElementById('apiStatusDot');
+            const text = document.getElementById('apiStatusText');
+            try {
+                const res = await fetch(API_BASE + '/api/v1/scm/cost-engine/health');
+                if (res.ok) {
+                    dot.style.background = 'var(--success)';
+                    text.textContent = 'API Online';
+                } else {
+                    dot.style.background = 'var(--warning)';
+                    text.textContent = 'API Error';
+                }
+            } catch (e) {
+                dot.style.background = 'var(--danger)';
+                text.textContent = 'API Offline';
+            }
+        }
+
+        // ── INIT ──
+        loadPayload('full');
+        checkApiStatus();
+        setInterval(checkApiStatus, 30000); // Recheck every 30s
+    </script>
+</body>
+</html>

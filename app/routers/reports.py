@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 from datetime import datetime
@@ -9,7 +9,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
 from app.database import get_db
 from app.middleware.auth import get_current_user
@@ -115,7 +114,12 @@ async def _fetch_or_data(job_id: str, db: AsyncSession) -> Optional[dict]:
 
 
 async def _store_report_metadata(
-    filename: str, report_type: str, fmt: str, path: str, source_id: str | None, db: AsyncSession
+    filename: str,
+    report_type: str,
+    fmt: str,
+    path: str,
+    source_id: str | None,
+    db: AsyncSession,
 ) -> ReportResponse:
     meta = ReportMetadata(
         filename=filename,
@@ -154,7 +158,9 @@ async def export_or_analysis(
     renderer = _RENDERER_MAP.get(fmt, ExcelRenderer)
     renderer.generate("or_analysis", data, path)
 
-    report = await _store_report_metadata(filename, "or_analysis", fmt, path, job_id, db)
+    report = await _store_report_metadata(
+        filename, "or_analysis", fmt, path, job_id, db
+    )
     return report
 
 
@@ -173,7 +179,9 @@ async def export_scm_cost_report(
     renderer = _RENDERER_MAP.get(req.format, ExcelRenderer)
     renderer.generate("scm_cost", data, path)
 
-    return await _store_report_metadata(filename, "scm_cost", req.format, path, req.source_id, db)
+    return await _store_report_metadata(
+        filename, "scm_cost", req.format, path, req.source_id, db
+    )
 
 
 @router.post("/sustainability")
@@ -191,4 +199,6 @@ async def export_sustainability_report(
     renderer = _RENDERER_MAP.get(req.format, PDFRenderer)
     renderer.generate("sustainability", data, path)
 
-    return await _store_report_metadata(filename, "sustainability", req.format, path, req.source_id, db)
+    return await _store_report_metadata(
+        filename, "sustainability", req.format, path, req.source_id, db
+    )

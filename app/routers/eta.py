@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import json
 from datetime import datetime
 from datetime import timezone
@@ -104,7 +104,8 @@ def build_eta_invoice(
         else None,
         "documentType": "I",
         "documentTypeVersion": "1.0",
-        "dateTimeIssued": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
+        "dateTimeIssued": datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+        + "Z",
         "taxpayerActivityCode": activity_code,
         "internalID": f"INV-{event.id}-{datetime.now(timezone.utc).replace(tzinfo=None).strftime('%Y%m%d%H%M%S')}",
         "totalDiscountAmount": Decimal("0.00"),

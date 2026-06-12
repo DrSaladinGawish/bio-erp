@@ -1,6 +1,6 @@
-﻿import enum
+import enum
 from datetime import datetime
-from sqlalchemy import Boolean, Integer, String, Float, ForeignKey, DateTime, Text, Enum as SAEnum, JSON
+from sqlalchemy import Boolean, Integer, String, Float, ForeignKey, DateTime, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 from app.models.base import BaseMixin, BranchAwareMixin, CurrencyAwareMixin
@@ -78,8 +78,9 @@ class Event(Base, BaseMixin, BranchAwareMixin, CurrencyAwareMixin):
     design_attachment: Mapped[str] = mapped_column(String(500), nullable=True)
 
     lifecycle_status: Mapped[str] = mapped_column(
-        String(20), default=LifecycleStatus.DRAFT.value,
-        comment="DRAFT/QUOTED/CONFIRMED/PLANNING/IN_PROGRESS/EXECUTED/INVOICED/CLOSED"
+        String(20),
+        default=LifecycleStatus.DRAFT.value,
+        comment="DRAFT/QUOTED/CONFIRMED/PLANNING/IN_PROGRESS/EXECUTED/INVOICED/CLOSED",
     )
     ops_team_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("staff.id"), nullable=True

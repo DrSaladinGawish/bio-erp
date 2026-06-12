@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Goods Receipt (GRN) - IncentiveHouse ERP{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="/">Dashboard</a> &raquo; Goods Receipt (GRN)</div>
+<div class="page-header">
+    <h1>Goods Receipt Notes</h1>
+    <div class="actions">
+        <button class="btn btn-ghost" onclick="loadGrnList()">Refresh</button>
+        <button class="btn btn-primary" onclick="openNewGrnModal()">+ New GRN</button>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid" id="grnKpis">
+    <div class="kpi-card kpi-active"><div class="kpi-label">Total GRNs</div><div class="kpi-value" id="kpiTotal">-</div></div>
+    <div class="kpi-card kpi-pending"><div class="kpi-label">Drafts</div><div class="kpi-value" id="kpiDraft">-</div></div>
+    <div class="kpi-card kpi-revenue"><div class="kpi-label">Posted</div><div class="kpi-value" id="kpiPosted">-</div></div>
+    <div class="kpi-card kpi-profit"><div class="kpi-label">Total Value (EGP)</div><div class="kpi-value" id="kpiValue">-</div></div>
+</div>
+
+<!-- Filters -->
+<div class="content-card">
+    <h3 style="margin-bottom:12px;color:var(--primary)">Filters</h3>
+    <div class="form-row">
+        <div class="form-group"><label>Status</label>
+            <select id="fStatus"><option value="">All</option><option>DRAFT</option><option>POSTED</option><option>CANCELLED</option></select>
+        </div>
+        <div class="form-group"><label>From</label><input type="date" id="fFrom"></div>
+        <div class="form-group"><label>To</label><input type="date" id="fTo"></div>
+        <div class="form-group"><label>Search</label><input type="text" id="fSearch" placeholder="GRN no, notes..."></div>
+    </div>
+    <button class="btn btn-primary" onclick="loadGrnList()">Apply</button>
+</div>
+
+<!-- Table -->
+<div class="content-card">
+    <h3 style="margin-bottom:12px;color:var(--primary)">Goods Receipt Notes</h3>
+    <div id="grnTableWrap">Loading...</div>
+</div>
+
+<!-- New GRN modal (inline) -->
+<div id="newGrnModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:8px;padding:24px;width:520px;max-width:90vw;">
+        <h3 style="margin-bottom:16px;color:var(--primary)">New Goods Receipt Note</h3>
+        <div class="form-group"><label>GRN Number *</label><input type="text" id="n_grn_no" placeholder="GRN-2026-001"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Date *</label><input type="date" id="n_grn_date"></div>
+            <div class="form-group"><label>PO ID</label><input type="number" id="n_po_id" placeholder="optional"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Vendor ID</label><input type="number" id="n_vendor_id"></div>
+            <div class="form-group"><label>Event ID</label><input type="number" id="n_event_id"></div>
+        </div>
+        <div class="form-group"><label>Warehouse</label><input type="text" id="n_warehouse" value="MAIN"></div>
+        <div class="form-group"><label>Notes</label><textarea id="n_notes" rows="2"></textarea></div>
+        <div class="form-actions">
+            <button class="btn btn-ghost" onclick="closeNewGrnModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitNewGrn()">Create</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function fmtEgp(n){ try{ return "EGP " + Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }catch(e){ return "EGP 0.00"; } }
+function esc(s){ return (s==null?"":String(s)).replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">"); }
+
+async function loadKpis(){
+    try{
+        var d = await fetch('/api/v1/grn/summary').then(r=>r.json());
+        document.getElementById('kpiTotal').textContent = d.total_grns||0;
+        document.getElementById('kpiDraft').textContent = d.draft||0;
+        document.getElementById('kpiPosted').textContent = d.posted||0;
+        document.getElementById('kpiValue').textContent = fmtEgp(d.total_value);
+    }catch(e){ console.error(e); }
+}
+
+async function loadGrnList(){
+    var qs = new URLSearchParams();
+    var s = document.getElementById('fStatus').value; if(s) qs.set('status',s);
+    var df = document.getElementById('fFrom').value; if(df) qs.set('date_from',df);
+    var dt = document.getElementById('fTo').value; if(dt) qs.set('date_to',dt);
+    var q = document.getElementById('fSearch').value; if(q) qs.set('search',q);
+    qs.set('page_size','100');
+    try{
+        var resp = await fetch('/api/v1/grn/receipts?'+qs.toString()).then(r=>r.json());
+        var rows = resp.data || [];
+        if(!rows.length){
+            document.getElementById('grnTableWrap').innerHTML = '<div class="alert alert-info">No GRNs found. Click "+ New GRN" to create one.</div>';
+            return;
+        }
+        var html = '<table class="data-table"><thead><tr><th>GRN No</th><th>Date</th><th>PO</th><th>Vendor</th><th>Event</th><th>Status</th><th>Total Qty</th><th>Value</th><th>Actions</th></tr></thead><tbody>';
+        rows.forEach(function(r){
+            var statusColor = r.status==='POSTED'?'var(--success)':(r.status==='CANCELLED'?'var(--danger)':'var(--warning)');
+            html += '<tr>';
+            html += '<td><strong>'+esc(r.grn_no)+'</strong></td>';
+            html += '<td>'+esc(r.grn_date)+'</td>';
+            html += '<td>'+esc(r.po_id||'-')+'</td>';
+            html += '<td>'+esc(r.vendor_id||'-')+'</td>';
+            html += '<td>'+esc(r.event_id||'-')+'</td>';
+            html += '<td><span style="color:'+statusColor+';font-weight:600">'+esc(r.status)+'</span></td>';
+            html += '<td>'+(r.total_qty||0).toFixed(2)+'</td>';
+            html += '<td>'+fmtEgp(r.total_value)+'</td>';
+            html += '<td>';
+            if(r.status==='DRAFT'){ html += '<button class="btn btn-success" style="padding:4px 10px;font-size:11px" onclick="postGrn('+r.id+')">Post</button> '; }
+            html += '<button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="viewGrn('+r.id+')">View</button>';
+            html += '</td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<p style="margin-top:10px;color:var(--text-light);font-size:12px">'+resp.total+' total GRN(s)</p>';
+        document.getElementById('grnTableWrap').innerHTML = html;
+    }catch(e){
+        document.getElementById('grnTableWrap').innerHTML = '<div class="alert alert-error">Error loading GRNs: '+e+'</div>';
+    }
+}
+
+async function viewGrn(id){
+    try{
+        var d = await fetch('/api/v1/grn/receipts/'+id).then(r=>r.json());
+        var lines = d.lines || [];
+        var linesHtml = lines.length ? '<table class="data-table"><thead><tr><th>Item</th><th>Description</th><th>Ordered</th><th>Received</th><th>Rejected</th><th>UOM</th><th>Unit Cost</th><th>Total</th></tr></thead><tbody>'+lines.map(function(l){
+            return '<tr><td>'+esc(l.item_code||'-')+'</td><td>'+esc(l.description||'')+'</td><td>'+(l.ordered_qty||0)+'</td><td>'+(l.received_qty||0)+'</td><td>'+(l.rejected_qty||0)+'</td><td>'+esc(l.uom||'EA')+'</td><td>'+fmtEgp(l.unit_cost)+'</td><td>'+fmtEgp(l.line_total)+'</td></tr>';
+        }).join('')+'</tbody></table>' : '<p>No line items yet.</p>';
+        var w = window.open('','_blank');
+        if(w){
+            w.document.write('<html><head><title>'+d.header.grn_no+'</title></head><body style="font-family:sans-serif;padding:20px"><h1>GRN '+d.header.grn_no+'</h1><p><b>Date:</b> '+d.header.grn_date+' <b>Status:</b> '+d.header.status+'</p><p><b>PO:</b> '+(d.header.po_id||'-')+' <b>Vendor:</b> '+(d.header.vendor_id||'-')+' <b>Event:</b> '+(d.header.event_id||'-')+'</p>'+linesHtml+'</body></html>');
+        } else {
+            alert('GRN '+d.header.grn_no+' — '+(lines.length)+' line(s), Total: '+fmtEgp(d.header.total_value));
+        }
+    }catch(e){ alert('Error: '+e); }
+}
+
+async function postGrn(id){
+    if(!confirm('Post this GRN? This will lock the line items.')) return;
+    try{
+        await fetch('/api/v1/grn/receipts/'+id+'/post',{method:'POST'});
+        loadGrnList();
+        loadKpis();
+    }catch(e){ alert('Error: '+e); }
+}
+
+function openNewGrnModal(){
+    document.getElementById('newGrnModal').style.display = 'flex';
+    document.getElementById('n_grn_date').value = new Date().toISOString().substring(0,10);
+    document.getElementById('n_grn_no').value = 'GRN-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-4);
+}
+function closeNewGrnModal(){ document.getElementById('newGrnModal').style.display = 'none'; }
+async function submitNewGrn(){
+    var payload = {
+        grn_no: document.getElementById('n_grn_no').value.trim(),
+        grn_date: document.getElementById('n_grn_date').value,
+        po_id: parseInt(document.getElementById('n_po_id').value) || null,
+        vendor_id: parseInt(document.getElementById('n_vendor_id').value) || null,
+        event_id: parseInt(document.getElementById('n_event_id').value) || null,
+        warehouse: document.getElementById('n_warehouse').value || 'MAIN',
+        notes: document.getElementById('n_notes').value || null
+    };
+    if(!payload.grn_no || !payload.grn_date){ alert('GRN No and Date are required'); return; }
+    try{
+        var r = await fetch('/api/v1/grn/receipts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        if(!r.ok){ var err = await r.json(); throw new Error(err.detail||'Failed'); }
+        closeNewGrnModal();
+        loadGrnList();
+        loadKpis();
+    }catch(e){ alert('Error: '+e.message); }
+}
+
+loadKpis();
+loadGrnList();
+</script>
+{% endblock %}

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Bank Reconciliation API — FastAPI router using proper dependency injection.
 
 Reads reconciliation data from the project-managed SQLite DB (same engine
@@ -10,6 +10,7 @@ Endpoints (under /recon):
   GET /recon/variances       - largest unreconciled variances
   GET /recon/check-books     - per-check-book rollup
 """
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -45,12 +46,14 @@ def recon_status(db: Session = Depends(get_recon_db)):
     """Per-status counts and total variance."""
     if not _table_exists(db, "bnk_reconciliation"):
         return {"rows": [], "note": "bnk_reconciliation table not yet created"}
-    rows = db.execute(text("""
+    rows = db.execute(
+        text("""
         SELECT recon_status, COUNT(*) AS cnt, COALESCE(SUM(ABS(variance)), 0) AS total_variance
         FROM bnk_reconciliation
         GROUP BY recon_status
         ORDER BY cnt DESC
-    """)).fetchall()
+    """)
+    ).fetchall()
     return {
         "rows": [
             {
@@ -71,14 +74,17 @@ def recon_variances(
     """Top unreconciled variances by absolute size."""
     if not _table_exists(db, "bnk_reconciliation"):
         return {"rows": [], "note": "bnk_reconciliation table not yet created"}
-    rows = db.execute(text("""
+    rows = db.execute(
+        text("""
         SELECT id, check_book_id, check_book_name, transaction_id,
                variance, bank_amount, gl_amount, recon_status
         FROM bnk_reconciliation
         WHERE COALESCE(recon_status, '') != 'RECONCILED'
         ORDER BY ABS(COALESCE(variance, 0)) DESC
         LIMIT :limit
-    """), {"limit": limit}).fetchall()
+    """),
+        {"limit": limit},
+    ).fetchall()
     return {
         "rows": [
             {
@@ -101,7 +107,8 @@ def check_books(db: Session = Depends(get_recon_db)):
     """Per-check-book rollup."""
     if not _table_exists(db, "bnk_reconciliation"):
         return {"rows": [], "note": "bnk_reconciliation table not yet created"}
-    rows = db.execute(text("""
+    rows = db.execute(
+        text("""
         SELECT check_book_id, check_book_name, COUNT(*) AS total,
                SUM(CASE WHEN COALESCE(recon_status,'') = 'RECONCILED' THEN 1 ELSE 0 END) AS ok,
                SUM(CASE WHEN COALESCE(recon_status,'') != 'RECONCILED' THEN 1 ELSE 0 END) AS bad,
@@ -109,7 +116,8 @@ def check_books(db: Session = Depends(get_recon_db)):
         FROM bnk_reconciliation
         GROUP BY check_book_id, check_book_name
         ORDER BY check_book_id
-    """)).fetchall()
+    """)
+    ).fetchall()
     return {
         "rows": [
             {

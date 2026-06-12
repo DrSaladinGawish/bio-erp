@@ -1,4 +1,5 @@
 """Tests for roles & RBAC endpoints (v2.4.2)."""
+
 from __future__ import annotations
 
 import os
@@ -33,6 +34,7 @@ def seeded_user():
         branch = session.execute(text("SELECT id FROM branches LIMIT 1")).scalar()
 
         from datetime import datetime, timezone
+
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         session.execute(
             text(
@@ -61,9 +63,7 @@ def seeded_user():
         session.execute(
             text("DELETE FROM user_roles WHERE user_id = :uid"), {"uid": user_id}
         )
-        session.execute(
-            text("DELETE FROM users WHERE id = :uid"), {"uid": user_id}
-        )
+        session.execute(text("DELETE FROM users WHERE id = :uid"), {"uid": user_id})
 
 
 async def test_list_roles(client: AsyncClient, auth_headers: dict):
@@ -104,9 +104,7 @@ async def test_get_role_by_id(client: AsyncClient, auth_headers: dict):
     assert len(roles) > 0
     role_id = roles[0]["id"]
 
-    resp = await client.get(
-        f"/api/v1/roles/{role_id}", headers=auth_headers
-    )
+    resp = await client.get(f"/api/v1/roles/{role_id}", headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     assert data["id"] == role_id
@@ -119,9 +117,7 @@ async def test_get_role_not_found(client: AsyncClient, auth_headers: dict):
     assert resp.status_code == 404
 
 
-async def test_assign_role(
-    client: AsyncClient, auth_headers: dict, seeded_user: dict
-):
+async def test_assign_role(client: AsyncClient, auth_headers: dict, seeded_user: dict):
     resp = await client.get("/api/v1/roles/", headers=auth_headers)
     roles = resp.json()
     read_only = next(r for r in roles if r["name"] == "read_only")
@@ -134,9 +130,7 @@ async def test_assign_role(
     assert "assigned" in resp.json()["message"].lower()
 
 
-async def test_remove_role(
-    client: AsyncClient, auth_headers: dict, seeded_user: dict
-):
+async def test_remove_role(client: AsyncClient, auth_headers: dict, seeded_user: dict):
     resp = await client.get("/api/v1/roles/", headers=auth_headers)
     roles = resp.json()
     read_only = next(r for r in roles if r["name"] == "read_only")
