@@ -1,0 +1,13 @@
+{
+  "form_name": "inventory_item",
+  "title": "Inventory Item",
+  "validations": {
+    "ItemCode": { "required": true },
+    "ItemName": { "required": true },
+    "UnitPrice": { "min": 0 },
+    "QuantityOnHand": { "min": 0 },
+    "ReorderLevel": { "min": 0 }
+  },
+  "autosave": { "enabled": true, "interval_seconds": 30 },
+  "audit": { "enabled": true }
+}

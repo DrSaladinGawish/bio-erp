@@ -1,0 +1,134 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FormMetaSchema",
+  "description": "Schema for ERP form metadata definitions",
+  "type": "object",
+  "required": ["forms"],
+  "properties": {
+    "forms": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "type": "object",
+          "required": ["title", "fields"],
+          "properties": {
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "system": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["ih", "em"] }
+            },
+            "sections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "title"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "title": { "type": "string" },
+                  "order": { "type": "integer" }
+                }
+              }
+            },
+            "fields": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/FormField" }
+            },
+            "endpoints": {
+              "type": "object",
+              "properties": {
+                "create": { "type": "string" },
+                "list": { "type": "string" },
+                "get": { "type": "string" },
+                "update": { "type": "string" },
+                "delete": { "type": "string" }
+              }
+            },
+            "autoCalcRules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "targetField": { "type": "string" },
+                  "formula": { "type": "string" },
+                  "triggerFields": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                },
+                "required": ["targetField", "formula", "triggerFields"]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "FormField": {
+      "type": "object",
+      "required": ["name", "label", "type"],
+      "properties": {
+        "name": { "type": "string" },
+        "label": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["text", "number", "date", "select", "textarea", "checkbox", "hidden", "email", "tel", "password", "file"]
+        },
+        "section": { "type": "string" },
+        "required": { "type": "boolean", "default": false },
+        "readonly": { "type": "boolean", "default": false },
+        "disabled": { "type": "boolean", "default": false },
+        "default": {},
+        "placeholder": { "type": "string" },
+        "maxLength": { "type": "integer" },
+        "minLength": { "type": "integer" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "step": { "type": "number" },
+        "pattern": { "type": "string" },
+        "optionsEndpoint": { "type": "string" },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {},
+              "label": { "type": "string" }
+            },
+            "required": ["value", "label"]
+          }
+        },
+        "optionValue": { "type": "string" },
+        "optionLabel": { "type": "string" },
+        "dependsOn": {
+          "type": "object",
+          "properties": {
+            "field": { "type": "string" },
+            "values": {
+              "type": "array",
+              "items": {}
+            }
+          }
+        },
+        "validations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rule": { "type": "string" },
+              "message": { "type": "string" },
+              "value": {}
+            }
+          }
+        },
+        "helpText": { "type": "string" },
+        "colSize": {
+          "type": "string",
+          "enum": ["full", "half", "third", "quarter", "auto"]
+        },
+        "displayFormat": { "type": "string" }
+      }
+    }
+  }
+}

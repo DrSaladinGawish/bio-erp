@@ -1,0 +1,16 @@
+{
+  "form_name": "receipt_voucher",
+  "title": "Receipt Voucher",
+  "formulas": {
+    "vat_amount": "subtotal * vat_rate / 100",
+    "total": "subtotal + vat_amount"
+  },
+  "validations": {
+    "payer_name": { "required": true },
+    "receipt_date": { "required": true },
+    "subtotal": { "min": 0 },
+    "vat_rate": { "min": 0, "max": 100 }
+  },
+  "autosave": { "enabled": true, "interval_seconds": 30 },
+  "audit": { "enabled": true }
+}

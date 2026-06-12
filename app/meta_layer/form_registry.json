@@ -1,0 +1,567 @@
+{
+  "forms": {
+    "sales_invoice": {
+      "title": "Sales Invoice",
+      "system": ["ih"],
+      "sections": [
+        { "name": "main", "label": "Invoice Details" },
+        { "name": "vat", "label": "VAT Information" },
+        { "name": "payment", "label": "Payment Details" }
+      ],
+      "fields": [
+        { "name": "InvoiceID", "type": "hidden", "label": "Invoice ID", "section": "main", "readonly": true },
+        { "name": "ClientCode", "type": "select", "label": "Client Code", "section": "main", "required": true, "optionsEndpoint": "/api/clients", "optionValue": "ClientCode", "optionLabel": "ClientName" },
+        { "name": "ClientName", "type": "text", "label": "Client Name", "section": "main" },
+        { "name": "InvoiceDate", "type": "date", "label": "Invoice Date", "section": "main", "required": true },
+        { "name": "SubTotal", "type": "number", "label": "Sub Total", "section": "vat", "step": 0.01 },
+        { "name": "VATRate", "type": "number", "label": "VAT Rate (%)", "section": "vat", "defaultValue": 14, "step": 0.01 },
+        { "name": "VATAmount", "type": "number", "label": "VAT Amount", "section": "vat", "readonly": true },
+        { "name": "TotalValue", "type": "number", "label": "Total Value", "section": "main", "readonly": true },
+        { "name": "Currency", "type": "text", "label": "Currency", "section": "main", "defaultValue": "USD" },
+        { "name": "PaymentStatus", "type": "select", "label": "Payment Status", "section": "payment", "options": ["Pending", "Paid", "Overdue"] },
+        { "name": "CollectedAmount", "type": "number", "label": "Collected Amount", "section": "payment" },
+        { "name": "Notes", "type": "textarea", "label": "Notes", "section": "main" }
+      ],
+      "autoCalcRules": [
+        { "formula": "SubTotal * VATRate / 100", "target": "VATAmount" },
+        { "formula": "SubTotal + VATAmount", "target": "TotalValue" }
+      ],
+      "endpoints": {
+        "create": { "method": "POST", "path": "/api/sal/invoices" },
+        "list": { "method": "GET", "path": "/api/sal/invoices" },
+        "get": { "method": "GET", "path": "/api/sal/invoices/{id}" },
+        "update": { "method": "PUT", "path": "/api/sal/invoices/{id}" },
+        "delete": { "method": "DELETE", "path": "/api/sal/invoices/{id}" }
+      }
+    },
+    "purchase_voucher": {
+      "title": "Purchase Voucher",
+      "system": ["ih"],
+      "sections": [
+        { "name": "main", "label": "Voucher Details" },
+        { "name": "vat", "label": "VAT Information" },
+        { "name": "items", "label": "Line Items" }
+      ],
+      "fields": [
+        { "name": "VoucherID", "type": "hidden", "label": "Voucher ID", "section": "main", "readonly": true },
+        { "name": "VendorCode", "type": "select", "label": "Vendor Code", "section": "main", "required": true, "optionsEndpoint": "/api/pur/vendors", "optionValue": "VendorCode", "optionLabel": "VendorName" },
+        { "name": "VendorName", "type": "text", "label": "Vendor Name", "section": "main" },
+        { "name": "PNRNumber", "type": "text", "label": "PNR Number", "section": "main" },
+        { "name": "VoucherDate", "type": "date", "label": "Voucher Date", "section": "main", "required": true },
+        { "name": "SubTotal", "type": "number", "label": "Sub Total", "section": "vat", "step": 0.01 },
+        { "name": "VATRate", "type": "number", "label": "VAT Rate (%)", "section": "vat", "defaultValue": 14, "step": 0.01 },
+        { "name": "VATAmount", "type": "number", "label": "VAT Amount", "section": "vat", "readonly": true },
+        { "name": "TotalValue", "type": "number", "label": "Total Value", "section": "main", "readonly": true },
+        { "name": "Notes", "type": "textarea", "label": "Notes", "section": "main" }
+      ],
+      "autoCalcRules": [
+        { "formula": "SubTotal * VATRate / 100", "target": "VATAmount" },
+        { "formula": "SubTotal + VATAmount", "target": "TotalValue" }
+      ],
+      "endpoints": {
+        "create": { "method": "POST", "path": "/api/pur/vouchers" },
+        "list": { "method": "GET", "path": "/api/pur/vouchers" },
+        "get": { "method": "GET", "path": "/api/pur/vouchers/{id}" },
+        "update": { "method": "PUT", "path": "/api/pur/vouchers/{id}" },
+        "delete": { "method": "DELETE", "path": "/api/pur/vouchers/{id}" }
+      }
+    },
+    "pnr_master": {
+      "title": "PNR Master",
+      "system": ["ih"],
+      "sections": [
+        { "name": "main", "label": "Event Details" },
+        { "name": "budget", "label": "Budget Summary" }
+      ],
+      "fields": [
+        { "name": "PNRNumber", "type": "text", "label": "PNR Number", "section": "main", "required": true, "maxLength": 50 },
+        { "name": "ClientCode", "type": "select", "label": "Client Code", "section": "main", "optionsEndpoint": "/api/clients", "optionValue": "ClientCode", "optionLabel": "ClientName" },
+        { "name": "EventName", "type": "text", "label": "Event Name", "section": "main", "maxLength": 500 },
+        { "name": "EventStartDate", "type": "date", "label": "Event Start Date", "section": "main" },
+        { "name": "EventEndDate", "type": "date", "label": "Event End Date", "section": "main" },
+        { "name": "JobFolder", "type": "text", "label": "Job Folder", "section": "main", "maxLength": 200 },
+        { "name": "Year", "type": "number", "label": "Year", "section": "main" },
+        { "name": "Status", "type": "select", "label": "Status", "section": "main", "options": ["Draft", "Active", "Completed", "Cancelled"] },
+        { "name": "CurrencyCode", "type": "text", "label": "Currency Code", "section": "main", "maxLength": 3, "defaultValue": "USD" }
+      ],
+      "endpoints": {
+        "create": { "method": "POST", "path": "/api/evn/pnrs" },
+        "list": { "method": "GET", "path": "/api/evn/pnrs" },
+        "get": { "method": "GET", "path": "/api/evn/pnrs/{pnr_number}" },
+        "update": { "method": "PUT", "path": "/api/evn/pnrs/{pnr_number}" },
+        "delete": { "method": "DELETE", "path": "/api/evn/pnrs/{pnr_number}" }
+      }
+    },
+    "bank_transaction": {
+      "title": "Bank Transaction",
+      "system": ["ih"],
+      "sections": [
+        { "name": "main", "label": "Transaction Details" }
+      ],
+      "fields": [
+        { "name": "TransactionID", "type": "hidden", "label": "Transaction ID", "section": "main", "readonly": true },
+        { "name": "BankCode", "type": "text", "label": "Bank Code", "section": "main", "required": true },
+        { "name": "AccountNumber", "type": "text", "label": "Account Number", "section": "main" },
+        { "name": "TransactionDate", "type": "date", "label": "Transaction Date", "section": "main", "required": true },
+        { "name": "Description", "type": "text", "label": "Description", "section": "main" },
+        { "name": "DebitAmount", "type": "number", "label": "Debit Amount", "section": "main", "step": 0.01 },
+        { "name": "CreditAmount", "type": "number", "label": "Credit Amount", "section": "main", "step": 0.01 },
+        { "name": "ReferenceNumber", "type": "text", "label": "Reference Number", "section": "main" },
+        { "name": "TransactionType", "type": "select", "label": "Transaction Type", "section": "main", "options": ["Deposit", "Withdrawal", "Transfer", "Payment"] },
+        { "name": "Status", "type": "select", "label": "Status", "section": "main", "options": ["Pending", "Posted", "Voided"] }
+      ],
+      "endpoints": {
+        "create": { "method": "POST", "path": "/api/bnk/transactions" },
+        "list": { "method": "GET", "path": "/api/bnk/transactions" },
+        "get": { "method": "GET", "path": "/api/bnk/transactions/{id}" },
+        "update": { "method": "PUT", "path": "/api/bnk/transactions/{id}" },
+        "delete": { "method": "DELETE", "path": "/api/bnk/transactions/{id}" }
+      }
+    },
+    "journal_voucher": {
+      "title": "Journal Voucher",
+      "system": ["ih"],
+      "sections": [
+        { "name": "main", "label": "Voucher Details" },
+        { "name": "lines", "label": "Journal Lines" }
+      ],
+      "fields": [
+        { "name": "JVNumber", "type": "text", "label": "JV Number", "section": "main", "readonly": true, "required": true },
+        { "name": "VoucherDate", "type": "date", "label": "Voucher Date", "section": "main", "required": true },
+        { "name": "Description", "type": "textarea", "label": "Description", "section": "main" },
+        { "name": "TotalDebit", "type": "number", "label": "Total Debit", "section": "main", "readonly": true },
+        { "name": "TotalCredit", "type": "number", "label": "Total Credit", "section": "main", "readonly": true },
+        { "name": "Status", "type": "select", "label": "Status", "section": "main", "options": ["Draft", "Posted"] },
+        { "name": "Reference", "type": "text", "label": "Reference", "section": "main" }
+      ],
+      "endpoints": {
+        "create": { "method": "POST", "path": "/api/gl/vouchers" },
+        "list": { "method": "GET", "path": "/api/gl/vouchers" },
+        "get": { "method": "GET", "path": "/api/gl/vouchers/{jv_number}" },
+        "update": { "method": "PUT", "path": "/api/gl/vouchers/{jv_number}" },
+        "delete": { "method": "DELETE", "path": "/api/gl/vouchers/{jv_number}" }
+      }
+    },
+    "pnr_budget_line": {
+      "title": "PNR Budget Line",
+      "system": ["ih"],
+      "sections": [
+        { "name": "main", "label": "Budget Line" }
+      ],
+      "fields": [
+        { "name": "LineItemID", "type": "hidden", "label": "Line Item ID", "section": "main", "readonly": true },
+        { "name": "Year", "type": "number", "label": "Year", "section": "main" },
+        { "name": "JobFolder", "type": "text", "label": "Job Folder", "section": "main" },
+        { "name": "FileName", "type": "text", "label": "File Name", "section": "main" },
+        { "name": "SheetName", "type": "text", "label": "Sheet Name", "section": "main" },
+        { "name": "RowNumber", "type": "number", "label": "Row Number", "section": "main" },
+        { "name": "MainCategoryCode", "type": "select", "label": "Main Category", "section": "main", "optionsEndpoint": "/api/evn/service-categories", "optionValue": "MainCategoryCode", "optionLabel": "MainCategoryName" },
+        { "name": "SubCategoryCode", "type": "select", "label": "Sub Category", "section": "main", "optionsEndpoint": "/api/evn/service-sub-categories", "optionValue": "SubCategoryCode", "optionLabel": "SubCategoryName" },
+        { "name": "ClientCode", "type": "select", "label": "Client Code", "section": "main", "optionsEndpoint": "/api/clients", "optionValue": "ClientCode", "optionLabel": "ClientName" },
+        { "name": "Description", "type": "textarea", "label": "Description", "section": "main" },
+        { "name": "Quantity", "type": "number", "label": "Quantity", "section": "main", "step": 0.01 },
+        { "name": "UnitPrice", "type": "number", "label": "Unit Price", "section": "main", "step": 0.01 },
+        { "name": "Amount", "type": "number", "label": "Amount", "section": "main", "readonly": true, "step": 0.01 },
+        { "name": "CurrencyCode", "type": "text", "label": "Currency", "section": "main", "defaultValue": "USD" }
+      ],
+      "autoCalcRules": [
+        { "formula": "Quantity * UnitPrice", "target": "Amount" }
+      ],
+      "endpoints": {
+        "create": { "method": "POST", "path": "/api/evn/budget-lines" },
+        "list": { "method": "GET", "path": "/api/evn/budget-lines" },
+        "update": { "method": "PUT", "path": "/api/evn/budget-lines/{id}" },
+        "delete": { "method": "DELETE", "path": "/api/evn/budget-lines/{id}" }
+      }
+    },
+    "purchase_invoice": {
+      "title": "Purchase Invoice",
+      "system": ["em"],
+      "sections": [
+        { "name": "main", "label": "Invoice Details" },
+        { "name": "vat", "label": "VAT Information" },
+        { "name": "job", "label": "Job Linking" }
+      ],
+      "fields": [
+        { "name": "id", "type": "hidden", "label": "ID", "section": "main", "readonly": true },
+        { "name": "invoice_number", "type": "text", "label": "Invoice Number", "section": "main", "required": true },
+        { "name": "vendor_name", "type": "text", "label": "Vendor Name", "section": "main", "required": true },
+        { "name": "vendor_tax_id", "type": "text", "label": "Vendor Tax ID", "section": "main" },
+        { "name": "invoice_date", "type": "date", "label": "Invoice Date", "section": "main", "required": true },
+        { "name": "due_date", "type": "date", "label": "Due Date", "section": "main" },
+        { "name": "subtotal", "type": "number", "label": "Subtotal", "section": "vat", "step": 0.01 },
+        { "name": "vat_rate", "type": "number", "label": "VAT Rate (%)", "section": "vat", "defaultValue": 14, "step": 0.01 },
+        { "name": "vat_amount", "type": "number", "label": "VAT Amount", "section": "vat", "readonly": true },
+        { "name": "total_amount", "type": "number", "label": "Total Amount", "section": "main", "readonly": true },
+        { "name": "currency", "type": "text", "label": "Currency", "section": "main", "defaultValue": "USD" },
+        { "name": "status", "type": "select", "label": "Status", "section": "main", "options": ["Draft", "Submitted", "Approved", "Paid", "Cancelled"] },
+        { "name": "category_id", "type": "select", "label": "Category", "section": "main", "optionsEndpoint": "/api/v1/purchase-categories", "optionValue": "id", "optionLabel": "name" },
+        { "name": "job_id", "type": "select", "label": "Job", "section": "job", "optionsEndpoint": "/api/v1/jobs", "optionValue": "id", "optionLabel": "name" },
+        { "name": "notes", "type": "textarea", "label": "Notes", "section": "main" }
+      ],
+      "autoCalcRules": [
+        { "formula": "subtotal * vat_rate / 100", "target": "vat_amount" },
+        { "formula": "subtotal + vat_amount", "target": "total_amount" }
+      ],
+      "endpoints": {
+        "create": { "method": "POST", "path": "/api/v1/purchase-invoices" },
+        "list": { "method": "GET", "path": "/api/v1/purchase-invoices" },
+        "get": { "method": "GET", "path": "/api/v1/purchase-invoices/{id}" },
+        "update": { "method": "PATCH", "path": "/api/v1/purchase-invoices/{id}" },
+        "delete": { "method": "DELETE", "path": "/api/v1/purchase-invoices/{id}" }
+      }
+    },
+    "sales_invoice_em": {
+      "title": "Sales Invoice",
+      "system": ["em"],
+      "sections": [
+        { "name": "main", "label": "Invoice Details" },
+        { "name": "vat", "label": "VAT Information" }
+      ],
+      "fields": [
+        { "name": "id", "type": "hidden", "label": "ID", "section": "main", "readonly": true },
+        { "name": "invoice_number", "type": "text", "label": "Invoice Number", "section": "main", "required": true },
+        { "name": "client_name", "type": "text", "label": "Client Name", "section": "main", "required": true },
+        { "name": "client_tax_id", "type": "text", "label": "Client Tax ID", "section": "main" },
+        { "name": "invoice_date", "type": "date", "label": "Invoice Date", "section": "main", "required": true },
+        { "name": "due_date", "type": "date", "label": "Due Date", "section": "main" },
+        { "name": "subtotal", "type": "number", "label": "Subtotal", "section": "vat", "step": 0.01 },
+        { "name": "vat_rate", "type": "number", "label": "VAT Rate (%)", "section": "vat", "defaultValue": 14, "step": 0.01 },
+        { "name": "vat_amount", "type": "number", "label": "VAT Amount", "section": "vat", "readonly": true },
+        { "name": "total_amount", "type": "number", "label": "Total Amount", "section": "main", "readonly": true },
+        { "name": "currency", "type": "text", "label": "Currency", "section": "main", "defaultValue": "USD" },
+        { "name": "status", "type": "select", "label": "Status", "section": "main", "options": ["Draft", "Sent", "Paid", "Overdue", "Cancelled"] },
+        { "name": "notes", "type": "textarea", "label": "Notes", "section": "main" }
+      ],
+      "autoCalcRules": [
+        { "formula": "subtotal * vat_rate / 100", "target": "vat_amount" },
+        { "formula": "subtotal + vat_amount", "target": "total_amount" }
+      ],
+      "endpoints": {
+        "create": { "method": "POST", "path": "/api/v1/sales-invoices" },
+        "list": { "method": "GET", "path": "/api/v1/sales-invoices" },
+        "get": { "method": "GET", "path": "/api/v1/sales-invoices/{id}" },
+        "delete": { "method": "DELETE", "path": "/api/v1/sales-invoices/{id}" }
+      }
+    },
+    "payment_voucher": {
+      "title": "Payment Voucher",
+      "system": ["em"],
+      "sections": [
+        { "name": "main", "label": "Payment Details" },
+        { "name": "vat", "label": "VAT Information" }
+      ],
+      "fields": [
+        { "name": "id", "type": "hidden", "label": "ID", "section": "main", "readonly": true },
+        { "name": "voucher_number", "type": "text", "label": "Voucher Number", "section": "main", "readonly": true },
+        { "name": "payee_name", "type": "text", "label": "Payee Name", "section": "main", "required": true },
+        { "name": "payment_date", "type": "date", "label": "Payment Date", "section": "main", "required": true },
+        { "name": "payment_method", "type": "select", "label": "Payment Method", "section": "main", "options": ["Cash", "Bank Transfer", "Cheque", "Credit Card"] },
+        { "name": "bank_account", "type": "text", "label": "Bank Account", "section": "main" },
+        { "name": "reference_number", "type": "text", "label": "Reference Number", "section": "main" },
+        { "name": "subtotal", "type": "number", "label": "Subtotal", "section": "vat", "step": 0.01 },
+        { "name": "vat_rate", "type": "number", "label": "VAT Rate (%)", "section": "vat", "defaultValue": 14, "step": 0.01 },
+        { "name": "vat_amount", "type": "number", "label": "VAT Amount", "section": "vat", "readonly": true },
+        { "name": "total", "type": "number", "label": "Total", "section": "main", "readonly": true },
+        { "name": "notes", "type": "textarea", "label": "Notes", "section": "main" }
+      ],
+      "autoCalcRules": [
+        { "formula": "subtotal * vat_rate / 100", "target": "vat_amount" },
+        { "formula": "subtotal + vat_amount", "target": "total" }
+      ],
+      "endpoints": {
+        "create": { "method": "POST", "path": "/api/v1/payment-vouchers" },
+        "list": { "method": "GET", "path": "/api/v1/payment-vouchers" }
+      }
+    },
+    "receipt_voucher": {
+      "title": "Receipt Voucher",
+      "system": ["em"],
+      "sections": [
+        { "name": "main", "label": "Receipt Details" },
+        { "name": "vat", "label": "VAT Information" }
+      ],
+      "fields": [
+        { "name": "id", "type": "hidden", "label": "ID", "section": "main", "readonly": true },
+        { "name": "voucher_number", "type": "text", "label": "Voucher Number", "section": "main", "readonly": true },
+        { "name": "payer_name", "type": "text", "label": "Payer Name", "section": "main", "required": true },
+        { "name": "receipt_date", "type": "date", "label": "Receipt Date", "section": "main", "required": true },
+        { "name": "payment_method", "type": "select", "label": "Payment Method", "section": "main", "options": ["Cash", "Bank Transfer", "Cheque", "Credit Card"] },
+        { "name": "bank_account", "type": "text", "label": "Bank Account", "section": "main" },
+        { "name": "reference_number", "type": "text", "label": "Reference Number", "section": "main" },
+        { "name": "subtotal", "type": "number", "label": "Subtotal", "section": "vat", "step": 0.01 },
+        { "name": "vat_rate", "type": "number", "label": "VAT Rate (%)", "section": "vat", "defaultValue": 14, "step": 0.01 },
+        { "name": "vat_amount", "type": "number", "label": "VAT Amount", "section": "vat", "readonly": true },
+        { "name": "total", "type": "number", "label": "Total", "section": "main", "readonly": true },
+        { "name": "notes", "type": "textarea", "label": "Notes", "section": "main" }
+      ],
+      "autoCalcRules": [
+        { "formula": "subtotal * vat_rate / 100", "target": "vat_amount" },
+        { "formula": "subtotal + vat_amount", "target": "total" }
+      ],
+      "endpoints": {
+        "create": { "method": "POST", "path": "/api/v1/receipt-vouchers" },
+        "list": { "method": "GET", "path": "/api/v1/receipt-vouchers" }
+      }
+    },
+    "client": {
+      "title": "Client",
+      "system": ["ih", "em"],
+      "sections": [
+        { "name": "main", "label": "Client Details" },
+        { "name": "contact", "label": "Contact Information" }
+      ],
+      "fields": [
+        { "name": "ClientCode", "type": "text", "label": "Client Code", "section": "main", "required": true, "maxLength": 10, "system": ["ih"] },
+        { "name": "id", "type": "hidden", "label": "ID", "section": "main", "readonly": true, "system": ["em"] },
+        { "name": "ClientName", "type": "text", "label": "Client Name", "section": "main", "required": true, "maxLength": 200 },
+        { "name": "ContactPerson", "type": "text", "label": "Contact Person", "section": "contact" },
+        { "name": "Email", "type": "email", "label": "Email", "section": "contact" },
+        { "name": "Phone", "type": "tel", "label": "Phone", "section": "contact" },
+        { "name": "Address", "type": "textarea", "label": "Address", "section": "contact" },
+        { "name": "TaxID", "type": "text", "label": "Tax ID", "section": "main" },
+        { "name": "PaymentTerms", "type": "text", "label": "Payment Terms", "section": "main" },
+        { "name": "CreditLimit", "type": "number", "label": "Credit Limit", "section": "main" },
+        { "name": "Status", "type": "select", "label": "Status", "section": "main", "options": ["Active", "Inactive", "Blocked"] }
+      ],
+      "endpoints": {
+        "ih": {
+          "create": { "method": "POST", "path": "/api/clients" },
+          "list": { "method": "GET", "path": "/api/clients" },
+          "get": { "method": "GET", "path": "/api/clients/{id}" },
+          "update": { "method": "PUT", "path": "/api/clients/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/clients/{id}" }
+        },
+        "em": {
+          "create": { "method": "POST", "path": "/api/v1/clients" },
+          "list": { "method": "GET", "path": "/api/v1/clients" },
+          "get": { "method": "GET", "path": "/api/v1/clients/{id}" },
+          "update": { "method": "PATCH", "path": "/api/v1/clients/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/v1/clients/{id}" }
+        }
+      }
+    },
+    "vendor": {
+      "title": "Vendor",
+      "system": ["ih", "em"],
+      "sections": [
+        { "name": "main", "label": "Vendor Details" },
+        { "name": "contact", "label": "Contact Information" }
+      ],
+      "fields": [
+        { "name": "VendorCode", "type": "text", "label": "Vendor Code", "section": "main", "required": true, "maxLength": 10, "system": ["ih"] },
+        { "name": "id", "type": "hidden", "label": "ID", "section": "main", "readonly": true, "system": ["em"] },
+        { "name": "VendorName", "type": "text", "label": "Vendor Name", "section": "main", "required": true },
+        { "name": "ContactPerson", "type": "text", "label": "Contact Person", "section": "contact" },
+        { "name": "Email", "type": "email", "label": "Email", "section": "contact" },
+        { "name": "Phone", "type": "tel", "label": "Phone", "section": "contact" },
+        { "name": "Address", "type": "textarea", "label": "Address", "section": "contact" },
+        { "name": "TaxID", "type": "text", "label": "Tax ID", "section": "main" },
+        { "name": "PaymentTerms", "type": "text", "label": "Payment Terms", "section": "main" },
+        { "name": "GLAccount", "type": "text", "label": "GL Account", "section": "main" },
+        { "name": "Status", "type": "select", "label": "Status", "section": "main", "options": ["Active", "Inactive", "Blocked"] }
+      ],
+      "endpoints": {
+        "ih": {
+          "create": { "method": "POST", "path": "/api/pur/vendors" },
+          "list": { "method": "GET", "path": "/api/pur/vendors" },
+          "get": { "method": "GET", "path": "/api/pur/vendors/{id}" },
+          "update": { "method": "PUT", "path": "/api/pur/vendors/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/pur/vendors/{id}" }
+        },
+        "em": {
+          "create": { "method": "POST", "path": "/api/v1/vendors" },
+          "list": { "method": "GET", "path": "/api/v1/vendors" },
+          "get": { "method": "GET", "path": "/api/v1/vendors/{id}" },
+          "update": { "method": "PATCH", "path": "/api/v1/vendors/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/v1/vendors/{id}" }
+        }
+      }
+    },
+    "inventory_item": {
+      "title": "Inventory Item",
+      "system": ["ih", "em"],
+      "sections": [
+        { "name": "main", "label": "Item Details" },
+        { "name": "pricing", "label": "Pricing" }
+      ],
+      "fields": [
+        { "name": "ItemID", "type": "hidden", "label": "Item ID", "section": "main", "readonly": true, "system": ["ih"] },
+        { "name": "id", "type": "hidden", "label": "ID", "section": "main", "readonly": true, "system": ["em"] },
+        { "name": "ItemCode", "type": "text", "label": "Item Code / SKU", "section": "main", "required": true },
+        { "name": "ItemName", "type": "text", "label": "Item Name", "section": "main", "required": true },
+        { "name": "Category", "type": "select", "label": "Category", "section": "main", "options": [] },
+        { "name": "Description", "type": "textarea", "label": "Description", "section": "main" },
+        { "name": "UnitOfMeasure", "type": "text", "label": "Unit of Measure", "section": "main" },
+        { "name": "QuantityOnHand", "type": "number", "label": "Qty On Hand", "section": "main", "readonly": true },
+        { "name": "UnitPrice", "type": "number", "label": "Unit Price", "section": "pricing", "step": 0.01 },
+        { "name": "ReorderLevel", "type": "number", "label": "Reorder Level", "section": "main" },
+        { "name": "WarehouseCode", "type": "text", "label": "Warehouse Code", "section": "main" },
+        { "name": "Status", "type": "select", "label": "Status", "section": "main", "options": ["Active", "Inactive", "Discontinued"] }
+      ],
+      "endpoints": {
+        "ih": {
+          "create": { "method": "POST", "path": "/api/inventory/items" },
+          "list": { "method": "GET", "path": "/api/inventory/items" },
+          "get": { "method": "GET", "path": "/api/inventory/items/{id}" },
+          "update": { "method": "PUT", "path": "/api/inventory/items/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/inventory/items/{id}" }
+        },
+        "em": {
+          "create": { "method": "POST", "path": "/api/v1/inventory/items" },
+          "list": { "method": "GET", "path": "/api/v1/inventory/items" },
+          "get": { "method": "GET", "path": "/api/v1/inventory/items/{id}" },
+          "update": { "method": "PATCH", "path": "/api/v1/inventory/items/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/v1/inventory/items/{id}" }
+        }
+      }
+    },
+    "payroll_employee": {
+      "title": "Payroll Employee",
+      "system": ["ih", "em"],
+      "sections": [
+        { "name": "main", "label": "Employee Details" },
+        { "name": "salary", "label": "Salary Details" }
+      ],
+      "fields": [
+        { "name": "EmployeeCode", "type": "text", "label": "Employee Code", "section": "main", "required": true },
+        { "name": "FullName", "type": "text", "label": "Full Name", "section": "main", "required": true },
+        { "name": "Department", "type": "select", "label": "Department", "section": "main" },
+        { "name": "Position", "type": "text", "label": "Position", "section": "main" },
+        { "name": "HireDate", "type": "date", "label": "Hire Date", "section": "main" },
+        { "name": "BaseSalary", "type": "number", "label": "Base Salary", "section": "salary", "step": 0.01 },
+        { "name": "Allowances", "type": "number", "label": "Allowances", "section": "salary" },
+        { "name": "Deductions", "type": "number", "label": "Deductions", "section": "salary" },
+        { "name": "BankAccount", "type": "text", "label": "Bank Account", "section": "main" },
+        { "name": "TaxID", "type": "text", "label": "Tax ID", "section": "main" },
+        { "name": "Status", "type": "select", "label": "Status", "section": "main", "options": ["Active", "On Leave", "Terminated"] }
+      ],
+      "endpoints": {
+        "ih": {
+          "create": { "method": "POST", "path": "/api/hr/employees" },
+          "list": { "method": "GET", "path": "/api/hr/employees" },
+          "get": { "method": "GET", "path": "/api/hr/employees/{id}" },
+          "update": { "method": "PUT", "path": "/api/hr/employees/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/hr/employees/{id}" }
+        },
+        "em": {
+          "create": { "method": "POST", "path": "/api/v1/employees" },
+          "list": { "method": "GET", "path": "/api/v1/employees" },
+          "get": { "method": "GET", "path": "/api/v1/employees/{id}" },
+          "update": { "method": "PATCH", "path": "/api/v1/employees/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/v1/employees/{id}" }
+        }
+      }
+    },
+    "crm_lead": {
+      "title": "CRM Lead",
+      "system": ["ih", "em"],
+      "sections": [
+        { "name": "main", "label": "Lead Details" },
+        { "name": "contact", "label": "Contact Info" }
+      ],
+      "fields": [
+        { "name": "LeadCode", "type": "text", "label": "Lead Code", "section": "main" },
+        { "name": "LeadName", "type": "text", "label": "Lead Name", "section": "main", "required": true },
+        { "name": "Company", "type": "text", "label": "Company", "section": "main" },
+        { "name": "ContactPerson", "type": "text", "label": "Contact Person", "section": "contact" },
+        { "name": "Email", "type": "email", "label": "Email", "section": "contact" },
+        { "name": "Phone", "type": "tel", "label": "Phone", "section": "contact" },
+        { "name": "Source", "type": "select", "label": "Source", "section": "main", "options": ["Website", "Referral", "Cold Call", "Social Media", "Other"] },
+        { "name": "Status", "type": "select", "label": "Status", "section": "main", "options": ["New", "Contacted", "Qualified", "Lost", "Converted"] },
+        { "name": "ExpectedValue", "type": "number", "label": "Expected Value", "section": "main" },
+        { "name": "Notes", "type": "textarea", "label": "Notes", "section": "main" }
+      ],
+      "endpoints": {
+        "ih": {
+          "create": { "method": "POST", "path": "/api/crm/leads" },
+          "list": { "method": "GET", "path": "/api/crm/leads" },
+          "get": { "method": "GET", "path": "/api/crm/leads/{id}" },
+          "update": { "method": "PUT", "path": "/api/crm/leads/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/crm/leads/{id}" }
+        },
+        "em": {
+          "create": { "method": "POST", "path": "/api/v1/leads" },
+          "list": { "method": "GET", "path": "/api/v1/leads" },
+          "get": { "method": "GET", "path": "/api/v1/leads/{id}" },
+          "update": { "method": "PATCH", "path": "/api/v1/leads/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/v1/leads/{id}" }
+        }
+      }
+    },
+    "budget_period": {
+      "title": "Budget Period",
+      "system": ["ih", "em"],
+      "sections": [
+        { "name": "main", "label": "Budget Period" }
+      ],
+      "fields": [
+        { "name": "BudgetCode", "type": "text", "label": "Budget Code", "section": "main", "required": true },
+        { "name": "FiscalYear", "type": "number", "label": "Fiscal Year", "section": "main", "required": true },
+        { "name": "PeriodName", "type": "text", "label": "Period Name", "section": "main" },
+        { "name": "StartDate", "type": "date", "label": "Start Date", "section": "main" },
+        { "name": "EndDate", "type": "date", "label": "End Date", "section": "main" },
+        { "name": "TotalBudget", "type": "number", "label": "Total Budget", "section": "main", "step": 0.01 },
+        { "name": "Status", "type": "select", "label": "Status", "section": "main", "options": ["Draft", "Approved", "Closed"] },
+        { "name": "Notes", "type": "textarea", "label": "Notes", "section": "main" }
+      ],
+      "endpoints": {
+        "ih": {
+          "create": { "method": "POST", "path": "/api/bud/periods" },
+          "list": { "method": "GET", "path": "/api/bud/periods" },
+          "get": { "method": "GET", "path": "/api/bud/periods/{id}" },
+          "update": { "method": "PUT", "path": "/api/bud/periods/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/bud/periods/{id}" }
+        },
+        "em": {
+          "create": { "method": "POST", "path": "/api/v1/budget-periods" },
+          "list": { "method": "GET", "path": "/api/v1/budget-periods" },
+          "get": { "method": "GET", "path": "/api/v1/budget-periods/{id}" },
+          "update": { "method": "PATCH", "path": "/api/v1/budget-periods/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/v1/budget-periods/{id}" }
+        }
+      }
+    },
+    "fixed_asset": {
+      "title": "Fixed Asset",
+      "system": ["ih", "em"],
+      "sections": [
+        { "name": "main", "label": "Asset Details" },
+        { "name": "depreciation", "label": "Depreciation" }
+      ],
+      "fields": [
+        { "name": "AssetCode", "type": "text", "label": "Asset Code", "section": "main", "required": true },
+        { "name": "AssetName", "type": "text", "label": "Asset Name", "section": "main", "required": true },
+        { "name": "Category", "type": "select", "label": "Category", "section": "main", "optionsEndpoint": "/api/fixed-assets/categories", "optionValue": "code", "optionLabel": "name" },
+        { "name": "PurchaseDate", "type": "date", "label": "Purchase Date", "section": "main", "required": true },
+        { "name": "PurchaseCost", "type": "number", "label": "Purchase Cost", "section": "main", "step": 0.01 },
+        { "name": "UsefulLifeYears", "type": "number", "label": "Useful Life (Years)", "section": "depreciation" },
+        { "name": "SalvageValue", "type": "number", "label": "Salvage Value", "section": "depreciation" },
+        { "name": "DepreciationMethod", "type": "select", "label": "Depreciation Method", "section": "depreciation", "options": ["Straight Line", "Declining Balance"] },
+        { "name": "AccumulatedDepreciation", "type": "number", "label": "Accumulated Depreciation", "section": "depreciation", "readonly": true },
+        { "name": "NetBookValue", "type": "number", "label": "Net Book Value", "section": "depreciation", "readonly": true },
+        { "name": "Location", "type": "text", "label": "Location", "section": "main" },
+        { "name": "Status", "type": "select", "label": "Status", "section": "main", "options": ["Active", "Disposed", "Under Maintenance"] }
+      ],
+      "autoCalcRules": [
+        { "formula": "PurchaseCost - AccumulatedDepreciation", "target": "NetBookValue" }
+      ],
+      "endpoints": {
+        "ih": {
+          "create": { "method": "POST", "path": "/api/fa/assets" },
+          "list": { "method": "GET", "path": "/api/fa/assets" },
+          "get": { "method": "GET", "path": "/api/fa/assets/{id}" },
+          "update": { "method": "PUT", "path": "/api/fa/assets/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/fa/assets/{id}" }
+        },
+        "em": {
+          "create": { "method": "POST", "path": "/api/v1/fixed-assets" },
+          "list": { "method": "GET", "path": "/api/v1/fixed-assets" },
+          "get": { "method": "GET", "path": "/api/v1/fixed-assets/{id}" },
+          "update": { "method": "PATCH", "path": "/api/v1/fixed-assets/{id}" },
+          "delete": { "method": "DELETE", "path": "/api/v1/fixed-assets/{id}" }
+        }
+      }
+    }
+  }
+}

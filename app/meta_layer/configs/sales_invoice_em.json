@@ -1,0 +1,16 @@
+{
+  "form_name": "sales_invoice_em",
+  "title": "Sales Invoice",
+  "formulas": {
+    "vat_amount": "subtotal * vat_rate / 100",
+    "total_amount": "subtotal + vat_amount"
+  },
+  "validations": {
+    "client_name": { "required": true },
+    "invoice_number": { "required": true },
+    "subtotal": { "min": 0 },
+    "vat_rate": { "min": 0, "max": 100 }
+  },
+  "autosave": { "enabled": true, "interval_seconds": 30 },
+  "audit": { "enabled": true }
+}

@@ -1,0 +1,10 @@
+{
+  "form_name": "client",
+  "title": "Client",
+  "validations": {
+    "ClientName": { "required": true },
+    "TaxID": { "regex": "^\\d{9}$", "message": "Tax ID must be 9 digits" }
+  },
+  "autosave": { "enabled": true, "interval_seconds": 30 },
+  "audit": { "enabled": true }
+}

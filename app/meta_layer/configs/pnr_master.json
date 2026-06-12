@@ -1,0 +1,19 @@
+{
+  "form_name": "pnr_master",
+  "title": "PNR Master",
+  "auto_fill": {
+    "ClientCode": {
+      "trigger": "change",
+      "fetch": "/api/clients/{value}",
+      "target_fields": {
+        "CurrencyCode": "DefaultCurrency"
+      }
+    }
+  },
+  "validations": {
+    "PNRNumber": { "required": true, "maxLength": 50 },
+    "Year": { "min": 2000, "max": 2099 }
+  },
+  "autosave": { "enabled": true, "interval_seconds": 30 },
+  "audit": { "enabled": true }
+}

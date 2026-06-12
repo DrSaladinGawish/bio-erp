@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  or-erp-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: or-erp-microservice
+    ports:
+      - "8010:8010"
+    environment:
+      - PORT=8010
+      - HOST=0.0.0.0
+      - LOG_LEVEL=info
+    volumes:
+      - ./or_erp_module.py:/app/or_erp_module.py:ro
+      - ./main.py:/app/main.py:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: PostgreSQL for persistent OR data
+  # postgres:
+  #   image: postgres:14-alpine
+  #   container_name: or-erp-db
+  #   environment:
+  #     POSTGRES_USER: or_erp
+  #     POSTGRES_PASSWORD: or_erp_secret
+  #     POSTGRES_DB: or_erp_db
+  #   ports:
+  #     - "5433:5432"
+  #   volumes:
+  #     - or_erp_data:/var/lib/postgresql/data
+  #     - ./or_erp_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+  #   restart: unless-stopped
+
+# volumes:
+#   or_erp_data:

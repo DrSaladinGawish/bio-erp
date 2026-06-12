@@ -1,0 +1,27 @@
+{
+  "form_name": "purchase_invoice_em",
+  "title": "Purchase Invoice",
+  "auto_fill": {
+    "vendor_id": {
+      "trigger": "change",
+      "fetch": "/api/v1/vendors/{value}",
+      "target_fields": {
+        "vendor_name": "name",
+        "vendor_tax_id": "tax_id"
+      }
+    }
+  },
+  "formulas": {
+    "vat_amount": "subtotal * vat_rate / 100",
+    "total_amount": "subtotal + vat_amount"
+  },
+  "validations": {
+    "vendor_name": { "required": true },
+    "invoice_number": { "required": true },
+    "vendor_tax_id": { "regex": "^\\d{9}$", "message": "Tax ID must be 9 digits" },
+    "subtotal": { "min": 0 },
+    "vat_rate": { "min": 0, "max": 100 }
+  },
+  "autosave": { "enabled": true, "interval_seconds": 30 },
+  "audit": { "enabled": true }
+}

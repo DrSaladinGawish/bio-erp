@@ -1,0 +1,10 @@
+{
+  "form_name": "budget_period",
+  "title": "Budget Period",
+  "validations": {
+    "FiscalYear": { "required": true, "min": 2000, "max": 2099 },
+    "TotalBudget": { "min": 0 }
+  },
+  "autosave": { "enabled": true, "interval_seconds": 30 },
+  "audit": { "enabled": true }
+}

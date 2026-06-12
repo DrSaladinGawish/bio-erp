@@ -1,0 +1,10 @@
+{
+  "form_name": "journal_voucher",
+  "title": "Journal Voucher",
+  "validations": {
+    "JVNumber": { "required": true },
+    "VoucherDate": { "required": true }
+  },
+  "autosave": { "enabled": true, "interval_seconds": 30 },
+  "audit": { "enabled": true }
+}

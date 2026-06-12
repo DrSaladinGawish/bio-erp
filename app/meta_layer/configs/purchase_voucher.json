@@ -1,0 +1,25 @@
+{
+  "form_name": "purchase_voucher",
+  "title": "Purchase Voucher",
+  "auto_fill": {
+    "VendorCode": {
+      "trigger": "change",
+      "fetch": "/api/pur/vendors/{value}",
+      "target_fields": {
+        "VendorName": "VendorName",
+        "Currency": "DefaultCurrency"
+      }
+    }
+  },
+  "formulas": {
+    "VATAmount": "SubTotal * VATRate / 100",
+    "TotalValue": "SubTotal + VATAmount"
+  },
+  "validations": {
+    "VendorCode": { "required": true },
+    "SubTotal": { "min": 0 },
+    "VATRate": { "min": 0, "max": 100 }
+  },
+  "autosave": { "enabled": true, "interval_seconds": 30 },
+  "audit": { "enabled": true, "endpoint": "/api/meta/audit" }
+}

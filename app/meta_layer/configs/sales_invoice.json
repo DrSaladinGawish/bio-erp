@@ -1,0 +1,28 @@
+{
+  "form_name": "sales_invoice",
+  "title": "Sales Invoice",
+  "auto_fill": {
+    "ClientCode": {
+      "trigger": "change",
+      "fetch": "/api/clients/{value}",
+      "target_fields": {
+        "ClientName": "ClientName",
+        "Currency": "DefaultCurrency"
+      }
+    }
+  },
+  "formulas": {
+    "VATAmount": "SubTotal * VATRate / 100",
+    "TotalValue": "SubTotal + VATAmount"
+  },
+  "validations": {
+    "ClientCode": { "required": true },
+    "SubTotal": { "min": 0 },
+    "VATRate": { "min": 0, "max": 100 }
+  },
+  "conditions": {
+    "CollectedAmount": { "show_when": "PaymentStatus == 'Paid' || PaymentStatus == 'Partial'" }
+  },
+  "autosave": { "enabled": true, "interval_seconds": 30 },
+  "audit": { "enabled": true, "endpoint": "/api/meta/audit" }
+}

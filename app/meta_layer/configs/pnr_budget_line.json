@@ -1,0 +1,22 @@
+{
+  "form_name": "pnr_budget_line",
+  "title": "PNR Budget Line",
+  "auto_fill": {
+    "MainCategoryCode": {
+      "trigger": "change",
+      "fetch": "/api/evn/service-sub-categories?main_code={value}",
+      "target_fields": {
+        "SubCategoryCode": "SubCategoryCode"
+      }
+    }
+  },
+  "formulas": {
+    "Amount": "Quantity * UnitPrice"
+  },
+  "validations": {
+    "Quantity": { "min": 0 },
+    "UnitPrice": { "min": 0 }
+  },
+  "autosave": { "enabled": true, "interval_seconds": 30 },
+  "audit": { "enabled": true }
+}
