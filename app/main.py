@@ -389,8 +389,10 @@ app.include_router(reverse_router, prefix="/api/v1")
 
 # Jinja2 Page Router — All HTML templates
 from app.routers.pages import router as pages_router
+from app.routers.doctor_reports import router as doctor_reports_router
 
 app.include_router(pages_router)
+app.include_router(doctor_reports_router)
 
 
 @app.exception_handler(StarletteHTTPException)
