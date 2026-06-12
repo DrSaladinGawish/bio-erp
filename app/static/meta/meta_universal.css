@@ -1,0 +1,295 @@
+/* ============================================
+   Meta Layer v2 — Universal Component Styling
+   ============================================ */
+
+/* --- DASHBOARD --- */
+[data-meta-dashboard] .kpi-card {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+[data-meta-dashboard] .kpi-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+[data-meta-dashboard] .kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  transition: color 0.3s;
+}
+
+[data-meta-dashboard] .kpi-label {
+  font-size: 0.85rem;
+  color: var(--text-muted, #64748b);
+  margin-top: 4px;
+}
+
+[data-meta-dashboard] .kpi-trend {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 8px;
+  display: inline-block;
+}
+
+[data-meta-dashboard] .kpi-trend.trend-up { color: #22c55e; }
+[data-meta-dashboard] .kpi-trend.trend-down { color: #ef4444; }
+
+[data-meta-dashboard] .kpi-card.kpi-error {
+  border-color: #ef4444;
+  background: rgba(239,68,68,0.05);
+}
+
+[data-meta-dashboard] .meta-period-toolbar {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+[data-meta-dashboard] .meta-chart-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  justify-content: flex-end;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+[data-meta-dashboard] [data-chart]:hover .meta-chart-actions {
+  opacity: 1;
+}
+
+/* --- LIST --- */
+[data-meta-list] .meta-bulk-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+[data-meta-list] .meta-search {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+[data-meta-list] .meta-search input {
+  padding-right: 30px;
+  border-radius: 8px;
+}
+
+[data-meta-list] table th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  position: relative;
+}
+
+[data-meta-list] table th:hover {
+  background: rgba(6,182,212,0.05);
+}
+
+[data-meta-list] table th::after {
+  content: '';
+  margin-left: 4px;
+}
+
+[data-meta-list] tr:hover {
+  background: rgba(6,182,212,0.03) !important;
+}
+
+[data-meta-list] .meta-select-all,
+[data-meta-list] .meta-select-row {
+  cursor: pointer;
+}
+
+/* --- NAV --- */
+[data-meta-nav] .nav-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #64748b);
+}
+
+[data-meta-nav] .nav-section-header:hover {
+  background: rgba(6,182,212,0.08);
+}
+
+[data-meta-nav] .nav-section-body {
+  transition: all 0.3s ease;
+}
+
+[data-meta-nav] a.active {
+  background: rgba(6,182,212,0.1);
+  color: #06b6d4;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+[data-meta-nav] [data-nav-badge] {
+  display: none;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+[data-meta-nav] .health-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: 8px;
+  transition: background 0.5s;
+}
+
+/* --- REPORT --- */
+[data-meta-report] .form-control-sm {
+  border-radius: 4px;
+  border-color: #e2e8f0;
+}
+
+[data-meta-report] .form-control-sm:focus {
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 2px rgba(6,182,212,0.2);
+}
+
+[data-meta-report] .btn-outline-secondary:hover {
+  background: rgba(6,182,212,0.08);
+  border-color: #06b6d4;
+}
+
+/* --- MODULE LAUNCHER --- */
+[data-meta-modules] .module-card {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s;
+  position: relative;
+}
+
+[data-meta-modules] .module-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+[data-meta-modules] .module-status-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  transition: background 0.5s;
+}
+
+[data-meta-modules] .module-version {
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+  font-family: monospace;
+}
+
+[data-meta-modules] .module-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+[data-meta-modules] .module-card:hover .module-actions {
+  opacity: 1;
+}
+
+/* --- DOCUMENTS --- */
+[data-meta-documents] .meta-drop-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 16px;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+[data-meta-documents] .meta-drop-zone.drag-over {
+  border-color: #06b6d4;
+  background: rgba(6,182,212,0.05);
+}
+
+[data-meta-documents] .meta-drop-zone.upload-success {
+  border-color: #22c55e;
+  background: rgba(34,197,94,0.05);
+}
+
+[data-meta-documents] .meta-drop-zone.upload-error {
+  border-color: #ef4444;
+  background: rgba(239,68,68,0.05);
+}
+
+[data-meta-documents] [data-file-url] {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+[data-meta-documents] [data-file-url]:hover {
+  color: #06b6d4;
+  text-decoration: underline;
+}
+
+/* --- MODAL --- */
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.meta-dashboard-modal > div {
+  animation: modalFadeIn 0.2s ease;
+}
+
+/* --- TRANSITIONS --- */
+.meta-fade-in {
+  animation: metaFadeIn 0.3s ease;
+}
+
+@keyframes metaFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  [data-meta-dashboard] .meta-period-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  [data-meta-list] .meta-bulk-bar {
+    flex-wrap: wrap;
+  }
+}
