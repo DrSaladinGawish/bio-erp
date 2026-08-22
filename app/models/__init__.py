@@ -88,6 +88,19 @@ from app.models.workflow import (
     DocumentSequence,
 )
 from app.models.three_way_match import ThreeWayMatch
+from app.models.ai_agent_audit import AiAgentAudit
+from app.models.library_compliance import LibraryComplianceScan, LibraryWhitelist
+from app.models.vibe_coding import VibeCodingSession, VibeCodeTemplate
+from app.models.financial_value import (
+    EVARecord,
+    EBITDARecord,
+    DCFValuation,
+    ResidualIncomeRecord,
+    EconomicProfitRecord,
+    MVARecord,
+    TSRRecord,
+    FCFRecord,
+)
 from app.models.event_management import (
     EventLog,
     BranchEventSummary,
@@ -241,4 +254,17 @@ __all__ = [
     "SCMStagingBankTransaction",
     "SCMAuditLog",
     "SCMDeploymentQueue",
+    "AiAgentAudit",
+    "LibraryComplianceScan",
+    "LibraryWhitelist",
+    "VibeCodingSession",
+    "VibeCodeTemplate",
+    "EVARecord",
+    "EBITDARecord",
+    "DCFValuation",
+    "ResidualIncomeRecord",
+    "EconomicProfitRecord",
+    "MVARecord",
+    "TSRRecord",
+    "FCFRecord",
 ]

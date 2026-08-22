@@ -1,9 +1,11 @@
 import random
+import re
 import string
 from datetime import datetime
 from datetime import timezone
 from sqlalchemy import select, func, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import inspect as sa_inspect
 from app.models.workflow import DocumentSequence
 
 
@@ -41,8 +43,11 @@ class SerialNumberService:
 
     async def generate_event_code(self, model_class) -> str:
         year = datetime.now(timezone.utc).replace(tzinfo=None).year
+        table_name = sa_inspect(model_class).mapped_table.name
+        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", table_name):
+            raise ValueError(f"Invalid table name: {table_name}")
         result = await self.session.execute(
-            text(f"SELECT COUNT(*) FROM {model_class.__tablename__}")
+            text(f"SELECT COUNT(*) FROM {table_name}")
         )
         count = result.scalar() or 0
         return f"EVT-{year}-{count + 1:03d}"

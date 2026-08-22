@@ -506,7 +506,7 @@ def legacy_event_create(payload: dict):
                     ).days
                     + 1,
                 )
-            except:
+            except (ValueError, TypeError):
                 pass
         now = dt.now().isoformat()
         db.execute(
