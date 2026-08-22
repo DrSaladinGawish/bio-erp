@@ -21,30 +21,40 @@ DATABASE_URL = os.getenv(
     "&trusted_connection=yes"
 )
 
-# SQLAlchemy engine with SQL Server optimizations
-engine = create_engine(
-    DATABASE_URL,
-    poolclass=QueuePool,
-    pool_size=20,
-    max_overflow=30,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    echo=False,
-    connect_args={
-        "timeout": 30,
-        "TrustServerCertificate": "yes",
-    }
-)
+# SQLAlchemy engine with SQL Server optimizations.
+# pyodbc is Windows-only in practice (needs unixODBC headers on Linux);
+# degrade gracefully so clean checkouts can still import the app tree.
+try:
+    import pyodbc  # noqa: F401
+except ImportError:
+    pyodbc = None
 
+if pyodbc is not None:
+    engine = create_engine(
+        DATABASE_URL,
+        poolclass=QueuePool,
+        pool_size=20,
+        max_overflow=30,
+        pool_pre_ping=True,
+        pool_recycle=3600,
+        echo=False,
+        connect_args={
+            "timeout": 30,
+            "TrustServerCertificate": "yes",
+        }
+    )
 
-@event.listens_for(engine, "connect")
-def set_sql_server_pragmas(dbapi_conn, connection_record):
-    """Set SQL Server session settings on connect."""
-    cursor = dbapi_conn.cursor()
-    cursor.execute("SET ANSI_NULLS ON")
-    cursor.execute("SET QUOTED_IDENTIFIER ON")
-    cursor.execute("SET NOCOUNT OFF")
-    cursor.close()
+    @event.listens_for(engine, "connect")
+    def set_sql_server_pragmas(dbapi_conn, connection_record):
+        """Set SQL Server session settings on connect."""
+        cursor = dbapi_conn.cursor()
+        cursor.execute("SET ANSI_NULLS ON")
+        cursor.execute("SET QUOTED_IDENTIFIER ON")
+        cursor.execute("SET NOCOUNT OFF")
+        cursor.close()
+
+else:
+    engine = None
 
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
