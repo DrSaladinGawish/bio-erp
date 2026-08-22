@@ -1,0 +1,14 @@
+{
+  "model": "AnomalyAutoencoder",
+  "checkpoint": "D:\\BIO_ERP_2\\ERP System\\BIO_ERP\\trained_models\\anomaly_autoencoder.pt",
+  "input_size": 16,
+  "bottleneck_size": 4,
+  "epochs": 150,
+  "final_loss": 0.0027482729534842546,
+  "trained_at": "2026-08-22T07:59:30.950278",
+  "training_data": "real",
+  "data_source": "public.bnk_transactions",
+  "threshold_p99_5": 0.03331256,
+  "production_ready": true,
+  "note": "is_flagged had 0 positive rows in bnk_transactions at training time \u2014 training and threshold are unsupervised; threshold = 99.5th percentile of reconstruction error."
+}

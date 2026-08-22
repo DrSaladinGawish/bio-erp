@@ -45,10 +45,8 @@ def _linear_forecast(values: list, horizon: int = 7) -> list:
 
 
 def predict_cashflow(db: Session, horizon_days: int = 7) -> dict:
-    """Forecast cashflow for the next N days from bank_transaction history."""
-    series = _fetch_amounts(db, "bank_transaction", "amount", "transaction_date")
-    if not series:
-        series = _fetch_amounts(db, "bnk_transaction", "amount", "transaction_date")
+    """Forecast cashflow for the next N days from bank txn history."""
+    series = _fetch_amounts(db, "bnk_transactions", "amount", "txn_date")
     amounts = [a for _, a in reversed(series)]
     forecast = _linear_forecast(amounts, horizon_days)
     return {
@@ -64,8 +62,8 @@ def predict_cashflow(db: Session, horizon_days: int = 7) -> dict:
 
 
 def predict_revenue(db: Session, horizon_days: int = 7) -> dict:
-    """Forecast revenue from sales_invoice history."""
-    series = _fetch_amounts(db, "sales_invoice", "total_amount", "invoice_date")
+    """Forecast revenue from sales_invoices history."""
+    series = _fetch_amounts(db, "sales_invoices", "total", "invoice_date")
     amounts = [a for _, a in reversed(series)]
     forecast = _linear_forecast(amounts, horizon_days)
     return {
@@ -81,7 +79,7 @@ def predict_revenue(db: Session, horizon_days: int = 7) -> dict:
 
 def detect_anomalies(db: Session) -> dict:
     """Detect outlier bank transactions using z-score > 3."""
-    series = _fetch_amounts(db, "bank_transaction", "amount", "transaction_date")
+    series = _fetch_amounts(db, "bnk_transactions", "amount", "txn_date")
     if not series:
         return {"predictor": "anomaly", "anomalies": [], "scanned": 0}
     amounts = [a for _, a in series]
@@ -116,8 +114,8 @@ def score_clients(db: Session) -> dict:
     try:
         rows = db.execute(
             text("""
-            SELECT client_id, COALESCE(SUM(total_amount), 0) as total, COUNT(*) as cnt
-            FROM sales_invoice
+            SELECT client_id, COALESCE(SUM(total), 0) as total, COUNT(*) as cnt
+            FROM sales_invoices
             GROUP BY client_id
             ORDER BY total DESC
             LIMIT 20
@@ -144,12 +142,14 @@ def score_clients(db: Session) -> dict:
 
 
 def rank_vendors(db: Session) -> dict:
-    """Rank vendors by total spend."""
+    """Rank vendors by total spend on real purchase orders."""
     try:
         rows = db.execute(
             text("""
-            SELECT vendor_id, COALESCE(SUM(total_amount), 0) as total, COUNT(*) as cnt
-            FROM purchase_voucher
+            SELECT vendor_id, COALESCE(SUM(total), 0) AS total,
+                   COUNT(*) AS cnt
+            FROM purchase_orders
+            WHERE vendor_id IS NOT NULL
             GROUP BY vendor_id
             ORDER BY total DESC
             LIMIT 20
@@ -159,7 +159,7 @@ def rank_vendors(db: Session) -> dict:
             {
                 "vendor_id": r[0],
                 "total_spend": float(r[1]),
-                "voucher_count": r[2],
+                "order_count": r[2],
                 "rank": i + 1,
             }
             for i, r in enumerate(rows)
