@@ -325,7 +325,7 @@ async def copilot_ask(request: CoPilotAskRequest):
         answer = llm_answer
         confidence = ConfidenceLevel(score=0.85, label="high", source="local-llm")
     else:
-        answer = self._rule_based_answer(request.question, request.context or {})
+        answer = _rule_based_answer(request.question, request.context or {})
         confidence = ConfidenceLevel(score=0.65, label="medium", source="rule-based")
 
     return CoPilotAskResponse(

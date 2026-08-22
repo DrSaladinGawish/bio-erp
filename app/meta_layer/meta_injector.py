@@ -98,6 +98,8 @@ class MetaLayerInjectorMiddleware(BaseHTTPMiddleware):
         content_type = response.headers.get("content-type", "")
         if "text/html" not in content_type:
             return response
+        if not hasattr(response, "body"):
+            return response
         body = response.body
         css_tag, core_js, meta_attrs = self._get_tags()
         should_inject = any(attr.encode() in body for attr in meta_attrs) or b"<form" in body

@@ -8,7 +8,6 @@ Engines: TDABC, Traditional Costing, ABC, RCA, Target Costing, BSC, Responsibili
 """
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 from datetime import datetime
@@ -37,14 +36,6 @@ scm_app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-)
-
-scm_app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 scm_module = SCMERPModule()

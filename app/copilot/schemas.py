@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any, Literal
 from datetime import datetime
 
 class ConfidenceLevel(BaseModel):
-    score: float = Field(ge=0.0, le=1.0, description="Confidence 0-1")
+    score: float = Field(default=0.5, ge=0.0, le=1.0, description="Confidence 0-1")
     label: Literal["low", "medium", "high", "very_high"] = "medium"
     source: str = "rule-based"
 

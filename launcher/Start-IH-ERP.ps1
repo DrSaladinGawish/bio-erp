@@ -6,7 +6,7 @@ param()
 
 Add-Type -AssemblyName PresentationFramework
 $BASE_DIR = "D:\ERP System\BIO_ERP"
-$PORT     = 9001
+$PORT     = 8000
 $LOGFILE  = "$BASE_DIR\logs\server.log"
 
 if (-not (Test-Path "$BASE_DIR\logs")) {
@@ -89,6 +89,12 @@ if (-not (Test-Path "$BASE_DIR\logs")) {
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <TextBlock Grid.Row="0" Grid.Column="0" Text="Module" FontWeight="Bold" Foreground="#D4A017"/>
         <TextBlock Grid.Row="0" Grid.Column="1" Text="Status" FontWeight="Bold" Foreground="#D4A017"/>
@@ -126,6 +132,24 @@ if (-not (Test-Path "$BASE_DIR\logs")) {
         <TextBlock Grid.Row="11" Grid.Column="0" Text="Events (EVN)"/>
         <TextBlock Grid.Row="11" Grid.Column="1" Name="M10S" Text="..." Foreground="#999"/>
         <TextBlock Grid.Row="11" Grid.Column="2" Name="M10D" Text="" Foreground="#999"/>
+        <TextBlock Grid.Row="12" Grid.Column="0" Text="EBA - Gap Scanner"/>
+        <TextBlock Grid.Row="12" Grid.Column="1" Name="M11S" Text="..." Foreground="#999"/>
+        <TextBlock Grid.Row="12" Grid.Column="2" Name="M11D" Text="" Foreground="#999"/>
+        <TextBlock Grid.Row="13" Grid.Column="0" Text="EBA - Health Monitor"/>
+        <TextBlock Grid.Row="13" Grid.Column="1" Name="M12S" Text="..." Foreground="#999"/>
+        <TextBlock Grid.Row="13" Grid.Column="2" Name="M12D" Text="" Foreground="#999"/>
+        <TextBlock Grid.Row="14" Grid.Column="0" Text="EBA - Bilingual Chat"/>
+        <TextBlock Grid.Row="14" Grid.Column="1" Name="M13S" Text="..." Foreground="#999"/>
+        <TextBlock Grid.Row="14" Grid.Column="2" Name="M13D" Text="" Foreground="#999"/>
+        <TextBlock Grid.Row="15" Grid.Column="0" Text="EBA - Auto-Remediation"/>
+        <TextBlock Grid.Row="15" Grid.Column="1" Name="M14S" Text="..." Foreground="#999"/>
+        <TextBlock Grid.Row="15" Grid.Column="2" Name="M14D" Text="" Foreground="#999"/>
+        <TextBlock Grid.Row="16" Grid.Column="0" Text="EBA - Library Compliance"/>
+        <TextBlock Grid.Row="16" Grid.Column="1" Name="M15S" Text="..." Foreground="#999"/>
+        <TextBlock Grid.Row="16" Grid.Column="2" Name="M15D" Text="" Foreground="#999"/>
+        <TextBlock Grid.Row="17" Grid.Column="0" Text="EBA - Vibe Coding Agent"/>
+        <TextBlock Grid.Row="17" Grid.Column="1" Name="M16S" Text="..." Foreground="#999"/>
+        <TextBlock Grid.Row="17" Grid.Column="2" Name="M16D" Text="" Foreground="#999"/>
       </Grid>
     </Border>
     <!-- Part 4 Data Flow Dashboard Status -->
@@ -226,10 +250,16 @@ function Check-Health {
         @{name="IH Approval";    url="/api/v1/ih-approval/summary"},
         @{name="Sales (SAL)";    url="/api/v1/sal/summary"},
         @{name="Purchases (PUR)";url="/api/v1/pur/summary"},
-        @{name="Events (EVN)";   url="/api/v1/evn/summary"}
+        @{name="Events (EVN)";   url="/api/v1/evn/summary"},
+        @{name="EBA - Gap Scanner";       url="/api/v1/ai-agent/status"},
+        @{name="EBA - Health Monitor";    url="/api/v1/ai-agent/health"},
+        @{name="EBA - Bilingual Chat";    url="/api/v1/ai-agent/status"},
+        @{name="EBA - Auto-Remediation";  url="/api/v1/ai-agent/status"},
+        @{name="EBA - Library Compliance";url="/api/v1/ai-agent/library/status"},
+        @{name="EBA - Vibe Coding Agent"; url="/api/v1/ai-agent/vibe/sessions"}
     )
-    $statusFields = @($window.FindName("M0S"),$window.FindName("M1S"),$window.FindName("M2S"),$window.FindName("M3S"),$window.FindName("M4S"),$window.FindName("M5S"),$window.FindName("M6S"),$window.FindName("M7S"),$window.FindName("M8S"),$window.FindName("M9S"),$window.FindName("M10S"))
-    $detailFields = @($window.FindName("M0D"),$window.FindName("M1D"),$window.FindName("M2D"),$window.FindName("M3D"),$window.FindName("M4D"),$window.FindName("M5D"),$window.FindName("M6D"),$window.FindName("M7D"),$window.FindName("M8D"),$window.FindName("M9D"),$window.FindName("M10D"))
+    $statusFields = @($window.FindName("M0S"),$window.FindName("M1S"),$window.FindName("M2S"),$window.FindName("M3S"),$window.FindName("M4S"),$window.FindName("M5S"),$window.FindName("M6S"),$window.FindName("M7S"),$window.FindName("M8S"),$window.FindName("M9S"),$window.FindName("M10S"),$window.FindName("M11S"),$window.FindName("M12S"),$window.FindName("M13S"),$window.FindName("M14S"),$window.FindName("M15S"),$window.FindName("M16S"))
+    $detailFields = @($window.FindName("M0D"),$window.FindName("M1D"),$window.FindName("M2D"),$window.FindName("M3D"),$window.FindName("M4D"),$window.FindName("M5D"),$window.FindName("M6D"),$window.FindName("M7D"),$window.FindName("M8D"),$window.FindName("M9D"),$window.FindName("M10D"),$window.FindName("M11D"),$window.FindName("M12D"),$window.FindName("M13D"),$window.FindName("M14D"),$window.FindName("M15D"),$window.FindName("M16D"))
 
     Write-Log "Checking module health..." "#569CD6"
     $ok = 0; $warn = 0; $err = 0
@@ -305,7 +335,7 @@ function Stop-Server {
         Write-Log "Stopping PID $($p.Id)..." "#D4A017"
         try { Stop-Process -Id $p.Id -Force -ErrorAction Stop; Start-Sleep -Seconds 2; Write-Log "Stopped." "#D4A017" }
         catch { Write-Log "Failed: $_" "#FF6B6B" }
-        for ($i = 0; $i -le 10; $i++) {
+        for ($i = 0; $i -le 16; $i++) {
             $sf = $window.FindName("M${i}S"); if ($sf) { $sf.Dispatcher.Invoke([Action]{ $sf.Text = "---"; $sf.Foreground = "#999" }) }
             $df = $window.FindName("M${i}D"); if ($df) { $df.Dispatcher.Invoke([Action]{ $df.Text = ""; $df.Foreground = "#999" }) }
         }

@@ -9,6 +9,7 @@
     </div>
 </div>
 <form id="salesForm" class="content-card">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
     <div class="alert" id="formAlert" style="display:none"></div>
     <div class="form-row">
         <div class="form-group">
@@ -76,8 +77,9 @@ document.getElementById('salesForm').addEventListener('submit', async function(e
         total_amount: parseFloat(document.getElementById('total_amount').value) || 0,
     };
     try {
+        var csrfToken = document.querySelector('input[name="_csrf"]').value;
         var r = await fetch('/api/v1/sal/invoices', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
+            method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
             body: JSON.stringify(data)
         });
         if (r.ok) {

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,7 @@ from app.middleware.auth import (
 from app.models.auth import User, Role
 from datetime import timezone
 from app.services.audit_logger import AuditLogger
+from app.services.rate_limiter import rate_limit
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -33,7 +34,8 @@ class UserCreate(BaseModel):
 
 
 @router.post("/login")
-async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
+@rate_limit(max_per_minute=10, path_prefix="auth:login")
+async def login(request: Request, req: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(User)
         .options(joinedload(User.roles))

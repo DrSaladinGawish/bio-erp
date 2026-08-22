@@ -39,6 +39,7 @@ app = FastAPI(
 )
 
 # CORS for frontend integration
+# WARNING: Restrict allow_origins in production
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
