@@ -1,0 +1,11 @@
+{
+  "model": "ClientChurnClassifier",
+  "checkpoint": "D:\\BIO_ERP_2\\ERP System\\BIO_ERP\\trained_models\\client_churn.pt",
+  "input_size": 8,
+  "epochs": 150,
+  "final_loss": 0.006076260237023234,
+  "trained_at": "2026-08-22T07:59:31.778422",
+  "training_data": "demo/synthetic",
+  "production_ready": false,
+  "note": "DEMO/SYNTHETIC: labels are the heuristic rule (balance > credit_used * 0.8) over seeded demo clients \u2014 NOT real churn outcomes. Do not serve as production-grade until retrained on real outcome data."
+}
