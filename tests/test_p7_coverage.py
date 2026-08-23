@@ -892,5 +892,12 @@ class TestOpenEndpoints:
 
     @pytest.mark.parametrize("path", ENDPOINTS)
     async def test_open_endpoints_no_auth(self, path: str, client: AsyncClient):
-        resp = await client.get(path)
-        assert resp.status_code == 200, f"{path} should be open, got {resp.status_code}"
+        resp = await client.get(path, follow_redirects=False)
+        if path == "/":
+            # Decided behavior: "/" intentionally 307-redirects to /login.
+            assert resp.status_code == 307
+            assert resp.headers["location"] == "/login"
+        else:
+            assert (
+                resp.status_code == 200
+            ), f"{path} should be open, got {resp.status_code}"
