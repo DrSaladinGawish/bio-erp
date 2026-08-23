@@ -32,7 +32,9 @@ class TestValidateQueryBlocklist:
     def test_rejects_multiple_statements(self):
         ok, err = validate_query("SELECT 1; DROP TABLE events")
         assert not ok
-        assert "Multiple" in err
+        # Contains DROP → rejected by the layer-1 unsafe-pattern guard,
+        # which reports the more specific 'Unsafe SQL' message.
+        assert "Unsafe SQL" in err
 
     def test_rejects_union_all(self):
         ok, err = validate_query(
@@ -139,7 +141,8 @@ class TestAdversarialBypassAttempts:
             "SELECT * FROM events; -- ALTER TABLE events DROP COLUMN name"
         )
         assert not ok
-        assert "Multiple" in err
+        # Contains ALTER/DROP → caught by the layer-1 unsafe-pattern guard.
+        assert "Unsafe SQL" in err
 
 
 # ── Layer 3: Integration tests (require PostgreSQL + readonly role) ──
@@ -154,76 +157,56 @@ from sqlalchemy import text
 class TestReadonlyDbRole:
     """Proves the bio_erp_reader role enforces SELECT-only at PostgreSQL level."""
 
-    async def test_readonly_role_can_select(self):
-        from app.database import get_readonly_session_factory
-        factory = get_readonly_session_factory()
-        session = factory()
+    async def _reader_exec(self, stmt: str):
+        """Run one statement on a FRESH reader engine (isolated per test).
+
+        A shared pooled engine corrupts its asyncpg connection after the
+        first permission error ('another operation is in progress'), so
+        every test gets its own short-lived engine.
+        """
+        from sqlalchemy.ext.asyncio import create_async_engine
+
+        from app.config import settings
+
+        engine = create_async_engine(settings.DATABASE_URL_READONLY)
         try:
-            result = await session.execute(text("SELECT 1 AS ok"))
-            assert result.scalar() == 1
+            async with engine.connect() as conn:
+                return await conn.execute(text(stmt))
         finally:
-            await session.close()
+            await engine.dispose()
+
+    async def test_readonly_role_can_select(self):
+        result = await self._reader_exec("SELECT 1 AS ok")
+        assert result.scalar() == 1
 
     async def test_readonly_role_cannot_insert(self):
-        from app.database import get_readonly_session_factory
-        factory = get_readonly_session_factory()
-        session = factory()
-        try:
-            with pytest.raises(Exception) as exc_info:
-                await session.execute(
-                    text("INSERT INTO events (name_en) VALUES ('injected')")
-                )
-            err_msg = str(exc_info.value).lower()
-            assert "permission" in err_msg or "denied" in err_msg or "privilege" in err_msg
-        finally:
-            await session.close()
+        with pytest.raises(Exception) as exc_info:
+            await self._reader_exec("INSERT INTO events (name_en) VALUES ('injected')")
+        err_msg = str(exc_info.value).lower()
+        assert "permission" in err_msg or "denied" in err_msg or "privilege" in err_msg
 
     async def test_readonly_role_cannot_update(self):
-        from app.database import get_readonly_session_factory
-        factory = get_readonly_session_factory()
-        session = factory()
-        try:
-            with pytest.raises(Exception) as exc_info:
-                await session.execute(
-                    text("UPDATE events SET name_en = 'hacked' WHERE id = 1")
-                )
-            err_msg = str(exc_info.value).lower()
-            assert "permission" in err_msg or "denied" in err_msg or "privilege" in err_msg
-        finally:
-            await session.close()
+        with pytest.raises(Exception) as exc_info:
+            await self._reader_exec(
+                "UPDATE events SET name_en = 'hacked' WHERE id = 1"
+            )
+        err_msg = str(exc_info.value).lower()
+        assert "permission" in err_msg or "denied" in err_msg or "privilege" in err_msg
 
     async def test_readonly_role_cannot_delete(self):
-        from app.database import get_readonly_session_factory
-        factory = get_readonly_session_factory()
-        session = factory()
-        try:
-            with pytest.raises(Exception) as exc_info:
-                await session.execute(text("DELETE FROM events WHERE id = 1"))
-            err_msg = str(exc_info.value).lower()
-            assert "permission" in err_msg or "denied" in err_msg or "privilege" in err_msg
-        finally:
-            await session.close()
+        with pytest.raises(Exception) as exc_info:
+            await self._reader_exec("DELETE FROM events WHERE id = 1")
+        err_msg = str(exc_info.value).lower()
+        assert "permission" in err_msg or "denied" in err_msg or "privilege" in err_msg
 
     async def test_readonly_role_cannot_drop(self):
-        from app.database import get_readonly_session_factory
-        factory = get_readonly_session_factory()
-        session = factory()
-        try:
-            with pytest.raises(Exception) as exc_info:
-                await session.execute(text("DROP TABLE events"))
-            err_msg = str(exc_info.value).lower()
-            assert "permission" in err_msg or "denied" in err_msg or "privilege" in err_msg
-        finally:
-            await session.close()
+        with pytest.raises(Exception) as exc_info:
+            await self._reader_exec("DROP TABLE events")
+        err_msg = str(exc_info.value).lower()
+        assert "permission" in err_msg or "denied" in err_msg or "privilege" in err_msg
 
     async def test_readonly_role_cannot_create_table(self):
-        from app.database import get_readonly_session_factory
-        factory = get_readonly_session_factory()
-        session = factory()
-        try:
-            with pytest.raises(Exception) as exc_info:
-                await session.execute(text("CREATE TABLE evil (id int)"))
-            err_msg = str(exc_info.value).lower()
-            assert "permission" in err_msg or "denied" in err_msg or "privilege" in err_msg
-        finally:
-            await session.close()
+        with pytest.raises(Exception) as exc_info:
+            await self._reader_exec("CREATE TABLE evil (id int)")
+        err_msg = str(exc_info.value).lower()
+        assert "permission" in err_msg or "denied" in err_msg or "privilege" in err_msg

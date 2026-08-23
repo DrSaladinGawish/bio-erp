@@ -29,7 +29,7 @@ class BankReconService:
             select(BankStaging).where(
                 and_(
                     BankStaging.session_id == session_id,
-                    not BankStaging.is_matched,
+                    ~BankStaging.is_matched,
                 )
             )
         )

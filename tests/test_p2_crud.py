@@ -63,11 +63,23 @@ class TestCreateLedgerEntry:
 class TestUpdateDeleteLedgerEntry:
     BASE = "/api/v1/accounting/ledger-entries"
 
+    async def _create_entry(self, client: AsyncClient, auth_headers: dict) -> int:
+        payload = {
+            **SAMPLE_PAYLOAD,
+            "code": f"UPD-{uuid4().hex[:8].upper()}",
+        }
+        resp = await client.post(
+            self.BASE, json=payload, headers=auth_headers
+        )
+        assert resp.status_code in (200, 201)
+        return resp.json()["id"]
+
     async def test_update_valid_returns_200(
         self, client: AsyncClient, auth_headers: dict
     ):
+        entry_id = await self._create_entry(client, auth_headers)
         resp = await client.put(
-            f"{self.BASE}/1", json=SAMPLE_UPDATE, headers=auth_headers
+            f"{self.BASE}/{entry_id}", json=SAMPLE_UPDATE, headers=auth_headers
         )
         assert resp.status_code == 200
 
@@ -82,7 +94,10 @@ class TestUpdateDeleteLedgerEntry:
     async def test_delete_returns_200_or_204(
         self, client: AsyncClient, auth_headers: dict
     ):
-        resp = await client.delete(f"{self.BASE}/1", headers=auth_headers)
+        entry_id = await self._create_entry(client, auth_headers)
+        resp = await client.delete(
+            f"{self.BASE}/{entry_id}", headers=auth_headers
+        )
         assert resp.status_code in (200, 204)
 
     async def test_update_no_auth_returns_401(self, client: AsyncClient):

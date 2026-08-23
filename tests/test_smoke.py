@@ -23,19 +23,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class TestRootHealth:
-    async def test_root_returns_200(self, client: AsyncClient):
-        resp = await client.get("/")
+    async def test_root_redirects_to_login(self, client: AsyncClient):
+        resp = await client.get("/", follow_redirects=False)
+        assert resp.status_code == 307
+        assert resp.headers["location"] == "/login"
+
+    def test_root_redirect_target_is_routable(self):
+        from starlette.routing import Match
+
+        from app.main import app
+
+        scope = {"type": "http", "path": "/login", "method": "GET"}
+        assert any(
+            route.matches(scope) != Match.NONE for route in app.routes
+        ), "/ must only redirect to a routable target"
+
+    async def test_health_endpoint_returns_json(self, client: AsyncClient):
+        resp = await client.get("/health")
         assert resp.status_code == 200
-
-    async def test_root_returns_json(self, client: AsyncClient):
-        resp = await client.get("/")
         assert resp.headers.get("content-type", "").startswith("application/json")
-
-    async def test_root_has_expected_keys(self, client: AsyncClient):
-        resp = await client.get("/")
         body = resp.json()
+        assert body["status"] in ("ok", "degraded")
         assert "version" in body
-        assert "message" not in body or body["message"] == "BIO_ERP v5"
 
 
 # ═══════════════════════════════════════════════════════════════════
