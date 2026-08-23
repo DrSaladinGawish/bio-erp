@@ -10,4 +10,4 @@ if "--reload" in sys.argv:
     print("ERROR: --reload is unsafe from this launcher (wrong watch dir). Remove it.", file=sys.stderr)
     sys.exit(1)
 logging.basicConfig(level=logging.WARNING)
-uvicorn.run(app, host="0.0.0.0", port=9001, log_level="info")
+uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

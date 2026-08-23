@@ -288,7 +288,7 @@ async def get_bank_recon_stats(
         select(func.count(BankStaging.id)).where(BankStaging.is_matched)
     )
     unmatched = await db.scalar(
-        select(func.count(BankStaging.id)).where(not BankStaging.is_matched)
+        select(func.count(BankStaging.id)).where(~BankStaging.is_matched)
     )
     total_recons = await db.scalar(select(func.count(BankReconciliation.id)))
     approved_recons = await db.scalar(

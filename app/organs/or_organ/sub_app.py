@@ -7,7 +7,6 @@ Based on: "البحوث الإلكترونية في المحاسبة" (Al-Azhar 
 """
 
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Dict, Optional, Any
 from datetime import datetime
@@ -40,14 +39,6 @@ or_app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-)
-
-or_app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 or_module = ORERPModule()

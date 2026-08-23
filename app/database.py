@@ -9,6 +9,9 @@ from app.config import settings
 async_engine = None
 _async_session_factory = None
 
+readonly_engine = None
+_readonly_session_factory = None
+
 sync_engine = None
 _sync_session_factory = None
 
@@ -53,6 +56,38 @@ class _AsyncSessionLocal:
 
 
 AsyncSessionLocal = _AsyncSessionLocal()
+
+
+def get_readonly_async_engine():
+    global readonly_engine
+    if readonly_engine is None:
+        readonly_engine = create_async_engine(
+            settings.DATABASE_URL_READONLY,
+            echo=settings.DEBUG,
+            pool_size=5,
+            max_overflow=5,
+        )
+    return readonly_engine
+
+
+def get_readonly_session_factory():
+    global _readonly_session_factory
+    if _readonly_session_factory is None:
+        _readonly_session_factory = async_sessionmaker(
+            get_readonly_async_engine(),
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+    return _readonly_session_factory
+
+
+async def get_readonly_db():
+    factory = get_readonly_session_factory()
+    session = factory()
+    try:
+        yield session
+    finally:
+        await session.close()
 
 
 async def get_db():

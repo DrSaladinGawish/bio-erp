@@ -221,7 +221,7 @@ class EventAssistant:
                 end = datetime.fromisoformat(request.end_date)
                 if (end - start).days < 1:
                     risks.append("Event duration seems very short")
-            except:
+            except (ValueError, TypeError):
                 pass
         if request.guest_count and request.guest_count < 10:
             risks.append("Low guest count — verify event scale")

@@ -9,6 +9,7 @@
     </div>
 </div>
 <form id="purForm" class="content-card">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
     <div class="alert" id="formAlert" style="display:none"></div>
     <div class="form-row">
         <div class="form-group">
@@ -69,8 +70,9 @@ document.getElementById('purForm').addEventListener('submit', async function(e) 
         description: document.getElementById('description').value,
     };
     try {
+        var csrfToken = document.querySelector('input[name="_csrf"]').value;
         var r = await fetch('/api/v1/pur/vouchers', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
+            method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
             body: JSON.stringify(data)
         });
         if (r.ok) {

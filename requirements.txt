@@ -1,4 +1,4 @@
-fastapi==0.115.0
+﻿fastapi==0.141.1
 uvicorn[standard]==0.30.0
 sqlalchemy[asyncio]==2.0.35
 asyncpg==0.30.0
@@ -20,7 +20,7 @@ python-dotenv==1.0.1
 aiosmtplib==3.0.1
 apscheduler==3.10.4
 jinja2==3.1.4
-weasyprint==62.3
+weasyprint==69.0
 tenacity==9.1.4
 openai>=1.50.0
 sqlparse>=0.5.0
@@ -31,5 +31,21 @@ redis==5.1.1
 casbin==1.30.0
 structlog==24.1.0
 slowapi==0.1.9
+itsdangerous==2.2.0
 pytest==8.3.0
 pytest-asyncio==0.24.0
+pytest-timeout>=2.4.0
+# --- Added during SQL-injection fix ---
+sqlglot>=30.0.0
+# --- Database connectors (discovered during setup) ---
+pyodbc>=5.0.0; platform_system == "Windows"  # MSSQL connector - needs unixODBC headers on Linux
+psycopg2-binary>=2.9.0
+# --- Missing from original requirements (discovered during env setup) ---
+werkzeug>=3.0.0
+email-validator>=2.0.0
+# --- RAG/LLM module ---
+torch>=2.0.0
+transformers>=4.35.0
+peft>=0.6.0
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.4

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import os
+import secrets
+import warnings
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,8 +17,8 @@ class Settings(BaseSettings):
     )
 
     DEBUG: bool = False
-    SECRET_KEY: str = "dev-secret-change-in-prod"
-    JWT_SECRET: str = "jwt-dev-secret"
+    SECRET_KEY: str = secrets.token_urlsafe(64)
+    JWT_SECRET: str = secrets.token_urlsafe(64)
     JWT_ACCESS_TTL: int = 900
     JWT_REFRESH_TTL: int = 2592000
 
@@ -23,15 +26,40 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://postgres:postgres123@localhost:5432/bio_erp"
     )
     SYNC_DATABASE_URL: str = "postgresql://postgres:postgres123@localhost:5432/bio_erp"
+    DATABASE_URL_READONLY: str = (
+        "postgresql+asyncpg://bio_erp_reader:readonly@localhost:5432/bio_erp"
+    )
 
     TEMPLATES_DIR: str = str(Path(__file__).parent / "templates")
     STATIC_DIR: str = str(Path(__file__).parent / "static")
     LOG_LEVEL: str = "INFO"
 
     ADMIN_USERNAME: str = "admin"
-    ADMIN_PASSWORD: str = "admin123"
+    ADMIN_PASSWORD: str = ""
     ADMIN_EMAIL: str = "admin@bioerp.local"
     ADMIN_FULL_NAME: str = "System Admin"
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def _warn_default_secret(cls, v: str) -> str:
+        if v and "dev-secret" in v:
+            warnings.warn(
+                "SECRET_KEY is using a default dev value! "
+                "Set a strong SECRET_KEY in .env for production.",
+                stacklevel=2,
+            )
+        return v
+
+    @field_validator("JWT_SECRET")
+    @classmethod
+    def _warn_default_jwt(cls, v: str) -> str:
+        if v and v == "jwt-dev-secret":
+            warnings.warn(
+                "JWT_SECRET is using a default dev value! "
+                "Set a strong JWT_SECRET in .env for production.",
+                stacklevel=2,
+            )
+        return v
 
     # CBE currency sync
     CBE_API_URL: str = "https://www.cbe.org.eg/api/currency-rates"
@@ -63,9 +91,12 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
+    # CORS
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+
     # EventCore integration
     eventcore_base_url: str = "http://localhost:8001"
-    BIO_ERP_BRIDGE_TOKEN: str = "ec-bridge-token-dev"
+    BIO_ERP_BRIDGE_TOKEN: str = ""
 
     DEFAULT_BRANCH_ID: int = 1
     DEFAULT_CURRENCY_ID: int = 1

@@ -1,14 +1,128 @@
 import re
-import sqlparse
+import logging
 from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlglot import parse as sqlglot_parse, exp
+from sqlglot.errors import SqlglotError
 from app.database import Base
 
+logger = logging.getLogger(__name__)
+
 _UNSAFE_PATTERN = re.compile(
-    r"\b(drop|delete|insert|update|alter|truncate|grant|revoke|create|replace)\s",
+    r"\b(drop|delete|insert|update|alter|truncate|grant|revoke|create|replace|exec|execute|executescript)\s",
     re.IGNORECASE,
 )
+
+_FORBIDDEN_KEYWORDS = re.compile(
+    r"\b(union\s+all|into\s+outfile|into\s+dumpfile|load_file|sleep|benchmark|waitfor|pg_sleep)\b",
+    re.IGNORECASE,
+)
+
+_TABLE_ALLOWLIST: set[str] = set()
+_COLUMN_ALLOWLIST: dict[str, set[str]] = {}
+
+
+def _build_allowlists() -> None:
+    global _TABLE_ALLOWLIST, _COLUMN_ALLOWLIST
+    if _TABLE_ALLOWLIST:
+        return
+    _TABLE_ALLOWLIST = {name.lower() for name in Base.metadata.tables.keys()}
+    _COLUMN_ALLOWLIST = {}
+    for table_name, table in Base.metadata.tables.items():
+        _COLUMN_ALLOWLIST[table_name.lower()] = {
+            col.name.lower() for col in table.columns
+        }
+
+
+def _get_allowed_tables() -> set[str]:
+    _build_allowlists()
+    return _TABLE_ALLOWLIST
+
+
+def _get_allowed_columns(table_name: str) -> set[str]:
+    _build_allowlists()
+    return _COLUMN_ALLOWLIST.get(table_name.lower(), set())
+
+
+def _extract_references(sql: str) -> tuple[set[str], set[tuple[str, str]]]:
+    try:
+        statements = sqlglot_parse(sql, read="postgres")
+    except SqlglotError:
+        raise ValueError("Failed to parse SQL — query rejected")
+
+    if not statements:
+        raise ValueError("Empty SQL statement — query rejected")
+
+    stmt = statements[0]
+    if len(statements) > 1:
+        raise ValueError("Multiple statements not allowed")
+
+    tables: set[str] = set()
+    column_refs: set[tuple[str, str]] = set()
+
+    for node in stmt.walk():
+        if isinstance(node, exp.Table):
+            catalog = node.args.get("catalog")
+            db = node.args.get("db")
+            if catalog or db:
+                ref = catalog.name if catalog else db.name
+                raise ValueError(
+                    f"Cross-database reference not allowed: {ref}"
+                )
+            name = node.name
+            if name:
+                tables.add(name.lower())
+
+        if isinstance(node, exp.Column):
+            col_table = node.table.lower() if node.table else None
+            col_name = node.name.lower() if node.name else None
+            if col_name:
+                column_refs.add((col_table, col_name))
+
+    return tables, column_refs
+
+
+def _check_select_only(stmt) -> None:
+    if not isinstance(stmt, exp.Select):
+        raise ValueError(
+            f"Only SELECT queries are allowed (got {type(stmt).__name__})"
+        )
+
+
+def _check_tables(tables: set[str]) -> None:
+    allowed = _get_allowed_tables()
+    unknown = tables - allowed
+    if unknown:
+        raise ValueError(
+            f"Query references unknown table(s): {', '.join(sorted(unknown))}"
+        )
+
+
+def _check_columns(column_refs: set[tuple[str, str]], tables: set[str]) -> None:
+    allowed_all = _get_allowed_tables()
+    table_for_col: dict[str | None, set[str]] = {}
+    for col_table, col_name in column_refs:
+        table_for_col.setdefault(col_table, set()).add(col_name)
+
+    for col_table, col_names in table_for_col.items():
+        if col_table and col_table not in allowed_all:
+            continue
+        if col_table:
+            allowed_cols = _get_allowed_columns(col_table)
+            if not allowed_cols:
+                continue
+            unknown = col_names - allowed_cols - {
+                "count", "sum", "avg", "min", "max", "abs", "round",
+                "cast", "coalesce", "now", "extract", "date_part",
+                "length", "trim", "upper", "lower", "substring", "replace",
+            }
+            if unknown:
+                raise ValueError(
+                    f"Table '{col_table}' — unknown column(s): "
+                    f"{', '.join(sorted(unknown))}"
+                )
+
 
 _FEW_SHOT_EXAMPLES = """
 -- Example 1: Total revenue by branch
@@ -45,6 +159,7 @@ GROUP BY s.id ORDER BY avg_rating DESC;
 
 
 def extract_schema_context() -> str:
+    _build_allowlists()
     lines = []
     for name, table in Base.metadata.tables.items():
         cols = [f"  {c.name} {c.type}" for c in table.columns]
@@ -74,12 +189,33 @@ Few-shot examples:
 def validate_query(query: str) -> tuple[bool, str]:
     if _UNSAFE_PATTERN.search(query):
         return False, "Unsafe SQL operation blocked"
-    parsed = sqlparse.parse(query)
-    if not parsed:
-        return False, "Could not parse SQL"
-    stmt = parsed[0]
-    if stmt.get_type() != "SELECT":
-        return False, "Only SELECT queries are allowed"
+    if _FORBIDDEN_KEYWORDS.search(query):
+        return False, "Forbidden SQL pattern detected"
+    if ";" in query.strip().rstrip(";").strip():
+        return False, "Multiple statements not allowed"
+
+    try:
+        tables, column_refs = _extract_references(query)
+    except ValueError as e:
+        return False, str(e)
+
+    try:
+        statements = sqlglot_parse(query, read="postgres")
+        if statements:
+            _check_select_only(statements[0])
+    except (SqlglotError, ValueError) as e:
+        return False, str(e)
+
+    try:
+        _check_tables(tables)
+    except ValueError as e:
+        return False, str(e)
+
+    try:
+        _check_columns(column_refs, tables)
+    except ValueError as e:
+        return False, str(e)
+
     return True, ""
 
 
@@ -89,9 +225,17 @@ async def execute_safe_query(
     valid, err = validate_query(query)
     if not valid:
         raise ValueError(err)
-    result = await db.execute(text(query))
-    rows = result.mappings().all()
-    return [dict(row) for row in rows]
+
+    from app.database import get_readonly_session_factory
+
+    readonly_factory = get_readonly_session_factory()
+    readonly_session = readonly_factory()
+    try:
+        result = await readonly_session.execute(text(query))
+        rows = result.mappings().all()
+        return [dict(row) for row in rows]
+    finally:
+        await readonly_session.close()
 
 
 def format_results(rows: list[dict[str, Any]], max_rows: int = 20) -> str:
@@ -140,7 +284,6 @@ class AIEngine:
         return sql
 
 
-# Singleton with defaults â€” override via dependency injection
 _default_engine: AIEngine | None = None
 
 

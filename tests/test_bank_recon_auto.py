@@ -144,4 +144,5 @@ async def test_auto_reconcile_requires_auth(client: AsyncClient, seeded_session:
     resp = await client.post(
         f"/api/v1/bank-reconciliation/auto-reconcile/{session_id}",
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 401
+    assert resp.headers.get("www-authenticate") == "Bearer"

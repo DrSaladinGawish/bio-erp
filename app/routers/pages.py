@@ -7,12 +7,36 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
+from sqlalchemy import select
+
+from app.auth import decode_token
+from app.config import settings
+from app.database import get_db
+from app.models import User
+from app.middleware.csrf import generate_csrf_token, require_csrf
 
 router = APIRouter(tags=["pages"])
 
 # Templates directory
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+
+# ------------------------------------------------------------------
+# CSRF token helper for Jinja2
+# ------------------------------------------------------------------
+
+
+def _csrf_token(request: Request) -> str:
+    """Return a CSRF token for the current request. Used as {{ csrf_token() }} in templates."""
+    token = request.cookies.get("csrf_token")
+    if token:
+        return token
+    return generate_csrf_token()
+
+
+templates.env.globals["csrf_token"] = _csrf_token
+
 
 # ------------------------------------------------------------------
 # Auth helpers (JWT cookie-based)
@@ -24,14 +48,39 @@ def get_current_user(request: Request):
     token = request.cookies.get("access_token")
     if not token:
         return None
-    return {
-        "id": 1,
-        "name": "Mr. Maged",
-        "email": "maged@incentivehouse.com",
-        "role": "super_admin",
-        "branch": "Cairo HQ",
-        "avatar": "MA",
-    }
+    payload = decode_token(token)
+    if not payload:
+        return None
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return None
+    return {"id": user_id, "_async_db": True}
+
+
+async def _resolve_user(user_dict: dict) -> dict:
+    """If user_dict has _async_db, resolve from database."""
+    if not user_dict or not user_dict.get("_async_db"):
+        return user_dict
+    uid = user_dict["id"]
+    async for db in get_db():
+        result = await db.execute(select(User).where(User.id == uid))
+        user = result.scalar_one_or_none()
+        await db.close()
+        if not user:
+            return None
+        return {
+            "id": user.id,
+            "name": user.full_name_en or user.username,
+            "email": user.email,
+            "role": "super_admin" if user.is_superuser else "user",
+            "branch": "Cairo HQ",
+            "avatar": (user.full_name_en or user.username)[:2].upper(),
+        }
+    return None
 
 
 def require_auth(request: Request):
@@ -52,6 +101,7 @@ def build_context(request: Request, extra: dict = None) -> dict:
     ctx = {
         "request": request,
         "user": user,
+        "csrf_token": _csrf_token(request),
         "app_name": "IncentiveHouse",
         "app_version": "v2.2.2",
         "current_year": 2026,
@@ -120,9 +170,11 @@ async def login_page(request: Request):
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, user: dict = Depends(require_auth)):
     """Main landing page with KPIs, charts, pipeline."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Dashboard",
             "page_id": "dashboard",
             "kpi_data": {
@@ -177,9 +229,11 @@ async def dashboard(request: Request, user: dict = Depends(require_auth)):
 @router.get("/events", response_class=HTMLResponse)
 async def events_page(request: Request, user: dict = Depends(require_auth)):
     """Event management CRUD + lifecycle."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Event Management",
             "page_id": "events",
             "events": [],
@@ -201,9 +255,11 @@ async def events_page(request: Request, user: dict = Depends(require_auth)):
 @router.get("/sales", response_class=HTMLResponse)
 async def sales_page(request: Request, user: dict = Depends(require_auth)):
     """Sales module: invoices, quotes, categories."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Sales",
             "page_id": "sales",
             "invoices": [],
@@ -217,9 +273,11 @@ async def sales_page(request: Request, user: dict = Depends(require_auth)):
 @router.get("/purchasing", response_class=HTMLResponse)
 async def purchasing_page(request: Request, user: dict = Depends(require_auth)):
     """Purchasing module: POs, vendors, three-way match."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Purchasing",
             "page_id": "purchasing",
             "purchase_orders": [],
@@ -232,9 +290,11 @@ async def purchasing_page(request: Request, user: dict = Depends(require_auth)):
 @router.get("/finance", response_class=HTMLResponse)
 async def finance_page(request: Request, user: dict = Depends(require_auth)):
     """Financial module: bank recon, journal, COA."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Financial",
             "page_id": "finance",
             "bank_accounts": [
@@ -273,9 +333,11 @@ async def finance_page(request: Request, user: dict = Depends(require_auth)):
 @router.get("/operations", response_class=HTMLResponse)
 async def operations_page(request: Request, user: dict = Depends(require_auth)):
     """Operations module: staff, delivery, calendar."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Operations",
             "page_id": "operations",
             "pending_ops": [],
@@ -289,9 +351,11 @@ async def operations_page(request: Request, user: dict = Depends(require_auth)):
 @router.get("/ops-dashboard", response_class=HTMLResponse)
 async def ops_dashboard_page(request: Request, user: dict = Depends(require_auth)):
     """Operations dashboard: today's events, pending briefings, resource conflicts."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Ops Dashboard",
             "page_id": "ops-dashboard",
         },
@@ -302,9 +366,11 @@ async def ops_dashboard_page(request: Request, user: dict = Depends(require_auth
 @router.get("/bank-reconciliation", response_class=HTMLResponse)
 async def bank_recon_page(request: Request, user: dict = Depends(require_auth)):
     """Dedicated bank reconciliation page."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Bank Reconciliation",
             "page_id": "bank-recon",
             "recon_summary": {
@@ -323,9 +389,11 @@ async def bank_recon_page(request: Request, user: dict = Depends(require_auth)):
 @router.get("/reports", response_class=HTMLResponse)
 async def reports_page(request: Request, user: dict = Depends(require_auth)):
     """Reports & analytics hub."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Reports",
             "page_id": "reports",
             "report_data": {
@@ -358,9 +426,11 @@ async def reports_page(request: Request, user: dict = Depends(require_auth)):
 @router.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request, user: dict = Depends(require_auth)):
     """System settings hub."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Settings",
             "page_id": "settings",
         },
@@ -371,9 +441,11 @@ async def settings_page(request: Request, user: dict = Depends(require_auth)):
 @router.get("/search", response_class=HTMLResponse)
 async def search_page(request: Request, user: dict = Depends(require_auth)):
     """Global search page."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Search",
             "page_id": "search",
         },
@@ -384,9 +456,11 @@ async def search_page(request: Request, user: dict = Depends(require_auth)):
 @router.get("/documents", response_class=HTMLResponse)
 async def documents_page(request: Request, user: dict = Depends(require_auth)):
     """Module-native document browser."""
+    resolved = await _resolve_user(user)
     ctx = build_context(
         request,
         {
+            "user": resolved,
             "page_title": "Documents",
             "page_id": "documents",
         },
@@ -402,19 +476,38 @@ async def documents_page(request: Request, user: dict = Depends(require_auth)):
 @router.get("/partials/event-form", response_class=HTMLResponse)
 async def event_form_partial(request: Request, event_id: int = None):
     """Return event form HTML for modal/popup."""
-    ctx = {"request": request, "event_id": event_id}
+    ctx = {"request": request, "event_id": event_id, "csrf_token": _csrf_token(request)}
     return templates.TemplateResponse("partials/event_form.html", ctx)
 
 
 @router.get("/partials/invoice-modal", response_class=HTMLResponse)
 async def invoice_modal_partial(request: Request):
     """Return invoice creation modal HTML."""
-    ctx = {"request": request, "vat_rate": 14}
+    ctx = {"request": request, "vat_rate": 14, "csrf_token": _csrf_token(request)}
     return templates.TemplateResponse("partials/invoice_modal.html", ctx)
 
 
 @router.get("/partials/recon-grid", response_class=HTMLResponse)
 async def recon_grid_partial(request: Request, account: str = "all"):
     """Return reconciliation grid for HTMX swap."""
-    ctx = {"request": request, "account": account}
+    ctx = {"request": request, "account": account, "csrf_token": _csrf_token(request)}
     return templates.TemplateResponse("partials/recon_grid.html", ctx)
+
+
+# ------------------------------------------------------------------
+# POST endpoints with explicit CSRF dependency validation
+# ------------------------------------------------------------------
+
+
+@router.post("/settings/profile", response_class=HTMLResponse)
+async def update_profile(
+    request: Request,
+    user: dict = Depends(require_auth),
+    _csrf: None = Depends(require_csrf),
+):
+    """Update user profile — CSRF validated via dependency injection."""
+    from fastapi.responses import RedirectResponse
+
+    form = await request.form()
+    # TODO: validate fields with Pydantic, save to DB
+    return RedirectResponse(url="/settings", status_code=303)

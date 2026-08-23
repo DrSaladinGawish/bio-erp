@@ -10,6 +10,12 @@ from app.models.neural.prediction import (
     NeuralTrainingHistory,
     NeuralMemory,
 )
+from app.services.neural.ann_predictors import (
+    predict_financial_ann,
+    predict_revenue_ann,
+    detect_anomalies_ann,
+    predict_churn_ann,
+)
 
 
 def _utcnow() -> datetime:
@@ -192,12 +198,55 @@ class TransactionAnomalyDetector:
         }
 
 
+# ── ANN-backed predictors (wrap async functions into class interface) ──
+
+
+class FinancialANNPredictor:
+    @staticmethod
+    async def predict(db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+        result = await predict_financial_ann(db, entity_id, context)
+        if "eva" in result:
+            result["predicted_value"] = result["eva"]
+        return result
+
+
+class RevenueForecasterPredictor:
+    @staticmethod
+    async def predict(db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+        result = await predict_revenue_ann(db, entity_id, context)
+        if "total_forecast" in result:
+            result["predicted_value"] = result["total_forecast"]
+        return result
+
+
+class AnomalyDetectorPredictor:
+    @staticmethod
+    async def predict(db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+        result = await detect_anomalies_ann(db, entity_id, context)
+        if "reconstruction_error" in result:
+            result["predicted_value"] = result["reconstruction_error"]
+        return result
+
+
+class ChurnClassifierPredictor:
+    @staticmethod
+    async def predict(db: AsyncSession, entity_id: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+        result = await predict_churn_ann(db, entity_id, context)
+        if "churn_probability" in result:
+            result["predicted_value"] = result["churn_probability"]
+        return result
+
+
 class PredictorService:
     PREDICTORS: dict[str, Any] = {
         "cash_flow": CashFlowPredictor,
         "client_churn": ClientChurnPredictor,
         "pnr_overrun": PnrOverrunPredictor,
         "transaction_anomaly": TransactionAnomalyDetector,
+        "financial_ann": FinancialANNPredictor,
+        "revenue_forecast": RevenueForecasterPredictor,
+        "anomaly_detector": AnomalyDetectorPredictor,
+        "churn_classifier": ChurnClassifierPredictor,
     }
 
     @staticmethod
@@ -236,13 +285,16 @@ class PredictorService:
             return result
 
         if result.get("predicted_value") is not None:
+            method = result.get("method", "heuristic")
+            model_name = result.get("model", prediction_type)
+            version = "2.0-ann" if method == "neural_network" else "1.0-heuristic"
             prediction = NeuralPrediction(
                 prediction_type=prediction_type,
                 prediction_key=entity_id,
                 predicted_value=result["predicted_value"],
                 confidence=result.get("confidence", 0.0),
                 features_snapshot=result,
-                model_version="1.0.0",
+                model_version=f"{model_name}/{version}",
                 prediction_date=_utcnow(),
             )
             db.add(prediction)

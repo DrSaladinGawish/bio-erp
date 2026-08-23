@@ -1,9 +1,15 @@
 import json, os
 from datetime import date, datetime
 from pathlib import Path
+from werkzeug.utils import secure_filename as _secure_filename
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 from fastapi.responses import JSONResponse, FileResponse, Response
+
+from app.middleware.auth import get_current_user
+
+ALLOWED_UPLOAD_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".xlsx", ".docx"}
+MAX_UPLOAD_SIZE_MB = 20
 
 
 router = APIRouter(prefix="/api/meta", tags=["meta_v2"])
@@ -44,17 +50,7 @@ def get_dashboard_config(dashboard_id: str):
 
 @router.get("/dashboard/drilldown/{kpi_id}")
 def dashboard_drilldown(kpi_id: str, period: str = "this_month"):
-    import random
-    items = []
-    for i in range(15):
-        items.append({
-            "id": i + 1,
-            "date": date.today().isoformat(),
-            "description": f"{kpi_id} item {i+1}",
-            "amount": round(random.uniform(100, 10000), 2),
-            "status": random.choice(["active", "pending", "completed"]),
-        })
-    return {"items": items}
+    return {"items": [], "message": f"Drilldown for {kpi_id} not implemented yet"}
 
 
 @router.get("/list/config/{list_key}")
@@ -134,17 +130,7 @@ def schedule_report(report_key: str, data: dict):
 
 @router.get("/report/{report_key}/export")
 def export_report(report_key: str, format: str = "csv"):
-    import csv, io, random
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["date", "value", "category"])
-    for i in range(30):
-        writer.writerow([date.today().isoformat(), round(random.uniform(100, 5000), 2), f"Category {i%5+1}"])
-    return Response(
-        content=output.getvalue(),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={report_key}.csv"},
-    )
+    return {"message": f"Export for {report_key} not implemented yet", "status": "not_implemented"}
 
 
 @router.get("/modules/config/{group_id}")
@@ -161,9 +147,7 @@ def get_modules_config(group_id: str):
 
 @router.get("/module-status/{module_id}")
 def get_module_status(module_id: str):
-    import random
-    statuses = ["running", "running", "running", "degraded", "stopped"]
-    return {"status": random.choice(statuses), "version": f"1.{random.randint(0,9)}.{random.randint(0,99)}", "uptime": f"{random.randint(1,720)}h", "memory_mb": random.randint(64, 512)}
+    return {"status": "unknown", "message": f"Status check for {module_id} not implemented yet"}
 
 
 @router.post("/module-restart/{module_id}")
@@ -182,44 +166,64 @@ def get_document_config(doc_key: str):
 
 
 @router.post("/documents/{doc_key}/upload")
-async def upload_documents(doc_key: str, files: list[UploadFile] = File(...)):
-    upload_dir = Path(__file__).parent.parent / "uploads" / doc_key
-    upload_dir.mkdir(parents=True, exist_ok=True)
+async def upload_documents(
+    doc_key: str,
+    files: list[UploadFile] = File(...),
+    _user=Depends(get_current_user),
+):
+    safe_doc_key = _secure_filename(doc_key)
+    if not safe_doc_key or safe_doc_key != doc_key:
+        raise HTTPException(status_code=400, detail="Invalid document key")
+
+    base_upload_dir = Path(__file__).parent.parent / "uploads"
+    base_upload_dir.mkdir(exist_ok=True)
+    upload_dir = base_upload_dir / safe_doc_key
+    upload_dir.mkdir(exist_ok=True)
+
+    resolved_upload_dir = upload_dir.resolve()
+    if not str(resolved_upload_dir).startswith(str(base_upload_dir.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid upload path")
+
     results = []
     for file in files:
-        fpath = upload_dir / file.filename
+        ext = Path(file.filename or "").suffix.lower()
+        if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File type '{ext}' not allowed. Allowed: {', '.join(ALLOWED_UPLOAD_EXTENSIONS)}",
+            )
+
+        safe_name = _secure_filename(file.filename or "unnamed")
+        if not safe_name:
+            safe_name = f"file_{date.today().isoformat()}{ext}"
+
+        fpath = upload_dir / safe_name
+        if not fpath.resolve().startswith(resolved_upload_dir):
+            raise HTTPException(status_code=400, detail="Invalid filename")
+
         content = await file.read()
+        if len(content) > MAX_UPLOAD_SIZE_MB * 1024 * 1024:
+            raise HTTPException(status_code=400, detail=f"File exceeds {MAX_UPLOAD_SIZE_MB}MB limit")
+
         with open(fpath, "wb") as f:
             f.write(content)
-        results.append({"filename": file.filename, "size": len(content), "status": "uploaded"})
+        results.append({"filename": safe_name, "size": len(content), "status": "uploaded"})
     return {"uploaded": len(results), "files": results}
 
 
 @router.get("/documents/{doc_key}/versions")
 def get_document_versions(doc_key: str):
-    import random
-    versions = []
-    for i in range(5):
-        versions.append({"version": i + 1, "description": f"Version {i+1} update", "created_at": date.today().isoformat(), "file_count": random.randint(1, 10)})
-    return {"versions": versions}
+    return {"versions": [], "message": f"Document versions for {doc_key} not implemented yet"}
 
 
 @router.get("/pending-count")
 def get_pending_count(type: str = "all"):
-    import random
-    counts = {"invoices": random.randint(0, 20), "approvals": random.randint(0, 10), "tasks": random.randint(0, 50)}
-    if type == "all":
-        return {"count": sum(counts.values()), "breakdown": counts}
-    return {"count": counts.get(type, 0), "type": type}
+    return {"count": 0, "message": "Pending count not implemented yet"}
 
 
 @router.get("/pending-items")
 def get_pending_items():
-    import random
-    items = []
-    for i in range(10):
-        items.append({"id": i + 1, "type": random.choice(["invoice", "approval", "task"]), "title": f"Pending item {i+1}", "created": date.today().isoformat(), "priority": random.choice(["high", "medium", "low"])})
-    return {"items": items}
+    return {"items": [], "message": "Pending items not implemented yet"}
 
 
 @router.get("/export/{chart_id}")

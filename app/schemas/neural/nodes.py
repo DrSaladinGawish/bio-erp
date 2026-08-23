@@ -89,8 +89,17 @@ class MemoryResponse(MemoryCreate):
 
 
 class PredictionRequest(BaseModel):
+    # Includes the ANN-backed predictor types (financial_ann,
+    # revenue_forecast, anomaly_detector). churn_classifier stays
+    # excluded even though trained_models/client_churn.pt now exists:
+    # that checkpoint was trained on synthetic demo data
+    # (scripts/seed_demo_clients.py, training_data="demo/synthetic"
+    # in its checkpoint metadata). It may only be opened after a
+    # retrain against REAL client churn outcomes.
     prediction_type: str = Field(
-        ..., pattern=r"^(cash_flow|client_churn|pnr_overrun|transaction_anomaly)$"
+        ...,
+        pattern=r"^(cash_flow|client_churn|pnr_overrun|transaction_anomaly"
+                r"|financial_ann|revenue_forecast|anomaly_detector)$",
     )
     entity_id: str
     context: dict[str, Any] | None = None

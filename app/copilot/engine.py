@@ -7,15 +7,10 @@ Supports:
   - Rule-based fallback when no LLM available
 """
 
-import re
-import json
 import time
-import hashlib
 import logging
-from pathlib import Path
 from typing import List, Dict, Optional, Any, Tuple
 from datetime import datetime
-from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
@@ -26,30 +21,46 @@ HAS_TRANSFORMERS = False
 HAS_SENTENCE = False
 HAS_SKLEARN = False
 
-try:
-    import torch
-    HAS_TORCH = True
-except ImportError:
-    pass
 
-try:
-    import transformers
-    HAS_TRANSFORMERS = True
-except ImportError:
-    pass
+def _check_torch():
+    global HAS_TORCH
+    if not HAS_TORCH:
+        try:
+            import torch  # noqa: F401
+            HAS_TORCH = True
+        except ImportError:
+            pass
 
-try:
-    from sentence_transformers import SentenceTransformer
-    HAS_SENTENCE = True
-except ImportError:
-    pass
 
-try:
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.metrics.pairwise import cosine_similarity
-    HAS_SKLEARN = True
-except ImportError:
-    pass
+def _check_transformers():
+    global HAS_TRANSFORMERS
+    if not HAS_TRANSFORMERS:
+        try:
+            import transformers  # noqa: F401
+            HAS_TRANSFORMERS = True
+        except ImportError:
+            pass
+
+
+def _check_sentence():
+    global HAS_SENTENCE
+    if not HAS_SENTENCE:
+        try:
+            from sentence_transformers import SentenceTransformer  # noqa: F401
+            HAS_SENTENCE = True
+        except ImportError:
+            pass
+
+
+def _check_sklearn():
+    global HAS_SKLEARN
+    if not HAS_SKLEARN:
+        try:
+            from sklearn.feature_extraction.text import TfidfVectorizer  # noqa: F401
+            from sklearn.metrics.pairwise import cosine_similarity  # noqa: F401
+            HAS_SKLEARN = True
+        except ImportError:
+            pass
 
 
 class CoPilotEngine:
@@ -68,6 +79,10 @@ class CoPilotEngine:
         self._learned_patterns: List[Dict] = []
         self._start_time = time.time()
 
+        _check_torch()
+        _check_transformers()
+        _check_sentence()
+        _check_sklearn()
         logger.info(f"CoPilotEngine init | torch={HAS_TORCH} transformers={HAS_TRANSFORMERS} "
                      f"sentence={HAS_SENTENCE} sklearn={HAS_SKLEARN}")
 
@@ -93,6 +108,7 @@ class CoPilotEngine:
 
     def _get_vectorizer(self):
         if self._vectorizer is None and HAS_SKLEARN:
+            from sklearn.feature_extraction.text import TfidfVectorizer
             self._vectorizer = TfidfVectorizer(max_features=500, stop_words="english")
         return self._vectorizer
 
