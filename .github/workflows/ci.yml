@@ -23,6 +23,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +71,9 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/erp_test
           TEST_DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/erp_test
+          DATABASE_URL_READONLY: postgresql+asyncpg://bio_erp_reader:readonly@localhost:5432/erp_test
+          BIO_ERP_READER_PASSWORD: readonly
+          POSTGRES_DB: erp_test
           SECRET_KEY: ci-test-key
           ENVIRONMENT: testing
           ALLOWED_HOSTS: localhost,127.0.0.1,.localhost,test,testserver

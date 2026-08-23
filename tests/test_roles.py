@@ -81,7 +81,8 @@ async def test_list_roles(client: AsyncClient, auth_headers: dict):
 
 async def test_list_roles_requires_auth(client: AsyncClient):
     resp = await client.get("/api/v1/roles/")
-    assert resp.status_code == 403
+    assert resp.status_code == 401
+    assert resp.headers.get("www-authenticate") == "Bearer"
 
 
 async def test_my_permissions(client: AsyncClient, auth_headers: dict):
@@ -95,7 +96,8 @@ async def test_my_permissions(client: AsyncClient, auth_headers: dict):
 
 async def test_my_permissions_requires_auth(client: AsyncClient):
     resp = await client.get("/api/v1/roles/my-permissions")
-    assert resp.status_code == 403
+    assert resp.status_code == 401
+    assert resp.headers.get("www-authenticate") == "Bearer"
 
 
 async def test_get_role_by_id(client: AsyncClient, auth_headers: dict):

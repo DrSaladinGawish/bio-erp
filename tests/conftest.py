@@ -42,8 +42,14 @@ from app.main import app  # noqa: E402
 
 
 # ── Sync DB setup (no event loop needed) ──────────────────────────
+# Timeouts keep a wedged backend (e.g. a killed run holding locks on the
+# schema we DROP below) from hanging the whole suite forever.
 _sync_url = TEST_DB_URL.replace("+asyncpg", "")
-_sync_engine = create_engine(_sync_url, echo=False)
+_sync_engine = create_engine(
+    _sync_url,
+    echo=False,
+    connect_args={"connect_timeout": 10, "options": "-c statement_timeout=30000"},
+)
 
 # Drop and recreate to handle schema changes (stub → full models)
 with _sync_engine.connect() as conn:
@@ -56,6 +62,46 @@ from app.models import Base  # noqa: E402
 
 Base.metadata.create_all(bind=_sync_engine)
 IHEBase.metadata.create_all(bind=_sync_engine)
+
+# ── Ensure the readonly DB role exists and can SELECT on this test DB ──
+# Layer-3 SQL-injection defense tests log in as this role. The role is
+# cluster-wide, so we NEVER touch its password here; we only create it when
+# missing (CI's fresh container) and grant read access to THIS database.
+# settings.DATABASE_URL_READONLY is repointed at the test DB so tests
+# exercise the same code path against the scratch database.
+from urllib.parse import unquote, urlparse  # noqa: E402
+
+_ro = urlparse(settings.DATABASE_URL_READONLY)
+_reader_user = unquote(_ro.username or "bio_erp_reader")
+_reader_pass = unquote(_ro.password or "readonly")
+
+with _sync_engine.connect() as conn:
+    dbname = conn.execute(text("SELECT current_database()")).scalar()
+    conn.execute(
+        text(
+            "DO $r$ BEGIN "
+            f"IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{_reader_user}') THEN "
+            f"CREATE ROLE {_reader_user} LOGIN PASSWORD '{_reader_pass}'; "
+            "END IF; END $r$;"
+        )
+    )
+    conn.execute(text(f"GRANT CONNECT ON DATABASE {dbname} TO {_reader_user}"))
+    conn.execute(text(f"GRANT USAGE ON SCHEMA public TO {_reader_user}"))
+    conn.execute(
+        text(f"GRANT SELECT ON ALL TABLES IN SCHEMA public TO {_reader_user}")
+    )
+    conn.execute(
+        text(
+            "ALTER DEFAULT PRIVILEGES IN SCHEMA public "
+            f"GRANT SELECT ON TABLES TO {_reader_user}"
+        )
+    )
+    conn.commit()
+
+settings.DATABASE_URL_READONLY = (
+    f"postgresql+asyncpg://{_reader_user}:{_reader_pass}@"
+    f"{_ro.hostname or 'localhost'}:{_ro.port or 5432}/{dbname}"
+)
 
 # Seed admin / currency / branch / category
 from app.auth import hash_password  # noqa: E402
