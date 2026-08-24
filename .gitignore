@@ -227,3 +227,6 @@ app/organs/incentivehouse_organ/Untitled-*.ipynb
 app/organs/incentivehouse_organ/validator.py
 app/organs/incentivehouse_organ/verify_*.py
 app/organs/incentivehouse_organ/~$*
+
+# TLS private material — never commit
+*.pem

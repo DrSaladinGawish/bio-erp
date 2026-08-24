@@ -31,14 +31,14 @@ cert = (
     .sign(key, hashes.SHA256(), backend=default_backend())
 )
 
-with open("ssl/key.pem", "wb") as f:
+with open("ssl/key_new.pem", "wb") as f:
     f.write(key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.TraditionalOpenSSL,
         encryption_algorithm=serialization.NoEncryption(),
     ))
 
-with open("ssl/cert.pem", "wb") as f:
+with open("ssl/cert_new.pem", "wb") as f:
     f.write(cert.public_bytes(serialization.Encoding.PEM))
 
-print("Generated ssl/cert.pem and ssl/key.pem")
+print("Generated ssl/cert_new.pem and ssl/key_new.pem")
