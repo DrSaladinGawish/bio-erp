@@ -67,7 +67,7 @@ def _utcnow() -> datetime:
 
 
 def get_engine():
-    url = os.environ.get("DATABASE_URL", "postgresql+asyncpg://postgres:postgres123@localhost:5432/bio_erp")
+    url = os.environ["DATABASE_URL"]  # required — fail loud, no default
     return create_async_engine(url)
 
 
