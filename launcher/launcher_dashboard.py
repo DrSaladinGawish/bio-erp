@@ -37,7 +37,7 @@ DB_CONFIG = {
     "port": int(os.getenv("DB_PORT", "5432")),
     "database": os.getenv("DB_NAME", "bio_erp"),
     "user": os.getenv("DB_USER", "postgres"),
-    "password": os.getenv("DB_PASSWORD", "postgres123"),
+    "password": os.environ["DB_PASSWORD"],  # required — fail loud, no default
 }
 
 MODULES = {

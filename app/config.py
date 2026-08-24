@@ -5,7 +5,7 @@ import secrets
 import warnings
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,13 +22,12 @@ class Settings(BaseSettings):
     JWT_ACCESS_TTL: int = 900
     JWT_REFRESH_TTL: int = 2592000
 
-    DATABASE_URL: str = (
-        "postgresql+asyncpg://postgres:postgres123@localhost:5432/bio_erp"
-    )
-    SYNC_DATABASE_URL: str = "postgresql://postgres:postgres123@localhost:5432/bio_erp"
-    DATABASE_URL_READONLY: str = (
-        "postgresql+asyncpg://bio_erp_reader:readonly@localhost:5432/bio_erp"
-    )
+    # Required — no defaults. The app must fail loudly at startup if these
+    # are not provided via environment/.env, never fall back to baked-in
+    # credentials.
+    DATABASE_URL: str
+    SYNC_DATABASE_URL: str = ""  # derived from DATABASE_URL when unset
+    DATABASE_URL_READONLY: str
 
     TEMPLATES_DIR: str = str(Path(__file__).parent / "templates")
     STATIC_DIR: str = str(Path(__file__).parent / "static")
@@ -38,6 +37,14 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = ""
     ADMIN_EMAIL: str = "admin@bioerp.local"
     ADMIN_FULL_NAME: str = "System Admin"
+
+    @model_validator(mode="after")
+    def _derive_sync_url(self) -> "Settings":
+        if not self.SYNC_DATABASE_URL:
+            # Same credentials as DATABASE_URL with the async driver marker
+            # stripped; contains no secrets of its own.
+            self.SYNC_DATABASE_URL = self.DATABASE_URL.replace("+asyncpg", "")
+        return self
 
     @field_validator("SECRET_KEY")
     @classmethod
